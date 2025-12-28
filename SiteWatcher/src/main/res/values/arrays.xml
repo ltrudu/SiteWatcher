@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="notification_actions">
+        <item>@string/open_app</item>
+        <item>@string/open_browser</item>
+    </string-array>
+
+    <string-array name="network_modes">
+        <item>@string/wifi_only</item>
+        <item>@string/wifi_and_data</item>
+        <item>@string/data_only</item>
+    </string-array>
+
+    <string-array name="comparison_modes">
+        <item>@string/comparison_full_html</item>
+        <item>@string/comparison_text_only</item>
+        <item>@string/comparison_css_selector</item>
+    </string-array>
+
+    <string-array name="schedule_types">
+        <item>@string/schedule_periodic</item>
+        <item>@string/schedule_specific_hour</item>
+    </string-array>
+
+    <string-array name="search_engines">
+        <item>@string/search_duckduckgo</item>
+        <item>@string/search_google</item>
+        <item>@string/search_bing</item>
+        <item>@string/search_qwant</item>
+    </string-array>
+</resources>

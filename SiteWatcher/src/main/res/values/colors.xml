@@ -2,4 +2,10 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Diff Colors -->
+    <color name="diff_added">#FF2E7D32</color>
+    <color name="diff_removed">#FFC62828</color>
+    <color name="diff_added_background">#1A4CAF50</color>
+    <color name="diff_removed_background">#1AE53935</color>
 </resources>

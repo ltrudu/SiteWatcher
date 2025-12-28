@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/siteListFragment"
+            android:icon="@drawable/ic_home"
+            android:title="@string/home" />
+    </group>
+
+    <item android:title="@string/manage">
+        <menu>
+            <item
+                android:id="@+id/backupsManagerFragment"
+                android:icon="@drawable/ic_backup"
+                android:title="@string/backups_manager" />
+        </menu>
+    </item>
+
+    <item android:title="@string/app_name">
+        <menu>
+            <item
+                android:id="@+id/settingsFragment"
+                android:icon="@drawable/ic_settings"
+                android:title="@string/settings" />
+            <item
+                android:id="@+id/aboutFragment"
+                android:icon="@drawable/ic_info"
+                android:title="@string/about" />
+        </menu>
+    </item>
+
+</menu>

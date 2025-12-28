@@ -1,3 +1,168 @@
 <resources>
+    <!-- App -->
     <string name="app_name">SiteWatcher</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">Site Changes</string>
+    <string name="notification_channel_description">Notifications when watched sites change</string>
+    <string name="notification_title">Site Changed</string>
+    <string name="notification_text">%1$s changed by %2$.1f%%</string>
+
+    <!-- Navigation -->
+    <string name="home">Home</string>
+    <string name="manage">Manage</string>
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    <string name="backups_manager">Backups Manager</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="browse">Browse</string>
+    <string name="view_diff">View Changes</string>
+
+    <!-- Site List -->
+    <string name="add_site">Add Site</string>
+    <string name="edit_site">Edit Site</string>
+    <string name="no_sites">No sites added yet</string>
+    <string name="no_sites_hint">Tap + to add a site to watch</string>
+    <string name="last_check_minutes">Last check: %1$d min ago</string>
+    <string name="last_check_hours">Last check: %1$dh %2$dm ago</string>
+    <string name="last_check_days">Last check: %1$d days ago</string>
+    <string name="last_check_just_now">Last check: just now</string>
+    <string name="next_check_in">Next check in: %1$d min</string>
+    <string name="next_check_in_hours">Next check in: %1$dh %2$dm</string>
+    <string name="next_check_soon">Next check in: &lt;1 min</string>
+    <string name="next_check_overdue">Check overdue</string>
+    <string name="never_checked">Never checked</string>
+    <string name="change_percent">%1$.1f%% changed</string>
+    <string name="error_state">Error</string>
+
+    <!-- Context Menu -->
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="duplicate">Duplicate</string>
+    <string name="check_now">Check Now</string>
+    <string name="confirm_delete">Delete this site?</string>
+    <string name="confirm_delete_message">This will remove the site and all its history.</string>
+
+    <!-- Add/Edit Form -->
+    <string name="url">URL</string>
+    <string name="url_hint">https://example.com</string>
+    <string name="invalid_url">Please enter a valid URL</string>
+    <string name="comparison_mode">Comparison Mode</string>
+    <string name="days_to_check">Days to Check</string>
+    <string name="schedule_type">Schedule Type</string>
+    <string name="check_interval">Check Interval</string>
+    <string name="check_interval_value">%1$d minutes</string>
+    <string name="specific_time">Specific Time</string>
+    <string name="threshold">Notification Threshold</string>
+    <string name="threshold_value">%1$d%%</string>
+    <string name="css_selector">CSS Selector</string>
+    <string name="css_selector_hint">e.g., #content, .main-text</string>
+    <string name="cancel">Cancel</string>
+    <string name="add">Add</string>
+    <string name="save">Save</string>
+    <string name="apply">Apply</string>
+
+    <!-- Comparison Modes -->
+    <string name="comparison_full_html">Full HTML</string>
+    <string name="comparison_text_only">Text Content Only</string>
+    <string name="comparison_css_selector">CSS Selector</string>
+
+    <!-- Schedule Types -->
+    <string name="schedule_periodic">Periodic Interval</string>
+    <string name="schedule_specific_hour">Specific Time</string>
+
+    <!-- Days -->
+    <string name="day_sun">S</string>
+    <string name="day_mon">M</string>
+    <string name="day_tue">T</string>
+    <string name="day_wed">W</string>
+    <string name="day_thu">T</string>
+    <string name="day_fri">F</string>
+    <string name="day_sat">S</string>
+
+    <!-- Browser Discovery -->
+    <string name="watch">Watch</string>
+    <string name="current_url">Current URL</string>
+
+    <!-- Settings -->
+    <string name="request_permissions">Request Permissions</string>
+    <string name="export_sites">Export Sites</string>
+    <string name="import_sites">Import Sites</string>
+    <string name="export_import">Export / Import</string>
+    <string name="export_success">Exported %1$d sites successfully</string>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="import_success">Imported %1$d sites successfully</string>
+    <string name="import_failed">Import failed: %1$s</string>
+    <string name="import_confirm_title">Import Sites</string>
+    <string name="import_confirm_message">This will import %1$d sites. Existing sites with the same URL will be skipped. Continue?</string>
+    <string name="no_sites_to_export">No sites to export</string>
+    <string name="alarm_permission_title">Alarm Permission Required</string>
+    <string name="alarm_permission_message">SiteWatcher needs permission to schedule exact alarms for reliable site checks. Without this permission, checks may be delayed or missed.\n\nPlease enable \"Alarms &amp; reminders\" in the next screen.</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="notification_tap_action">When notification tapped</string>
+    <string name="open_app">Open App</string>
+    <string name="open_browser">Open in Browser</string>
+    <string name="network_mode">Network Mode</string>
+    <string name="wifi_only">WiFi Only</string>
+    <string name="wifi_and_data">WiFi + Mobile Data</string>
+    <string name="data_only">Mobile Data Only</string>
+    <string name="retry_count">Retry Count</string>
+    <string name="max_threads">Max Concurrent Checks</string>
+    <string name="history_count">History Versions to Keep</string>
+    <string name="search_engine">Search Engine</string>
+    <string name="debug_mode">Debug Mode</string>
+    <string name="debug_mode_summary">Enable logging for troubleshooting</string>
+    <string name="permissions_granted">All permissions granted</string>
+    <string name="permissions_missing">Some permissions missing</string>
+
+    <!-- Search Engines -->
+    <string name="search_duckduckgo">DuckDuckGo</string>
+    <string name="search_google">Google</string>
+    <string name="search_bing">Bing</string>
+    <string name="search_qwant">Qwant</string>
+
+    <!-- Backups -->
+    <string name="no_backups">No backups available</string>
+    <string name="no_backups_hint">Backups are created when sites are checked</string>
+    <string name="backup_date">%1$s</string>
+    <string name="backup_size">%1$s</string>
+    <string name="delete_backup">Delete Backup</string>
+    <string name="view_backup">View Content</string>
+    <string name="backup_deleted">Backup deleted</string>
+    <string name="confirm_delete_backup">Delete backup?</string>
+    <string name="confirm_delete_backup_message">Delete backup for %1$s from %2$s?</string>
+
+    <!-- Diff Viewer -->
+    <string name="no_previous_version">No previous version to compare</string>
+    <string name="diff_added">Added</string>
+    <string name="diff_removed">Removed</string>
+    <string name="diff_unchanged">Unchanged</string>
+    <string name="diff_previous_version">Previous</string>
+    <string name="diff_current_version">Current</string>
+    <string name="diff_added_lines">+%1$d lines</string>
+    <string name="diff_removed_lines">-%1$d lines</string>
+
+    <!-- Navigation Errors -->
+    <string name="error_navigation">Navigation error</string>
+
+    <!-- About -->
+    <string name="version">Version %1$s</string>
+    <string name="about_description">SiteWatcher monitors websites for changes and notifies you when content is modified.</string>
+    <string name="developer">Developer</string>
+    <string name="source_code">Source Code</string>
+
+    <!-- Errors -->
+    <string name="error_network">Network error</string>
+    <string name="error_timeout">Connection timeout</string>
+    <string name="error_ssl">SSL certificate error</string>
+    <string name="error_unknown">Unknown error</string>
+    <string name="error_loading">Error loading content</string>
+
+    <!-- General -->
+    <string name="ok">OK</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="loading">Loading…</string>
+    <string name="retry">Retry</string>
 </resources>

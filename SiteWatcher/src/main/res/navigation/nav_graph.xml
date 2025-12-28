@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/siteListFragment">
+
+    <fragment
+        android:id="@+id/siteListFragment"
+        android:name="com.ltrudu.sitewatcher.ui.sitelist.SiteListFragment"
+        android:label="@string/app_name"
+        tools:layout="@layout/fragment_site_list">
+        <action
+            android:id="@+id/action_siteList_to_addEdit"
+            app:destination="@id/addEditFragment" />
+        <action
+            android:id="@+id/action_siteList_to_diffViewer"
+            app:destination="@id/diffViewerFragment" />
+        <action
+            android:id="@+id/action_siteList_to_settings"
+            app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_siteList_to_about"
+            app:destination="@id/aboutFragment" />
+        <action
+            android:id="@+id/action_siteList_to_backups"
+            app:destination="@id/backupsManagerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addEditFragment"
+        android:name="com.ltrudu.sitewatcher.ui.addedit.AddEditFragment"
+        android:label="@string/add_site"
+        tools:layout="@layout/fragment_add_edit">
+        <argument
+            android:name="siteId"
+            app:argType="long"
+            android:defaultValue="-1L" />
+        <action
+            android:id="@+id/action_addEdit_to_browserDiscovery"
+            app:destination="@id/browserDiscoveryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/browserDiscoveryFragment"
+        android:name="com.ltrudu.sitewatcher.ui.browser.BrowserDiscoveryFragment"
+        android:label="@string/browse"
+        tools:layout="@layout/fragment_browser_discovery" />
+
+    <fragment
+        android:id="@+id/diffViewerFragment"
+        android:name="com.ltrudu.sitewatcher.ui.diff.DiffViewerFragment"
+        android:label="@string/view_diff"
+        tools:layout="@layout/fragment_diff_viewer">
+        <argument
+            android:name="siteId"
+            app:argType="long" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/backupsManagerFragment"
+        android:name="com.ltrudu.sitewatcher.ui.backups.BackupsManagerFragment"
+        android:label="@string/backups_manager"
+        tools:layout="@layout/fragment_backups_manager">
+        <action
+            android:id="@+id/action_backups_to_diffViewer"
+            app:destination="@id/diffViewerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.ltrudu.sitewatcher.ui.settings.SettingsFragment"
+        android:label="@string/settings"
+        tools:layout="@layout/fragment_settings" />
+
+    <fragment
+        android:id="@+id/aboutFragment"
+        android:name="com.ltrudu.sitewatcher.ui.about.AboutFragment"
+        android:label="@string/about"
+        tools:layout="@layout/fragment_about" />
+
+</navigation>

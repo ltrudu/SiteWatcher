@@ -20,6 +20,8 @@
     <string name="view_diff">View Changes</string>
 
     <!-- Site List -->
+    <string name="search_hint">Search sites (AND, OR, NOT)</string>
+    <string name="search_no_results">No sites match your search</string>
     <string name="add_site">Add Site</string>
     <string name="edit_site">Edit Site</string>
     <string name="no_sites">No sites added yet</string>

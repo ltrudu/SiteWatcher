@@ -3,11 +3,14 @@ package com.ltrudu.sitewatcher.ui.sitelist;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,9 +22,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
 import com.ltrudu.sitewatcher.R;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.util.Logger;
+import com.ltrudu.sitewatcher.util.SearchQueryParser;
 
 /**
  * Fragment displaying the list of watched sites.
@@ -31,12 +36,20 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
 
     private static final String TAG = "SiteListFragment";
     private static final long REFRESH_INTERVAL_MS = 60_000; // 1 minute
+    private static final long SEARCH_DEBOUNCE_MS = 300; // 300ms debounce
 
     private SiteListViewModel viewModel;
     private SiteListAdapter adapter;
     private RecyclerView recyclerView;
     private LinearLayout emptyState;
+    private TextView emptyStateText;
+    private TextView emptyStateHint;
     private FloatingActionButton fab;
+    private TextInputEditText editSearch;
+
+    // Handler for search debounce
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchRunnable;
 
     // Handler for periodic UI refresh
     private final Handler refreshHandler = new Handler(Looper.getMainLooper());
@@ -72,6 +85,7 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
 
         initViews(view);
         setupRecyclerView();
+        setupSearch();
         setupFab();
         observeData();
 
@@ -91,6 +105,10 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         super.onPause();
         // Stop periodic refresh timer
         refreshHandler.removeCallbacks(refreshRunnable);
+        // Cancel any pending search
+        if (searchRunnable != null) {
+            searchHandler.removeCallbacks(searchRunnable);
+        }
         Logger.d(TAG, "Stopped refresh timer");
     }
 
@@ -101,6 +119,11 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         recyclerView = view.findViewById(R.id.recyclerView);
         emptyState = view.findViewById(R.id.emptyState);
         fab = view.findViewById(R.id.fab);
+        editSearch = view.findViewById(R.id.editSearch);
+
+        // Find text views inside empty state
+        emptyStateText = emptyState.findViewById(R.id.emptyStateText);
+        emptyStateHint = emptyState.findViewById(R.id.emptyStateHint);
     }
 
     /**
@@ -109,6 +132,41 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     private void setupRecyclerView() {
         adapter = new SiteListAdapter(this);
         recyclerView.setAdapter(adapter);
+    }
+
+    /**
+     * Set up the search functionality with debouncing.
+     */
+    private void setupSearch() {
+        editSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Not needed
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Cancel any pending search
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String query = s.toString();
+
+                // Create a new runnable for the search
+                searchRunnable = () -> {
+                    Logger.d(TAG, "Filtering with query: " + query);
+                    adapter.filter(query);
+                    updateEmptyState();
+                };
+
+                // Debounce: wait 300ms before executing
+                searchHandler.postDelayed(searchRunnable, SEARCH_DEBOUNCE_MS);
+            }
+        });
     }
 
     /**
@@ -125,18 +183,31 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         viewModel.getAllSites().observe(getViewLifecycleOwner(), sites -> {
             Logger.d(TAG, "Sites updated: " + (sites != null ? sites.size() : 0) + " sites");
             adapter.submitList(sites);
-            updateEmptyState(sites == null || sites.isEmpty());
+            updateEmptyState();
         });
     }
 
     /**
-     * Update the empty state visibility.
-     * @param isEmpty Whether the list is empty
+     * Update the empty state visibility based on adapter state.
      */
-    private void updateEmptyState(boolean isEmpty) {
-        if (isEmpty) {
+    private void updateEmptyState() {
+        boolean hasAnySites = adapter.hasAnySites();
+        boolean isFilterEmpty = adapter.isFilterEmpty();
+        boolean showEmptyState = !hasAnySites || isFilterEmpty;
+
+        if (showEmptyState) {
             recyclerView.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
+
+            // Update empty state text based on whether it's a filter result or no sites
+            if (isFilterEmpty) {
+                emptyStateText.setText(R.string.search_no_results);
+                emptyStateHint.setVisibility(View.GONE);
+            } else {
+                emptyStateText.setText(R.string.no_sites);
+                emptyStateHint.setVisibility(View.VISIBLE);
+                emptyStateHint.setText(R.string.no_sites_hint);
+            }
         } else {
             recyclerView.setVisibility(View.VISIBLE);
             emptyState.setVisibility(View.GONE);

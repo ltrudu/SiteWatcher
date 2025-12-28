@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.ltrudu.sitewatcher.R;
 import com.ltrudu.sitewatcher.data.model.ScheduleType;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
+import com.ltrudu.sitewatcher.util.SearchQueryParser;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -21,7 +22,7 @@ import java.util.List;
 
 /**
  * RecyclerView adapter for displaying watched sites.
- * Handles site item display and click interactions.
+ * Handles site item display, click interactions, and filtering.
  */
 public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteViewHolder> {
 
@@ -43,8 +44,10 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
         void onLongClick(@NonNull WatchedSite site, @NonNull View view);
     }
 
+    private final List<WatchedSite> allSites = new ArrayList<>();
     private final List<WatchedSite> sites = new ArrayList<>();
     private final OnSiteClickListener listener;
+    private String currentFilter = "";
 
     /**
      * Constructor for SiteListAdapter.
@@ -82,6 +85,35 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
             newSites = new ArrayList<>();
         }
 
+        // Store all sites for filtering
+        allSites.clear();
+        allSites.addAll(newSites);
+
+        // Apply current filter
+        applyFilter();
+    }
+
+    /**
+     * Filter the list based on a search query.
+     * @param query The search query (supports AND, OR, NOT keywords)
+     */
+    public void filter(@NonNull String query) {
+        currentFilter = query;
+        applyFilter();
+    }
+
+    /**
+     * Apply the current filter to the sites list.
+     */
+    private void applyFilter() {
+        List<WatchedSite> filteredSites = SearchQueryParser.filter(allSites, currentFilter);
+        updateDisplayList(filteredSites);
+    }
+
+    /**
+     * Update the displayed list with DiffUtil for efficient updates.
+     */
+    private void updateDisplayList(@NonNull List<WatchedSite> newSites) {
         List<WatchedSite> oldSites = new ArrayList<>(sites);
         List<WatchedSite> finalNewSites = newSites;
 
@@ -119,6 +151,22 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
         sites.clear();
         sites.addAll(newSites);
         diffResult.dispatchUpdatesTo(this);
+    }
+
+    /**
+     * Check if there are any sites in the unfiltered list.
+     * @return true if there are sites, false otherwise
+     */
+    public boolean hasAnySites() {
+        return !allSites.isEmpty();
+    }
+
+    /**
+     * Check if the current filter produced no results.
+     * @return true if filter is active and no results, false otherwise
+     */
+    public boolean isFilterEmpty() {
+        return SearchQueryParser.isValidQuery(currentFilter) && sites.isEmpty() && !allSites.isEmpty();
     }
 
     /**

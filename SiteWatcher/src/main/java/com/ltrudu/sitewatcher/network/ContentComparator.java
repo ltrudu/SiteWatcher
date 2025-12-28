@@ -22,17 +22,21 @@ public class ContentComparator {
     /**
      * Compare two content strings based on the specified mode.
      *
-     * @param oldContent  The previous content
-     * @param newContent  The current content
-     * @param mode        The comparison mode to use
-     * @param cssSelector CSS selector for CSS_SELECTOR mode (can be null for other modes)
+     * @param oldContent    The previous content
+     * @param newContent    The current content
+     * @param mode          The comparison mode to use
+     * @param cssSelector   CSS selector for CSS_SELECTOR mode (can be null for other modes)
+     * @param minTextLength Minimum text block length for TEXT_ONLY mode (3-50, filters small elements)
+     * @param minWordLength Minimum word length for TEXT_ONLY mode (words shorter than this are filtered out)
      * @return ComparisonResult containing change metrics
      */
     @NonNull
     public ComparisonResult compareContent(@Nullable String oldContent,
                                            @Nullable String newContent,
                                            @NonNull ComparisonMode mode,
-                                           @Nullable String cssSelector) {
+                                           @Nullable String cssSelector,
+                                           int minTextLength,
+                                           int minWordLength) {
         // Handle null cases
         if (oldContent == null && newContent == null) {
             return ComparisonResult.noChange(0);
@@ -55,7 +59,7 @@ public class ContentComparator {
 
         switch (mode) {
             case TEXT_ONLY:
-                return compareTextOnly(oldContent, newContent);
+                return compareTextOnly(oldContent, newContent, minTextLength, minWordLength);
             case CSS_SELECTOR:
                 return compareCssSelector(oldContent, newContent, cssSelector);
             case FULL_HTML:
@@ -96,17 +100,23 @@ public class ContentComparator {
 
     /**
      * Compare only the text content, stripping HTML tags.
+     * Filters out text blocks shorter than minTextLength to reduce false positives
+     * from dynamic content like timestamps, counters, etc.
      *
-     * @param oldContent Previous HTML
-     * @param newContent Current HTML
+     * @param oldContent    Previous HTML
+     * @param newContent    Current HTML
+     * @param minTextLength Minimum text block length (elements with shorter text are ignored)
+     * @param minWordLength Minimum word length (words shorter than this are filtered out)
      * @return Comparison result
      */
     @NonNull
     private ComparisonResult compareTextOnly(@NonNull String oldContent,
-                                             @NonNull String newContent) {
+                                             @NonNull String newContent,
+                                             int minTextLength,
+                                             int minWordLength) {
         try {
-            String oldText = extractText(oldContent);
-            String newText = extractText(newContent);
+            String oldText = extractTextFiltered(oldContent, minTextLength, minWordLength);
+            String newText = extractTextFiltered(newContent, minTextLength, minWordLength);
 
             if (oldText.equals(newText)) {
                 return ComparisonResult.noChange(oldText.length());
@@ -147,7 +157,7 @@ public class ContentComparator {
                                                 @Nullable String cssSelector) {
         if (cssSelector == null || cssSelector.trim().isEmpty()) {
             Logger.w(TAG, "CSS selector is empty, falling back to text comparison");
-            return compareTextOnly(oldContent, newContent);
+            return compareTextOnly(oldContent, newContent, 3, 1); // Use minimal filtering for fallback
         }
 
         try {
@@ -196,7 +206,82 @@ public class ContentComparator {
     }
 
     /**
-     * Extract text content from HTML.
+     * Extract text content from HTML, filtering out text blocks shorter than minLength.
+     * This helps reduce false positives from dynamic content like timestamps, counters, etc.
+     *
+     * @param html          The HTML content
+     * @param minLength     Minimum text length per element (text shorter than this is ignored)
+     * @param minWordLength Minimum word length (words shorter than this are filtered out)
+     * @return Extracted and filtered text
+     */
+    @NonNull
+    private String extractTextFiltered(@NonNull String html, int minLength, int minWordLength) {
+        Document doc = Jsoup.parse(html);
+        // Remove script and style elements
+        doc.select("script, style, noscript").remove();
+
+        // If minimal filtering, just return all text
+        if (minLength <= 3 && minWordLength <= 1) {
+            return doc.text();
+        }
+
+        StringBuilder result = new StringBuilder();
+
+        // Get all text nodes by traversing leaf elements
+        // We look at elements that directly contain text (not just child elements)
+        for (Element element : doc.getAllElements()) {
+            // Skip elements that are just containers
+            if (element.children().isEmpty() || element.ownText().length() > 0) {
+                String ownText = element.ownText().trim();
+                // Only include text blocks that meet the minimum length
+                if (ownText.length() >= minLength) {
+                    // Filter words by minimum word length
+                    String filteredText = filterShortWords(ownText, minWordLength);
+                    if (!filteredText.isEmpty()) {
+                        if (result.length() > 0) {
+                            result.append(" ");
+                        }
+                        result.append(filteredText);
+                    }
+                }
+            }
+        }
+
+        return result.toString();
+    }
+
+    /**
+     * Filter out words shorter than the minimum length.
+     *
+     * @param text The text to filter
+     * @param minWordLength Minimum word length (words shorter than this are removed)
+     * @return Text with short words removed
+     */
+    @NonNull
+    private String filterShortWords(@NonNull String text, int minWordLength) {
+        if (minWordLength <= 1) {
+            return text;
+        }
+
+        StringBuilder result = new StringBuilder();
+        String[] words = text.split("\\s+");
+
+        for (String word : words) {
+            // Remove punctuation for length check but keep original word
+            String cleanWord = word.replaceAll("[^\\p{L}\\p{N}]", "");
+            if (cleanWord.length() >= minWordLength) {
+                if (result.length() > 0) {
+                    result.append(" ");
+                }
+                result.append(word);
+            }
+        }
+
+        return result.toString();
+    }
+
+    /**
+     * Extract text content from HTML (no filtering).
      *
      * @param html The HTML content
      * @return Extracted text

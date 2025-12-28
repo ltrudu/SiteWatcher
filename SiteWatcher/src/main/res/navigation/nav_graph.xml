@@ -25,6 +25,9 @@
         <action
             android:id="@+id/action_siteList_to_backups"
             app:destination="@id/backupsManagerFragment" />
+        <action
+            android:id="@+id/action_siteList_to_dataViewer"
+            app:destination="@id/dataViewerFragment" />
     </fragment>
 
     <fragment
@@ -39,6 +42,19 @@
         <action
             android:id="@+id/action_addEdit_to_browserDiscovery"
             app:destination="@id/browserDiscoveryFragment" />
+        <action
+            android:id="@+id/action_addEdit_to_selectorBrowser"
+            app:destination="@id/selectorBrowserFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/selectorBrowserFragment"
+        android:name="com.ltrudu.sitewatcher.ui.selector.SelectorBrowserFragment"
+        android:label="@string/pick_element"
+        tools:layout="@layout/fragment_selector_browser">
+        <argument
+            android:name="url"
+            app:argType="string" />
     </fragment>
 
     <fragment
@@ -65,6 +81,16 @@
         <action
             android:id="@+id/action_backups_to_diffViewer"
             app:destination="@id/diffViewerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/dataViewerFragment"
+        android:name="com.ltrudu.sitewatcher.ui.dataviewer.DataViewerFragment"
+        android:label="@string/view_data"
+        tools:layout="@layout/fragment_data_viewer">
+        <argument
+            android:name="siteId"
+            app:argType="long" />
     </fragment>
 
     <fragment

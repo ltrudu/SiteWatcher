@@ -172,7 +172,9 @@ public class SiteChecker {
                     oldContent,
                     newContent,
                     site.getComparisonMode(),
-                    site.getCssSelector()
+                    site.getCssSelector(),
+                    site.getMinTextLength(),
+                    site.getMinWordLength()
             );
 
             float changePercent = comparisonResult.getChangePercent();

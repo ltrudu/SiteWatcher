@@ -2,10 +2,13 @@ package com.ltrudu.sitewatcher.data.database;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.ltrudu.sitewatcher.data.dao.CheckResultDao;
 import com.ltrudu.sitewatcher.data.dao.SiteHistoryDao;
@@ -24,7 +27,7 @@ import com.ltrudu.sitewatcher.data.model.WatchedSite;
         SiteHistory.class,
         CheckResult.class
     },
-    version = 1,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters({Converters.class})
@@ -33,6 +36,26 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
     private static final String DATABASE_NAME = "sitewatcher_database";
 
     private static volatile SiteWatcherDatabase INSTANCE;
+
+    /**
+     * Migration from version 1 to 2: Add min_text_length column.
+     */
+    private static final Migration MIGRATION_1_2 = new Migration(1, 2) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN min_text_length INTEGER NOT NULL DEFAULT 10");
+        }
+    };
+
+    /**
+     * Migration from version 2 to 3: Add min_word_length column.
+     */
+    private static final Migration MIGRATION_2_3 = new Migration(2, 3) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN min_word_length INTEGER NOT NULL DEFAULT 3");
+        }
+    };
 
     /**
      * Get the WatchedSite DAO.
@@ -71,6 +94,7 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
                             SiteWatcherDatabase.class,
                             DATABASE_NAME
                     )
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .fallbackToDestructiveMigration()
                     .build();
                 }

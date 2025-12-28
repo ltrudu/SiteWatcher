@@ -50,6 +50,8 @@ public class AddEditViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> thresholdPercent = new MutableLiveData<>(25);
     private final MutableLiveData<ComparisonMode> comparisonMode = new MutableLiveData<>(ComparisonMode.TEXT_ONLY);
     private final MutableLiveData<String> cssSelector = new MutableLiveData<>("");
+    private final MutableLiveData<Integer> minTextLength = new MutableLiveData<>(10);
+    private final MutableLiveData<Integer> minWordLength = new MutableLiveData<>(3);
 
     // Validation state
     private final MutableLiveData<Boolean> isUrlValid = new MutableLiveData<>(false);
@@ -97,6 +99,8 @@ public class AddEditViewModel extends AndroidViewModel {
         thresholdPercent.setValue(25);
         comparisonMode.setValue(ComparisonMode.TEXT_ONLY);
         cssSelector.setValue("");
+        minTextLength.setValue(10);
+        minWordLength.setValue(3);
         isUrlValid.setValue(false);
     }
 
@@ -145,6 +149,8 @@ public class AddEditViewModel extends AndroidViewModel {
         thresholdPercent.postValue(site.getThresholdPercent());
         comparisonMode.postValue(site.getComparisonMode());
         cssSelector.postValue(site.getCssSelector() != null ? site.getCssSelector() : "");
+        minTextLength.postValue(site.getMinTextLength());
+        minWordLength.postValue(site.getMinWordLength());
 
         // Validate URL - use postValue version
         isUrlValid.postValue(true);
@@ -229,6 +235,12 @@ public class AddEditViewModel extends AndroidViewModel {
         } else {
             site.setCssSelector(null);
         }
+
+        Integer minLen = minTextLength.getValue();
+        site.setMinTextLength(minLen != null ? minLen : 10);
+
+        Integer minWord = minWordLength.getValue();
+        site.setMinWordLength(minWord != null ? minWord : 3);
 
         return site;
     }
@@ -345,6 +357,14 @@ public class AddEditViewModel extends AndroidViewModel {
         return cssSelector;
     }
 
+    public MutableLiveData<Integer> getMinTextLength() {
+        return minTextLength;
+    }
+
+    public MutableLiveData<Integer> getMinWordLength() {
+        return minWordLength;
+    }
+
     public LiveData<Boolean> getIsUrlValid() {
         return isUrlValid;
     }
@@ -403,6 +423,14 @@ public class AddEditViewModel extends AndroidViewModel {
 
     public void setCssSelector(String selector) {
         this.cssSelector.setValue(selector);
+    }
+
+    public void setMinTextLength(int length) {
+        this.minTextLength.setValue(length);
+    }
+
+    public void setMinWordLength(int length) {
+        this.minWordLength.setValue(length);
     }
 
     /**

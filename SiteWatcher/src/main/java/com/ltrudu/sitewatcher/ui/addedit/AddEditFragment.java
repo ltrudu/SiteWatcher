@@ -38,7 +38,9 @@ public class AddEditFragment extends Fragment {
 
     private static final String ARG_SITE_ID = "siteId";
     private static final String BROWSER_RESULT_KEY = "browserResult";
+    private static final String SELECTOR_RESULT_KEY = "selectorResult";
     private static final String URL_KEY = "url";
+    private static final String SELECTOR_KEY = "selector";
 
     private AddEditViewModel viewModel;
 
@@ -65,6 +67,12 @@ public class AddEditFragment extends Fragment {
     private MaterialButton saveButton;
     private android.widget.TextView intervalValueLabel;
     private android.widget.TextView thresholdValueLabel;
+    private View minTextLengthSection;
+    private Slider minTextLengthSlider;
+    private android.widget.TextView minTextLengthValueLabel;
+    private View minWordLengthSection;
+    private Slider minWordLengthSlider;
+    private android.widget.TextView minWordLengthValueLabel;
 
     // Adapters
     private ArrayAdapter<String> comparisonModeAdapter;
@@ -110,6 +118,9 @@ public class AddEditFragment extends Fragment {
         // Check for result from BrowserDiscoveryFragment
         checkForDiscoveredUrl();
 
+        // Check for result from SelectorBrowserFragment
+        checkForSelectedSelector();
+
         isInitializing = false;
     }
 
@@ -136,6 +147,12 @@ public class AddEditFragment extends Fragment {
         saveButton = view.findViewById(R.id.saveButton);
         intervalValueLabel = view.findViewById(R.id.intervalValueLabel);
         thresholdValueLabel = view.findViewById(R.id.thresholdValueLabel);
+        minTextLengthSection = view.findViewById(R.id.minTextLengthSection);
+        minTextLengthSlider = view.findViewById(R.id.minTextLengthSlider);
+        minTextLengthValueLabel = view.findViewById(R.id.minTextLengthValueLabel);
+        minWordLengthSection = view.findViewById(R.id.minWordLengthSection);
+        minWordLengthSlider = view.findViewById(R.id.minWordLengthSlider);
+        minWordLengthValueLabel = view.findViewById(R.id.minWordLengthValueLabel);
 
         // Set button text based on mode
         if (viewModel.isEditMode()) {
@@ -232,6 +249,9 @@ public class AddEditFragment extends Fragment {
             }
         });
 
+        // CSS Selector picker button (touch icon)
+        cssSelectorInputLayout.setEndIconOnClickListener(v -> navigateToSelectorBrowser());
+
         // Day toggle buttons
         setupDayToggle(toggleSunday, WatchedSite.SUNDAY);
         setupDayToggle(toggleMonday, WatchedSite.MONDAY);
@@ -274,6 +294,22 @@ public class AddEditFragment extends Fragment {
                 viewModel.setThresholdPercent((int) value);
             }
             updateThresholdLabel((int) value);
+        });
+
+        // Min text length slider
+        minTextLengthSlider.addOnChangeListener((slider, value, fromUser) -> {
+            if (fromUser && !isInitializing) {
+                viewModel.setMinTextLength((int) value);
+            }
+            updateMinTextLengthLabel((int) value);
+        });
+
+        // Min word length slider
+        minWordLengthSlider.addOnChangeListener((slider, value, fromUser) -> {
+            if (fromUser && !isInitializing) {
+                viewModel.setMinWordLength((int) value);
+            }
+            updateMinWordLengthLabel((int) value);
         });
 
         // Cancel button
@@ -365,6 +401,22 @@ public class AddEditFragment extends Fragment {
             }
         });
 
+        // Observe min text length
+        viewModel.getMinTextLength().observe(getViewLifecycleOwner(), minLength -> {
+            if (minLength != null) {
+                minTextLengthSlider.setValue(minLength);
+                updateMinTextLengthLabel(minLength);
+            }
+        });
+
+        // Observe min word length
+        viewModel.getMinWordLength().observe(getViewLifecycleOwner(), minLength -> {
+            if (minLength != null) {
+                minWordLengthSlider.setValue(minLength);
+                updateMinWordLengthLabel(minLength);
+            }
+        });
+
         // Observe save result
         viewModel.getSaveResult().observe(getViewLifecycleOwner(), result -> {
             if (result != null && result.isSuccess()) {
@@ -394,6 +446,20 @@ public class AddEditFragment extends Fragment {
         );
     }
 
+    private void checkForSelectedSelector() {
+        // Listen for result from SelectorBrowserFragment
+        getParentFragmentManager().setFragmentResultListener(
+                SELECTOR_RESULT_KEY,
+                getViewLifecycleOwner(),
+                (requestKey, result) -> {
+                    String selector = result.getString(SELECTOR_KEY);
+                    if (selector != null && !selector.isEmpty()) {
+                        viewModel.setCssSelector(selector);
+                    }
+                }
+        );
+    }
+
     private void updateDayToggles(int enabledDays) {
         toggleSunday.setChecked((enabledDays & WatchedSite.SUNDAY) != 0);
         toggleMonday.setChecked((enabledDays & WatchedSite.MONDAY) != 0);
@@ -407,6 +473,12 @@ public class AddEditFragment extends Fragment {
     private void updateCssSelectorVisibility(ComparisonMode mode) {
         cssSelectorInputLayout.setVisibility(
                 mode == ComparisonMode.CSS_SELECTOR ? View.VISIBLE : View.GONE
+        );
+        minTextLengthSection.setVisibility(
+                mode == ComparisonMode.TEXT_ONLY ? View.VISIBLE : View.GONE
+        );
+        minWordLengthSection.setVisibility(
+                mode == ComparisonMode.TEXT_ONLY ? View.VISIBLE : View.GONE
         );
     }
 
@@ -426,6 +498,14 @@ public class AddEditFragment extends Fragment {
 
     private void updateThresholdLabel(int percent) {
         thresholdValueLabel.setText(getString(R.string.threshold_value, percent));
+    }
+
+    private void updateMinTextLengthLabel(int length) {
+        minTextLengthValueLabel.setText(getString(R.string.min_text_length_value, length));
+    }
+
+    private void updateMinWordLengthLabel(int length) {
+        minWordLengthValueLabel.setText(getString(R.string.min_word_length_value, length));
     }
 
     private void updateTimePickerButton() {
@@ -481,6 +561,24 @@ public class AddEditFragment extends Fragment {
     private void navigateToBrowserDiscovery() {
         NavController navController = Navigation.findNavController(requireView());
         navController.navigate(R.id.action_addEdit_to_browserDiscovery);
+    }
+
+    private void navigateToSelectorBrowser() {
+        String url = viewModel.getUrl().getValue();
+        if (url == null || url.isEmpty()) {
+            urlInputLayout.setError(getString(R.string.url_required_for_selector));
+            return;
+        }
+
+        // Validate URL first
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
+
+        Bundle args = new Bundle();
+        args.putString("url", url);
+        NavController navController = Navigation.findNavController(requireView());
+        navController.navigate(R.id.action_addEdit_to_selectorBrowser, args);
     }
 
     private void navigateBack() {

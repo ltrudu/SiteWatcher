@@ -1,5 +1,7 @@
 package com.ltrudu.sitewatcher.ui.sitelist;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -280,6 +282,23 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     }
 
     /**
+     * Open the site URL in the default web browser.
+     * @param site The site to open
+     */
+    private void openInBrowser(@NonNull WatchedSite site) {
+        String url = site.getUrl();
+        if (url != null && !url.isEmpty()) {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            try {
+                startActivity(intent);
+            } catch (Exception e) {
+                Logger.e(TAG, "Failed to open browser for URL: " + url, e);
+                Toast.makeText(requireContext(), R.string.error_navigation, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    /**
      * Navigate to the add/edit fragment.
      * @param siteId The site ID to edit, or -1 for add mode
      */
@@ -299,6 +318,17 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         args.putLong("siteId", siteId);
         Navigation.findNavController(requireView())
                 .navigate(R.id.action_siteList_to_diffViewer, args);
+    }
+
+    /**
+     * Navigate to the data viewer fragment.
+     * @param siteId The site ID to view data for
+     */
+    private void navigateToDataViewer(long siteId) {
+        Bundle args = new Bundle();
+        args.putLong("siteId", siteId);
+        Navigation.findNavController(requireView())
+                .navigate(R.id.action_siteList_to_dataViewer, args);
     }
 
     @Override
@@ -335,7 +365,10 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     private boolean handleContextMenuClick(@NonNull WatchedSite site, @NonNull MenuItem item) {
         int itemId = item.getItemId();
 
-        if (itemId == R.id.action_edit) {
+        if (itemId == R.id.action_open_browser) {
+            openInBrowser(site);
+            return true;
+        } else if (itemId == R.id.action_edit) {
             navigateToAddEdit(site.getId());
             return true;
         } else if (itemId == R.id.action_duplicate) {
@@ -346,6 +379,9 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
             return true;
         } else if (itemId == R.id.action_view_diff) {
             navigateToDiffViewer(site.getId());
+            return true;
+        } else if (itemId == R.id.action_view_data) {
+            navigateToDataViewer(site.getId());
             return true;
         } else if (itemId == R.id.action_delete) {
             showDeleteConfirmation(site);

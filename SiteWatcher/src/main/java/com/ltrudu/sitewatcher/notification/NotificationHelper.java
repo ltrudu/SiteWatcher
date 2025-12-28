@@ -12,8 +12,8 @@ import com.ltrudu.sitewatcher.MainActivity;
 import com.ltrudu.sitewatcher.R;
 import com.ltrudu.sitewatcher.data.model.NotificationAction;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
+import com.ltrudu.sitewatcher.data.preferences.PreferencesManager;
 import com.ltrudu.sitewatcher.util.Constants;
-import com.ltrudu.sitewatcher.util.PreferencesManager;
 
 public class NotificationHelper {
 
@@ -26,7 +26,7 @@ public class NotificationHelper {
         if (notificationManager == null) return;
 
         // Determine tap action from settings
-        PreferencesManager prefs = PreferencesManager.getInstance(context);
+        PreferencesManager prefs = new PreferencesManager(context);
         NotificationAction action = prefs.getNotificationAction();
 
         PendingIntent pendingIntent;

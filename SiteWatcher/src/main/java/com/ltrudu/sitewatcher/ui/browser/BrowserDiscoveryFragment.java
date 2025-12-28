@@ -24,7 +24,7 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.textfield.TextInputEditText;
 import com.ltrudu.sitewatcher.R;
 import com.ltrudu.sitewatcher.util.Logger;
-import com.ltrudu.sitewatcher.util.PreferencesManager;
+import com.ltrudu.sitewatcher.data.preferences.PreferencesManager;
 
 /**
  * Fragment for browsing websites to discover URLs for monitoring.
@@ -173,7 +173,7 @@ public class BrowserDiscoveryFragment extends Fragment {
     }
 
     private void loadInitialPage() {
-        PreferencesManager preferencesManager = PreferencesManager.getInstance(requireContext());
+        PreferencesManager preferencesManager = new PreferencesManager(requireContext());
         String searchEngineUrl = preferencesManager.getSearchEngineUrl();
         Logger.d(TAG, "Loading initial search engine: " + searchEngineUrl);
 

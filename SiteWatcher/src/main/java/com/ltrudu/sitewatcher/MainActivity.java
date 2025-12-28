@@ -19,9 +19,14 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
+import android.widget.Toast;
+
+import androidx.lifecycle.ViewModelProvider;
+
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
+import com.ltrudu.sitewatcher.ui.sitelist.SiteListViewModel;
 import com.ltrudu.sitewatcher.util.Logger;
 
 public class MainActivity extends AppCompatActivity {
@@ -32,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private AppBarConfiguration appBarConfiguration;
+    private SiteListViewModel siteListViewModel;
 
     // Track if we're waiting for the user to return from Settings
     private boolean waitingForAlarmPermission = false;
@@ -51,6 +57,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Initialize shared ViewModel at Activity scope so it's shared with fragments
+        siteListViewModel = new ViewModelProvider(this).get(SiteListViewModel.class);
 
         setupNavigation();
         checkPermissions();
@@ -78,7 +87,37 @@ public class MainActivity extends AppCompatActivity {
 
             NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
             NavigationUI.setupWithNavController(navigationView, navController);
+
+            // Handle custom menu items (non-navigation actions)
+            navigationView.setNavigationItemSelectedListener(item -> {
+                int itemId = item.getItemId();
+
+                if (itemId == R.id.action_check_all) {
+                    // Handle Check All action
+                    checkAllSites();
+                    drawerLayout.closeDrawers();
+                    return true;
+                }
+
+                // For navigation items, use the default behavior
+                boolean handled = NavigationUI.onNavDestinationSelected(item, navController);
+                if (handled) {
+                    drawerLayout.closeDrawers();
+                }
+                return handled;
+            });
         }
+    }
+
+    /**
+     * Check all enabled sites immediately.
+     */
+    private void checkAllSites() {
+        Logger.d(TAG, "Check all sites requested from drawer menu");
+        Toast.makeText(this, R.string.checking_all_sites, Toast.LENGTH_SHORT).show();
+
+        // Use shared ViewModel so the checking events are observed by the fragment
+        siteListViewModel.checkAllSites();
     }
 
     private void checkPermissions() {

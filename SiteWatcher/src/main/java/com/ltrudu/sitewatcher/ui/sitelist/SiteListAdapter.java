@@ -16,9 +16,13 @@ import com.ltrudu.sitewatcher.data.model.ScheduleType;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.util.SearchQueryParser;
 
+import android.widget.ProgressBar;
+
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * RecyclerView adapter for displaying watched sites.
@@ -47,6 +51,7 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
     private final List<WatchedSite> allSites = new ArrayList<>();
     private final List<WatchedSite> sites = new ArrayList<>();
     private final OnSiteClickListener listener;
+    private final Set<Long> checkingSites = new HashSet<>();
     private String currentFilter = "";
 
     /**
@@ -167,6 +172,67 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
      */
     public boolean isFilterEmpty() {
         return SearchQueryParser.isValidQuery(currentFilter) && sites.isEmpty() && !allSites.isEmpty();
+    }
+
+    /**
+     * Mark a site as currently being checked.
+     * @param siteId The ID of the site being checked
+     */
+    public void setChecking(long siteId) {
+        checkingSites.add(siteId);
+        notifyItemChanged(findPositionById(siteId));
+    }
+
+    /**
+     * Mark a site as no longer being checked.
+     * @param siteId The ID of the site that finished checking
+     */
+    public void clearChecking(long siteId) {
+        checkingSites.remove(siteId);
+        notifyItemChanged(findPositionById(siteId));
+    }
+
+    /**
+     * Mark all sites as being checked.
+     */
+    public void setAllChecking() {
+        for (WatchedSite site : sites) {
+            if (site.isEnabled()) {
+                checkingSites.add(site.getId());
+            }
+        }
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Clear checking state for all sites.
+     */
+    public void clearAllChecking() {
+        checkingSites.clear();
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Check if a site is currently being checked.
+     * @param siteId The ID of the site to check
+     * @return true if the site is being checked
+     */
+    public boolean isChecking(long siteId) {
+        return checkingSites.contains(siteId);
+    }
+
+    /**
+     * Find the position of a site by its ID.
+     * @param siteId The site ID to find
+     * @return The position in the list, or -1 if not found
+     */
+    private int findPositionById(long siteId) {
+        for (int i = 0; i < sites.size(); i++) {
+            if (sites.get(i).getId() == siteId) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**
@@ -308,6 +374,7 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
      */
     class SiteViewHolder extends RecyclerView.ViewHolder {
 
+        private final ProgressBar progressChecking;
         private final TextView textUrl;
         private final TextView textLastCheck;
         private final TextView textNextCheck;
@@ -316,6 +383,7 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
 
         SiteViewHolder(@NonNull View itemView) {
             super(itemView);
+            progressChecking = itemView.findViewById(R.id.progressChecking);
             textUrl = itemView.findViewById(R.id.textUrl);
             textLastCheck = itemView.findViewById(R.id.textLastCheck);
             textNextCheck = itemView.findViewById(R.id.textNextCheck);
@@ -329,6 +397,10 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
          */
         void bind(@NonNull WatchedSite site) {
             Context context = itemView.getContext();
+
+            // Show/hide checking indicator
+            boolean isCurrentlyChecking = checkingSites.contains(site.getId());
+            progressChecking.setVisibility(isCurrentlyChecking ? View.VISIBLE : View.GONE);
 
             // Set URL or display name
             textUrl.setText(site.getDisplayName());

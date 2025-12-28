@@ -11,6 +11,10 @@
     <item android:title="@string/manage">
         <menu>
             <item
+                android:id="@+id/action_check_all"
+                android:icon="@drawable/ic_refresh"
+                android:title="@string/check_all" />
+            <item
                 android:id="@+id/backupsManagerFragment"
                 android:icon="@drawable/ic_backup"
                 android:title="@string/backups_manager" />

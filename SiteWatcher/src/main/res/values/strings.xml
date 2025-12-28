@@ -43,6 +43,8 @@
     <string name="delete">Delete</string>
     <string name="duplicate">Duplicate</string>
     <string name="check_now">Check Now</string>
+    <string name="check_all">Check All Sites</string>
+    <string name="checking_all_sites">Checking all sites…</string>
     <string name="confirm_delete">Delete this site?</string>
     <string name="confirm_delete_message">This will remove the site and all its history.</string>
 

@@ -22,7 +22,7 @@ import com.ltrudu.sitewatcher.R;
  */
 public class AboutFragment extends Fragment {
 
-    private static final String GITHUB_URL = "https://github.com/LTrudu/SiteWatcher";
+    private static final String GITHUB_URL = "https://github.com/ltrudu/SiteWatcher";
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,

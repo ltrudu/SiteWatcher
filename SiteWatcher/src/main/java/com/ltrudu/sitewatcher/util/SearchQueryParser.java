@@ -1,6 +1,7 @@
 package com.ltrudu.sitewatcher.util;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 
@@ -10,20 +11,27 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Parses and evaluates search queries with AND, OR, NOT keywords.
+ * Parses and evaluates search queries with AND, OR, NOT keywords and parentheses.
  *
  * Syntax:
  * - Default (space separated): treated as AND
  * - AND: both terms must match (e.g., "term1 AND term2")
  * - OR: either term can match (e.g., "term1 OR term2")
  * - NOT: excludes items containing the term (e.g., "NOT term")
+ * - Parentheses: group expressions (e.g., "(term1 OR term2) AND term3")
+ *
+ * Operator precedence (highest to lowest):
+ * 1. NOT
+ * 2. AND
+ * 3. OR
  *
  * Examples:
  * - "google" - matches sites containing "google"
  * - "google AND news" - matches sites containing both "google" and "news"
  * - "google OR bing" - matches sites containing "google" or "bing"
  * - "NOT facebook" - matches sites NOT containing "facebook"
- * - "google AND NOT ads" - matches sites with "google" but not "ads"
+ * - "(google OR bing) AND news" - matches sites with ("google" or "bing") and "news"
+ * - "NOT (facebook OR twitter)" - matches sites without "facebook" and without "twitter"
  */
 public class SearchQueryParser {
 
@@ -34,18 +42,88 @@ public class SearchQueryParser {
 
     // Token types
     private enum TokenType {
-        AND, OR, NOT, TERM
+        AND, OR, NOT, LPAREN, RPAREN, TERM, EOF
     }
 
     private static class Token {
         final TokenType type;
         final String value;
 
-        Token(TokenType type, String value) {
+        Token(TokenType type, @Nullable String value) {
             this.type = type;
             this.value = value;
         }
+
+        @Override
+        public String toString() {
+            return type + (value != null ? "(" + value + ")" : "");
+        }
     }
+
+    // Expression tree nodes
+    private interface Expression {
+        boolean evaluate(String searchText);
+    }
+
+    private static class TermExpression implements Expression {
+        final String term;
+
+        TermExpression(String term) {
+            this.term = term.toLowerCase();
+        }
+
+        @Override
+        public boolean evaluate(String searchText) {
+            return searchText.contains(term);
+        }
+    }
+
+    private static class NotExpression implements Expression {
+        final Expression operand;
+
+        NotExpression(Expression operand) {
+            this.operand = operand;
+        }
+
+        @Override
+        public boolean evaluate(String searchText) {
+            return !operand.evaluate(searchText);
+        }
+    }
+
+    private static class AndExpression implements Expression {
+        final Expression left;
+        final Expression right;
+
+        AndExpression(Expression left, Expression right) {
+            this.left = left;
+            this.right = right;
+        }
+
+        @Override
+        public boolean evaluate(String searchText) {
+            return left.evaluate(searchText) && right.evaluate(searchText);
+        }
+    }
+
+    private static class OrExpression implements Expression {
+        final Expression left;
+        final Expression right;
+
+        OrExpression(Expression left, Expression right) {
+            this.left = left;
+            this.right = right;
+        }
+
+        @Override
+        public boolean evaluate(String searchText) {
+            return left.evaluate(searchText) || right.evaluate(searchText);
+        }
+    }
+
+    // Parser state
+    private List<Token> tokens;
+    private int position;
 
     /**
      * Filter a list of sites based on a search query.
@@ -63,28 +141,54 @@ public class SearchQueryParser {
             return new ArrayList<>(sites);
         }
 
-        List<Token> tokens = tokenize(trimmedQuery);
-        List<WatchedSite> result = new ArrayList<>();
+        try {
+            SearchQueryParser parser = new SearchQueryParser();
+            Expression expression = parser.parse(trimmedQuery);
 
-        for (WatchedSite site : sites) {
-            if (matchesSite(site, tokens)) {
-                result.add(site);
+            if (expression == null) {
+                return new ArrayList<>(sites);
             }
-        }
 
-        return result;
+            List<WatchedSite> result = new ArrayList<>();
+            for (WatchedSite site : sites) {
+                String searchText = getSearchableText(site);
+                if (expression.evaluate(searchText)) {
+                    result.add(site);
+                }
+            }
+
+            return result;
+        } catch (Exception e) {
+            Logger.w(TAG, "Failed to parse query: " + query + "\nException: " + e.getMessage());
+            return new ArrayList<>(sites);
+        }
     }
 
     /**
-     * Tokenize the search query into operators and terms.
+     * Parse a query string into an expression tree.
+     */
+    @Nullable
+    private Expression parse(@NonNull String query) {
+        tokens = tokenize(query);
+        position = 0;
+
+        if (tokens.isEmpty() || (tokens.size() == 1 && tokens.get(0).type == TokenType.EOF)) {
+            return null;
+        }
+
+        return parseOrExpression();
+    }
+
+    /**
+     * Tokenize the search query into operators, parentheses, and terms.
      */
     @NonNull
-    private static List<Token> tokenize(@NonNull String query) {
-        List<Token> tokens = new ArrayList<>();
+    private List<Token> tokenize(@NonNull String query) {
+        List<Token> result = new ArrayList<>();
 
-        // Pattern to match AND, OR, NOT keywords (case insensitive) or quoted strings or words
+        // Pattern to match parentheses, AND, OR, NOT keywords, quoted strings, or words
         Pattern pattern = Pattern.compile(
-            "\\bAND\\b|\\bOR\\b|\\bNOT\\b|\"[^\"]+\"|\\S+",
+            "\\(|\\)|\\bAND\\b|\\bOR\\b|\\bNOT\\b|\"[^\"]+\"|[^\\s()]+",
             Pattern.CASE_INSENSITIVE
         );
 
@@ -95,14 +199,20 @@ public class SearchQueryParser {
             String upperMatch = match.toUpperCase();
 
             switch (upperMatch) {
+                case "(":
+                    result.add(new Token(TokenType.LPAREN, null));
+                    break;
+                case ")":
+                    result.add(new Token(TokenType.RPAREN, null));
+                    break;
                 case "AND":
-                    tokens.add(new Token(TokenType.AND, null));
+                    result.add(new Token(TokenType.AND, null));
                     break;
                 case "OR":
-                    tokens.add(new Token(TokenType.OR, null));
+                    result.add(new Token(TokenType.OR, null));
                     break;
                 case "NOT":
-                    tokens.add(new Token(TokenType.NOT, null));
+                    result.add(new Token(TokenType.NOT, null));
                     break;
                 default:
                     // Remove quotes if present
@@ -110,94 +220,126 @@ public class SearchQueryParser {
                     if (term.startsWith("\"") && term.endsWith("\"") && term.length() > 2) {
                         term = term.substring(1, term.length() - 1);
                     }
-                    tokens.add(new Token(TokenType.TERM, term.toLowerCase()));
+                    result.add(new Token(TokenType.TERM, term));
                     break;
             }
         }
 
-        return tokens;
+        result.add(new Token(TokenType.EOF, null));
+        return result;
     }
 
     /**
-     * Check if a site matches the tokenized query.
+     * Get the current token.
      */
-    private static boolean matchesSite(@NonNull WatchedSite site, @NonNull List<Token> tokens) {
-        if (tokens.isEmpty()) {
-            return true;
+    private Token currentToken() {
+        if (position >= tokens.size()) {
+            return new Token(TokenType.EOF, null);
+        }
+        return tokens.get(position);
+    }
+
+    /**
+     * Consume the current token and advance.
+     */
+    private Token consume() {
+        Token token = currentToken();
+        position++;
+        return token;
+    }
+
+    /**
+     * Check if current token matches the expected type.
+     */
+    private boolean match(TokenType type) {
+        return currentToken().type == type;
+    }
+
+    /**
+     * Parse OR expression (lowest precedence).
+     * or_expr := and_expr (OR and_expr)*
+     */
+    @Nullable
+    private Expression parseOrExpression() {
+        Expression left = parseAndExpression();
+        if (left == null) return null;
+
+        while (match(TokenType.OR)) {
+            consume(); // consume OR
+            Expression right = parseAndExpression();
+            if (right == null) return left;
+            left = new OrExpression(left, right);
         }
 
-        // Get searchable text from site (title and URL)
-        String searchText = getSearchableText(site);
+        return left;
+    }
 
-        // Process tokens with operator precedence
-        // NOT has highest precedence, then AND, then OR
+    /**
+     * Parse AND expression.
+     * and_expr := not_expr (AND not_expr)*
+     * Note: implicit AND between consecutive terms
+     */
+    @Nullable
+    private Expression parseAndExpression() {
+        Expression left = parseNotExpression();
+        if (left == null) return null;
 
-        List<Boolean> results = new ArrayList<>();
-        List<TokenType> operators = new ArrayList<>();
-
-        boolean negateNext = false;
-
-        for (int i = 0; i < tokens.size(); i++) {
-            Token token = tokens.get(i);
-
-            switch (token.type) {
-                case NOT:
-                    negateNext = true;
-                    break;
-
-                case AND:
-                    operators.add(TokenType.AND);
-                    break;
-
-                case OR:
-                    operators.add(TokenType.OR);
-                    break;
-
-                case TERM:
-                    boolean matches = searchText.contains(token.value);
-                    if (negateNext) {
-                        matches = !matches;
-                        negateNext = false;
-                    }
-                    results.add(matches);
-                    break;
-            }
-        }
-
-        // If no terms, return true
-        if (results.isEmpty()) {
-            return true;
-        }
-
-        // Evaluate with operators (left to right, OR has lower precedence)
-        // First pass: evaluate AND operations
-        List<Boolean> afterAnd = new ArrayList<>();
-        List<TokenType> afterAndOps = new ArrayList<>();
-
-        afterAnd.add(results.get(0));
-
-        for (int i = 0; i < operators.size() && i + 1 < results.size(); i++) {
-            TokenType op = operators.get(i);
-            boolean nextResult = results.get(i + 1);
-
-            if (op == TokenType.AND) {
-                // Combine with previous using AND
-                int lastIdx = afterAnd.size() - 1;
-                afterAnd.set(lastIdx, afterAnd.get(lastIdx) && nextResult);
+        while (true) {
+            if (match(TokenType.AND)) {
+                consume(); // consume AND
+                Expression right = parseNotExpression();
+                if (right == null) return left;
+                left = new AndExpression(left, right);
+            } else if (match(TokenType.TERM) || match(TokenType.LPAREN) || match(TokenType.NOT)) {
+                // Implicit AND between consecutive terms/expressions
+                Expression right = parseNotExpression();
+                if (right == null) return left;
+                left = new AndExpression(left, right);
             } else {
-                // OR - keep separate for now
-                afterAnd.add(nextResult);
-                afterAndOps.add(TokenType.OR);
+                break;
             }
         }
 
-        // Second pass: evaluate OR operations
-        boolean finalResult = afterAnd.get(0);
-        for (int i = 1; i < afterAnd.size(); i++) {
-            finalResult = finalResult || afterAnd.get(i);
+        return left;
+    }
+
+    /**
+     * Parse NOT expression (highest precedence).
+     * not_expr := NOT? primary
+     */
+    @Nullable
+    private Expression parseNotExpression() {
+        if (match(TokenType.NOT)) {
+            consume(); // consume NOT
+            Expression operand = parseNotExpression(); // NOT can chain: NOT NOT x
+            if (operand == null) return null;
+            return new NotExpression(operand);
         }
 
-        return finalResult;
+        return parsePrimary();
+    }
+
+    /**
+     * Parse primary expression (term or parenthesized expression).
+     * primary := TERM | LPAREN or_expr RPAREN
+     */
+    @Nullable
+    private Expression parsePrimary() {
+        if (match(TokenType.LPAREN)) {
+            consume(); // consume (
+            Expression expr = parseOrExpression();
+            if (match(TokenType.RPAREN)) {
+                consume(); // consume )
+            }
+            return expr;
+        }
+
+        if (match(TokenType.TERM)) {
+            Token token = consume();
+            return new TermExpression(token.value);
+        }
+
+        return null;
     }
 
     /**

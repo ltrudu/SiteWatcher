@@ -6,16 +6,21 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.RecyclerView;
@@ -69,7 +74,8 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        viewModel = new ViewModelProvider(this).get(SiteListViewModel.class);
+        // Use Activity-scoped ViewModel so it's shared with MainActivity for check all
+        viewModel = new ViewModelProvider(requireActivity()).get(SiteListViewModel.class);
     }
 
     @Nullable
@@ -87,6 +93,7 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         setupRecyclerView();
         setupSearch();
         setupFab();
+        setupMenu();
         observeData();
 
         Logger.d(TAG, "SiteListFragment view created");
@@ -177,6 +184,51 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     }
 
     /**
+     * Set up the options menu with Check All action.
+     */
+    private void setupMenu() {
+        requireActivity().addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.menu_main, menu);
+            }
+
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                int itemId = menuItem.getItemId();
+
+                if (itemId == R.id.action_check_all) {
+                    checkAllSites();
+                    return true;
+                } else if (itemId == R.id.action_settings) {
+                    Navigation.findNavController(requireView())
+                            .navigate(R.id.action_siteList_to_settings);
+                    return true;
+                } else if (itemId == R.id.action_backups) {
+                    Navigation.findNavController(requireView())
+                            .navigate(R.id.action_siteList_to_backups);
+                    return true;
+                } else if (itemId == R.id.action_about) {
+                    Navigation.findNavController(requireView())
+                            .navigate(R.id.action_siteList_to_about);
+                    return true;
+                }
+
+                return false;
+            }
+        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    }
+
+    /**
+     * Trigger a check for all sites.
+     */
+    private void checkAllSites() {
+        Logger.d(TAG, "Check all sites requested");
+        Toast.makeText(requireContext(), R.string.checking_all_sites, Toast.LENGTH_SHORT).show();
+        viewModel.checkAllSites();
+    }
+
+    /**
      * Observe LiveData from ViewModel.
      */
     private void observeData() {
@@ -184,6 +236,19 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
             Logger.d(TAG, "Sites updated: " + (sites != null ? sites.size() : 0) + " sites");
             adapter.submitList(sites);
             updateEmptyState();
+        });
+
+        // Observe checking events to update the progress indicator
+        viewModel.getCheckingEvent().observe(getViewLifecycleOwner(), event -> {
+            if (event != null) {
+                for (Long siteId : event.siteIds) {
+                    if (event.isChecking) {
+                        adapter.setChecking(siteId);
+                    } else {
+                        adapter.clearChecking(siteId);
+                    }
+                }
+            }
         });
     }
 

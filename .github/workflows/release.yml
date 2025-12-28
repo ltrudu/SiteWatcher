@@ -24,18 +24,47 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/keystore.jks
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug
 
-      - name: Rename APK with version
+      - name: Rename APKs with version
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          find SiteWatcher/build/outputs/apk/debug/ -name "*.apk" -exec sh -c '
-            for f; do
-              dir=$(dirname "$f")
-              mv "$f" "$dir/SiteWatcher-${VERSION}-debug.apk"
-            done
-          ' _ {} +
+
+          # Find and rename release APK
+          for apk in SiteWatcher/build/outputs/apk/release/*.apk; do
+            if [ -f "$apk" ]; then
+              mv "$apk" "SiteWatcher/build/outputs/apk/release/SiteWatcher-${VERSION}-release.apk"
+              break
+            fi
+          done
+
+          # Find and rename debug APK
+          for apk in SiteWatcher/build/outputs/apk/debug/*.apk; do
+            if [ -f "$apk" ]; then
+              mv "$apk" "SiteWatcher/build/outputs/apk/debug/SiteWatcher-${VERSION}-debug.apk"
+              break
+            fi
+          done
+
+      - name: List APK files
+        run: |
+          echo "=== Release APKs ==="
+          ls -la SiteWatcher/build/outputs/apk/release/ || echo "No release APKs"
+          echo "=== Debug APKs ==="
+          ls -la SiteWatcher/build/outputs/apk/debug/ || echo "No debug APKs"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -44,15 +73,25 @@ jobs:
           body: |
             ## SiteWatcher ${{ github.ref_name }}
 
+            ### Downloads
+            - **Release APK** - Signed, optimized build (recommended)
+            - **Debug APK** - For testing/debugging
+
             ### Installation
-            1. Download the APK file below
+            1. Download the APK file
             2. Enable "Install from unknown sources" on your Android device
             3. Install the APK
 
             ### What's New
             See [commits](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details.
-          files: SiteWatcher/build/outputs/apk/debug/*.apk
+          files: |
+            SiteWatcher/build/outputs/apk/release/*.apk
+            SiteWatcher/build/outputs/apk/debug/*.apk
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean up keystore
+        if: always()
+        run: rm -f ${{ github.workspace }}/keystore.jks

@@ -233,3 +233,6 @@ You are free to copy, modify, publish, use, compile, sell, or distribute this so
 ---
 
 Made with care for people who need to stay informed.
+
+<p align="center">❤️ Made with <a href="https://claude.ai">Claude.ai</a> ❤️</p>
+

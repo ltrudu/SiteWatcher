@@ -2,6 +2,7 @@ package com.ltrudu.sitewatcher.ui.backups;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -10,7 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
@@ -154,8 +155,64 @@ public class BackupsManagerFragment extends Fragment implements BackupsAdapter.O
     }
 
     @Override
+    public void onBackupLongClick(@NonNull BackupsViewModel.BackupItem backup, @NonNull View view) {
+        Logger.d(TAG, "Backup long-clicked: " + backup.getHistoryId());
+        showContextMenu(backup, view);
+    }
+
+    @Override
     public void onDeleteClick(@NonNull BackupsViewModel.BackupItem backup) {
         showDeleteConfirmationDialog(backup);
+    }
+
+    /**
+     * Show context menu for backup item.
+     */
+    private void showContextMenu(@NonNull BackupsViewModel.BackupItem backup, @NonNull View anchorView) {
+        PopupMenu popupMenu = new PopupMenu(requireContext(), anchorView);
+        popupMenu.inflate(R.menu.menu_backup_context);
+
+        popupMenu.setOnMenuItemClickListener(item -> handleContextMenuClick(backup, item));
+        popupMenu.show();
+    }
+
+    /**
+     * Handle context menu item clicks.
+     */
+    private boolean handleContextMenuClick(@NonNull BackupsViewModel.BackupItem backup, @NonNull MenuItem item) {
+        int itemId = item.getItemId();
+
+        if (itemId == R.id.action_view_rendered) {
+            navigateToBackupViewer(backup.getHistoryId(), true);
+            return true;
+        } else if (itemId == R.id.action_view_source) {
+            navigateToBackupViewer(backup.getHistoryId(), false);
+            return true;
+        } else if (itemId == R.id.action_delete_backup) {
+            showDeleteConfirmationDialog(backup);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Navigate to backup viewer fragment.
+     *
+     * @param historyId    The history entry ID
+     * @param showRendered Whether to show rendered HTML or source
+     */
+    private void navigateToBackupViewer(long historyId, boolean showRendered) {
+        try {
+            Bundle args = new Bundle();
+            args.putLong("historyId", historyId);
+            args.putBoolean("showRendered", showRendered);
+            Navigation.findNavController(requireView())
+                    .navigate(R.id.action_backups_to_backupViewer, args);
+        } catch (Exception e) {
+            Logger.e(TAG, "Error navigating to backup viewer", e);
+            Toast.makeText(requireContext(), R.string.error_navigation, Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

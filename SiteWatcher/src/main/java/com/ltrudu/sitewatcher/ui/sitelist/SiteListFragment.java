@@ -368,6 +368,12 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         if (itemId == R.id.action_open_browser) {
             openInBrowser(site);
             return true;
+        } else if (itemId == R.id.action_open_webview) {
+            openInWebView(site);
+            return true;
+        } else if (itemId == R.id.action_test_actions) {
+            openTestActions(site);
+            return true;
         } else if (itemId == R.id.action_edit) {
             navigateToAddEdit(site.getId());
             return true;
@@ -389,6 +395,32 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         }
 
         return false;
+    }
+
+    /**
+     * Open site URL in WebView (view only, no action execution).
+     * @param site The site to open
+     */
+    private void openInWebView(@NonNull WatchedSite site) {
+        Bundle args = new Bundle();
+        args.putString("url", site.getUrl());
+        args.putString("actions_json", "[]");
+        args.putBoolean("execute_actions", false);
+        Navigation.findNavController(requireView())
+                .navigate(R.id.actionTesterFragment, args);
+    }
+
+    /**
+     * Open site URL in WebView and execute auto-click actions.
+     * @param site The site to test
+     */
+    private void openTestActions(@NonNull WatchedSite site) {
+        Bundle args = new Bundle();
+        args.putString("url", site.getUrl());
+        args.putString("actions_json", com.ltrudu.sitewatcher.data.model.AutoClickAction.toJsonString(site.getAutoClickActions()));
+        args.putBoolean("execute_actions", true);
+        Navigation.findNavController(requireView())
+                .navigate(R.id.actionTesterFragment, args);
     }
 
     /**

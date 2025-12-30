@@ -37,6 +37,14 @@ public class BackupsAdapter extends ListAdapter<BackupItem, BackupsAdapter.Backu
         void onBackupClick(@NonNull BackupItem backup);
 
         /**
+         * Called when a backup item is long-clicked (to show context menu).
+         *
+         * @param backup The long-clicked backup item
+         * @param view   The view to anchor the popup menu to
+         */
+        void onBackupLongClick(@NonNull BackupItem backup, @NonNull View view);
+
+        /**
          * Called when the delete button is clicked.
          *
          * @param backup The backup item to delete
@@ -124,6 +132,15 @@ public class BackupsAdapter extends ListAdapter<BackupItem, BackupsAdapter.Backu
                 if (listener != null) {
                     listener.onBackupClick(backup);
                 }
+            });
+
+            // Set long click listener for context menu
+            itemView.setOnLongClickListener(v -> {
+                if (listener != null) {
+                    listener.onBackupLongClick(backup, v);
+                    return true;
+                }
+                return false;
             });
 
             btnDelete.setOnClickListener(v -> {

@@ -23,6 +23,8 @@ public class PreferencesManager {
     private static final String KEY_HISTORY_COUNT = "history_count";
     private static final String KEY_SEARCH_ENGINE_INDEX = "search_engine_index";
     private static final String KEY_DEBUG_MODE = "debug_mode";
+    private static final String KEY_PAGE_LOAD_DELAY = "page_load_delay";
+    private static final String KEY_POST_ACTION_DELAY = "post_action_delay";
 
     private final SharedPreferences preferences;
 
@@ -103,6 +105,28 @@ public class PreferencesManager {
 
     public void setDebugMode(boolean enabled) {
         preferences.edit().putBoolean(KEY_DEBUG_MODE, enabled).apply();
+    }
+
+    // Page Load Delay (seconds to wait after page load before executing actions)
+    public int getPageLoadDelay() {
+        return preferences.getInt(KEY_PAGE_LOAD_DELAY, Constants.DEFAULT_PAGE_LOAD_DELAY);
+    }
+
+    public void setPageLoadDelay(int seconds) {
+        int validSeconds = Math.max(Constants.MIN_DELAY_SECONDS,
+                Math.min(Constants.MAX_DELAY_SECONDS, seconds));
+        preferences.edit().putInt(KEY_PAGE_LOAD_DELAY, validSeconds).apply();
+    }
+
+    // Post-Action Delay (seconds to wait after last action before capturing content)
+    public int getPostActionDelay() {
+        return preferences.getInt(KEY_POST_ACTION_DELAY, Constants.DEFAULT_POST_ACTION_DELAY);
+    }
+
+    public void setPostActionDelay(int seconds) {
+        int validSeconds = Math.max(Constants.MIN_DELAY_SECONDS,
+                Math.min(Constants.MAX_DELAY_SECONDS, seconds));
+        preferences.edit().putInt(KEY_POST_ACTION_DELAY, validSeconds).apply();
     }
 
     /**

@@ -24,10 +24,13 @@ import com.google.android.material.slider.Slider;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.ltrudu.sitewatcher.R;
+import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
+import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.ScheduleType;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -47,6 +50,8 @@ public class AddEditFragment extends Fragment {
     // Views
     private TextInputLayout urlInputLayout;
     private TextInputEditText urlEditText;
+    private Spinner fetchModeSpinner;
+    private android.widget.TextView fetchModeHint;
     private Spinner comparisonModeSpinner;
     private TextInputLayout cssSelectorInputLayout;
     private TextInputEditText cssSelectorEditText;
@@ -74,7 +79,13 @@ public class AddEditFragment extends Fragment {
     private Slider minWordLengthSlider;
     private android.widget.TextView minWordLengthValueLabel;
 
+    // Auto-click views
+    private View autoClickSection;
+    private android.widget.TextView actionsCountLabel;
+    private MaterialButton buttonEditActions;
+
     // Adapters
+    private ArrayAdapter<String> fetchModeAdapter;
     private ArrayAdapter<String> comparisonModeAdapter;
     private ArrayAdapter<String> scheduleTypeAdapter;
 
@@ -112,6 +123,7 @@ public class AddEditFragment extends Fragment {
 
         initializeViews(view);
         setupSpinners();
+        setupAutoClickSection();
         setupListeners();
         observeViewModel();
 
@@ -121,12 +133,17 @@ public class AddEditFragment extends Fragment {
         // Check for result from SelectorBrowserFragment
         checkForSelectedSelector();
 
+        // Listen for result from EditActionsFragment
+        listenForEditActionsResult();
+
         isInitializing = false;
     }
 
     private void initializeViews(View view) {
         urlInputLayout = view.findViewById(R.id.urlInputLayout);
         urlEditText = view.findViewById(R.id.urlEditText);
+        fetchModeSpinner = view.findViewById(R.id.fetchModeSpinner);
+        fetchModeHint = view.findViewById(R.id.fetchModeHint);
         comparisonModeSpinner = view.findViewById(R.id.comparisonModeSpinner);
         cssSelectorInputLayout = view.findViewById(R.id.cssSelectorInputLayout);
         cssSelectorEditText = view.findViewById(R.id.cssSelectorEditText);
@@ -154,15 +171,35 @@ public class AddEditFragment extends Fragment {
         minWordLengthSlider = view.findViewById(R.id.minWordLengthSlider);
         minWordLengthValueLabel = view.findViewById(R.id.minWordLengthValueLabel);
 
-        // Set button text based on mode
+        // Auto-click views
+        autoClickSection = view.findViewById(R.id.autoClickSection);
+        actionsCountLabel = view.findViewById(R.id.actionsCountLabel);
+        buttonEditActions = view.findViewById(R.id.buttonEditActions);
+
+        // Set button text and title based on mode
         if (viewModel.isEditMode()) {
             saveButton.setText(R.string.save);
+            requireActivity().setTitle(R.string.edit_site);
         } else {
             saveButton.setText(R.string.add);
+            requireActivity().setTitle(R.string.add_site);
         }
     }
 
     private void setupSpinners() {
+        // Fetch mode spinner
+        String[] fetchModes = new String[]{
+                getString(R.string.fetch_mode_static),
+                getString(R.string.fetch_mode_javascript)
+        };
+        fetchModeAdapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                fetchModes
+        );
+        fetchModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        fetchModeSpinner.setAdapter(fetchModeAdapter);
+
         // Comparison mode spinner
         String[] comparisonModes = new String[]{
                 getString(R.string.comparison_full_html),
@@ -191,6 +228,57 @@ public class AddEditFragment extends Fragment {
         scheduleTypeSpinner.setAdapter(scheduleTypeAdapter);
     }
 
+    private void setupAutoClickSection() {
+        buttonEditActions.setOnClickListener(v -> navigateToEditActions());
+    }
+
+    private void navigateToEditActions() {
+        String url = viewModel.getUrl().getValue();
+        if (url == null || url.isEmpty()) {
+            urlInputLayout.setError(getString(R.string.url_required_for_selector));
+            return;
+        }
+
+        // Normalize URL
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
+
+        List<AutoClickAction> actions = viewModel.getAutoClickActions().getValue();
+
+        Bundle args = new Bundle();
+        args.putString("url", url);
+        args.putString("actions_json", AutoClickAction.toJsonString(actions));
+
+        NavController navController = Navigation.findNavController(requireView());
+        navController.navigate(R.id.action_addEdit_to_editActions, args);
+    }
+
+    private void listenForEditActionsResult() {
+        getParentFragmentManager().setFragmentResultListener(
+                "editActionsResult",
+                getViewLifecycleOwner(),
+                (requestKey, result) -> {
+                    String actionsJson = result.getString("actions_json");
+                    if (actionsJson != null) {
+                        List<AutoClickAction> actions = AutoClickAction.fromJsonString(actionsJson);
+                        viewModel.setAutoClickActions(actions);
+                    }
+                }
+        );
+    }
+
+    private void updateActionsCountLabel(List<AutoClickAction> actions) {
+        int count = actions != null ? actions.size() : 0;
+        actionsCountLabel.setText(getResources().getQuantityString(
+                R.plurals.actions_registered, count, count));
+    }
+
+    private void updateAutoClickSectionVisibility(FetchMode mode) {
+        boolean visible = mode == FetchMode.JAVASCRIPT;
+        autoClickSection.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
     private void setupListeners() {
         // URL input with validation
         urlEditText.addTextChangedListener(new TextWatcher() {
@@ -214,6 +302,22 @@ public class AddEditFragment extends Fragment {
 
         // Planet button (browse) click
         urlInputLayout.setEndIconOnClickListener(v -> navigateToBrowserDiscovery());
+
+        // Fetch mode spinner
+        fetchModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!isInitializing) {
+                    FetchMode mode = position == 0 ? FetchMode.STATIC : FetchMode.JAVASCRIPT;
+                    viewModel.setFetchMode(mode);
+                }
+                updateFetchModeHint(position);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
 
         // Comparison mode spinner
         comparisonModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -352,6 +456,18 @@ public class AddEditFragment extends Fragment {
             }
         });
 
+        // Observe fetch mode
+        viewModel.getFetchMode().observe(getViewLifecycleOwner(), mode -> {
+            if (mode != null) {
+                int position = mode == FetchMode.STATIC ? 0 : 1;
+                if (fetchModeSpinner.getSelectedItemPosition() != position) {
+                    fetchModeSpinner.setSelection(position);
+                }
+                updateFetchModeHint(position);
+                updateAutoClickSectionVisibility(mode);
+            }
+        });
+
         // Observe comparison mode
         viewModel.getComparisonMode().observe(getViewLifecycleOwner(), mode -> {
             if (mode != null) {
@@ -417,6 +533,11 @@ public class AddEditFragment extends Fragment {
             }
         });
 
+        // Observe auto-click actions
+        viewModel.getAutoClickActions().observe(getViewLifecycleOwner(), actions -> {
+            updateActionsCountLabel(actions);
+        });
+
         // Observe save result
         viewModel.getSaveResult().observe(getViewLifecycleOwner(), result -> {
             if (result != null && result.isSuccess()) {
@@ -468,6 +589,14 @@ public class AddEditFragment extends Fragment {
         toggleThursday.setChecked((enabledDays & WatchedSite.THURSDAY) != 0);
         toggleFriday.setChecked((enabledDays & WatchedSite.FRIDAY) != 0);
         toggleSaturday.setChecked((enabledDays & WatchedSite.SATURDAY) != 0);
+    }
+
+    private void updateFetchModeHint(int position) {
+        if (position == 0) {
+            fetchModeHint.setText(R.string.fetch_mode_static_desc);
+        } else {
+            fetchModeHint.setText(R.string.fetch_mode_javascript_desc);
+        }
     }
 
     private void updateCssSelectorVisibility(ComparisonMode mode) {

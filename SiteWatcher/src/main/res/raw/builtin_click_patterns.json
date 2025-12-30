@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "patterns": [
+    {
+      "id": "onetrust_reject",
+      "label": "OneTrust Reject",
+      "selector": "#onetrust-reject-all-handler, .onetrust-reject-btn-handler, [class*='onetrust'][class*='reject']"
+    },
+    {
+      "id": "onetrust_accept",
+      "label": "OneTrust Accept",
+      "selector": "#onetrust-accept-btn-handler, .onetrust-accept-btn-handler"
+    },
+    {
+      "id": "cookiebot_decline",
+      "label": "Cookiebot Decline",
+      "selector": "#CybotCookiebotDialogBodyButtonDecline, [id*='CybotCookiebot'][id*='Decline']"
+    },
+    {
+      "id": "cookiebot_accept",
+      "label": "Cookiebot Accept",
+      "selector": "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll, #CybotCookiebotDialogBodyButtonAccept"
+    },
+    {
+      "id": "didomi_disagree",
+      "label": "Didomi Disagree",
+      "selector": "#didomi-notice-disagree-button, .didomi-notice-disagree-button, [class*='didomi'][class*='disagree']"
+    },
+    {
+      "id": "didomi_agree",
+      "label": "Didomi Agree",
+      "selector": "#didomi-notice-agree-button, .didomi-notice-agree-button"
+    },
+    {
+      "id": "quantcast_reject",
+      "label": "Quantcast Reject",
+      "selector": ".qc-cmp2-summary-buttons button[mode='secondary'], .qc-cmp-button[class*='secondary']"
+    },
+    {
+      "id": "quantcast_accept",
+      "label": "Quantcast Accept",
+      "selector": ".qc-cmp2-summary-buttons button[mode='primary'], .qc-cmp-button[class*='primary']"
+    },
+    {
+      "id": "usercentrics_deny",
+      "label": "Usercentrics Deny",
+      "selector": "[data-testid='uc-deny-all-button'], #uc-btn-deny-banner, .uc-btn-deny"
+    },
+    {
+      "id": "usercentrics_accept",
+      "label": "Usercentrics Accept",
+      "selector": "[data-testid='uc-accept-all-button'], #uc-btn-accept-banner"
+    },
+    {
+      "id": "klaro_decline",
+      "label": "Klaro Decline",
+      "selector": ".klaro .cm-btn-decline, .klaro button[class*='decline']"
+    },
+    {
+      "id": "klaro_accept",
+      "label": "Klaro Accept",
+      "selector": ".klaro .cm-btn-success, .klaro .cm-btn-accept"
+    },
+    {
+      "id": "osano_deny",
+      "label": "Osano Deny",
+      "selector": ".osano-cm-deny, [class*='osano'][class*='deny']"
+    },
+    {
+      "id": "osano_accept",
+      "label": "Osano Accept",
+      "selector": ".osano-cm-accept-all, .osano-cm-accept"
+    },
+    {
+      "id": "trustarc_consent",
+      "label": "TrustArc Consent",
+      "selector": "#truste-consent-button, .truste-consent-button, [id*='truste'][id*='consent']"
+    },
+    {
+      "id": "sourcepoint_reject",
+      "label": "Sourcepoint Reject",
+      "selector": "button.sp_choice_type_12, [title='Reject'], [class*='sp_choice'][class*='reject']"
+    },
+    {
+      "id": "sourcepoint_accept",
+      "label": "Sourcepoint Accept",
+      "selector": "button.sp_choice_type_11, [title='Accept']"
+    },
+    {
+      "id": "iubenda_reject",
+      "label": "Iubenda Reject",
+      "selector": ".iubenda-cs-reject-btn, [class*='iubenda'][class*='reject']"
+    },
+    {
+      "id": "iubenda_accept",
+      "label": "Iubenda Accept",
+      "selector": ".iubenda-cs-accept-btn"
+    },
+    {
+      "id": "axeptio_reject",
+      "label": "Axeptio Reject",
+      "selector": "[data-axeptio-action='deny'], .axeptio_btn_dismiss"
+    },
+    {
+      "id": "axeptio_accept",
+      "label": "Axeptio Accept",
+      "selector": "[data-axeptio-action='accept'], .axeptio_btn_accept"
+    },
+    {
+      "id": "tarteaucitron_deny",
+      "label": "Tarteaucitron Deny",
+      "selector": "#tarteaucitronAllDenied, .tarteaucitronDeny, [id*='tarteaucitron'][id*='Denied']"
+    },
+    {
+      "id": "tarteaucitron_accept",
+      "label": "Tarteaucitron Accept",
+      "selector": "#tarteaucitronAllAllowed, .tarteaucitronAllow"
+    },
+    {
+      "id": "generic_reject_en",
+      "label": "Generic Reject (EN)",
+      "selector": "button[class*='reject'], button[class*='decline'], button[class*='refuse'], [aria-label*='Reject'], [aria-label*='Decline'], [aria-label*='Refuse']"
+    },
+    {
+      "id": "generic_reject_fr",
+      "label": "Generic Reject (FR)",
+      "selector": "button[class*='refuser'], button[class*='rejeter'], [aria-label*='Refuser'], [aria-label*='Tout refuser']"
+    },
+    {
+      "id": "generic_reject_de",
+      "label": "Generic Reject (DE)",
+      "selector": "button[class*='ablehnen'], [aria-label*='Ablehnen'], [aria-label*='Alle ablehnen']"
+    },
+    {
+      "id": "generic_reject_es",
+      "label": "Generic Reject (ES)",
+      "selector": "button[class*='rechazar'], [aria-label*='Rechazar']"
+    },
+    {
+      "id": "generic_reject_it",
+      "label": "Generic Reject (IT)",
+      "selector": "button[class*='rifiuta'], [aria-label*='Rifiuta']"
+    },
+    {
+      "id": "generic_close",
+      "label": "Generic Close/Dismiss",
+      "selector": "[class*='cookie-close'], [class*='cookie-dismiss'], [class*='banner-close'], [aria-label='Close'], [aria-label='Dismiss'], .close-cookie-banner"
+    },
+    {
+      "id": "generic_necessary_only",
+      "label": "Generic Necessary Only",
+      "selector": "button[class*='necessary'], button[class*='essential'], [aria-label*='necessary only'], [aria-label*='essential only']"
+    },
+    {
+      "id": "bandcamp_essential_only",
+      "label": "Bandcamp Essential Only",
+      "selector": "button[data-action='accept-essential'], button.cc-button-essential, [class*='cookie'][class*='essential'], button:contains('Only essential')"
+    },
+    {
+      "id": "bandcamp_accept",
+      "label": "Bandcamp Accept",
+      "selector": "button[data-action='accept-all'], button.cc-button-accept, [class*='cookie'][class*='accept']"
+    }
+  ]
+}

@@ -6,10 +6,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
+import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
@@ -113,6 +115,10 @@ public class SelectorBrowserFragment extends Fragment {
         // Enable mixed content
         webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
 
+        // Fix for black screen / flickering issues
+        webView.setBackgroundColor(android.graphics.Color.WHITE);
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
         // Add JavaScript interface for communication
         webView.addJavascriptInterface(new SelectorJsInterface(), "SelectorBridge");
 
@@ -169,6 +175,17 @@ public class SelectorBrowserFragment extends Fragment {
 
         Logger.d(TAG, "Loading URL: " + targetUrl);
         loadingOverlay.setVisibility(View.VISIBLE);
+
+        // Clear all WebView data for fresh start (ensures cookie consent dialogs appear)
+        CookieManager.getInstance().removeAllCookies(null);
+        CookieManager.getInstance().flush();
+        webView.clearCache(true);
+        webView.clearHistory();
+        webView.clearFormData();
+        if (webView.getContext() != null) {
+            WebStorage.getInstance().deleteAllData();
+        }
+
         webView.loadUrl(targetUrl);
     }
 
@@ -255,12 +272,50 @@ public class SelectorBrowserFragment extends Fragment {
                 "  return selector;" +
                 "}" +
 
+                // Find the best interactive element at a point
+                "function findInteractiveElement(x, y) {" +
+                "  var elements = document.elementsFromPoint(x, y);" +
+                "  for (var i = 0; i < elements.length; i++) {" +
+                "    var el = elements[i];" +
+                "    if (el.tagName === 'BODY' || el.tagName === 'HTML') continue;" +
+                "    var style = window.getComputedStyle(el);" +
+                // Skip elements with pointer-events: none or hidden
+                "    if (style.pointerEvents === 'none') continue;" +
+                "    if (style.visibility === 'hidden') continue;" +
+                "    if (style.display === 'none') continue;" +
+                // Skip fully transparent elements (likely overlays)
+                "    if (parseFloat(style.opacity) === 0) continue;" +
+                // Prefer interactive elements (buttons, links, inputs)
+                "    var tag = el.tagName.toUpperCase();" +
+                "    if (tag === 'BUTTON' || tag === 'A' || tag === 'INPUT' || " +
+                "        tag === 'SELECT' || tag === 'TEXTAREA' || " +
+                "        el.getAttribute('role') === 'button' || " +
+                "        el.onclick || el.hasAttribute('onclick')) {" +
+                "      return el;" +
+                "    }" +
+                "  }" +
+                // If no interactive element found, return first visible non-body element
+                "  for (var i = 0; i < elements.length; i++) {" +
+                "    var el = elements[i];" +
+                "    if (el.tagName === 'BODY' || el.tagName === 'HTML') continue;" +
+                "    var style = window.getComputedStyle(el);" +
+                "    if (style.pointerEvents === 'none') continue;" +
+                "    if (style.visibility === 'hidden') continue;" +
+                "    if (style.display === 'none') continue;" +
+                "    if (parseFloat(style.opacity) === 0) continue;" +
+                "    return el;" +
+                "  }" +
+                "  return null;" +
+                "}" +
+
                 // Handle click events
                 "function handleClick(e) {" +
                 "  e.preventDefault();" +
                 "  e.stopPropagation();" +
 
-                "  var el = e.target;" +
+                // Find the best interactive element at click position
+                "  var el = findInteractiveElement(e.clientX, e.clientY);" +
+                "  if (!el) el = e.target;" +
 
                 // Skip if it's the body or html
                 "  if (el.tagName === 'BODY' || el.tagName === 'HTML') return;" +
@@ -308,6 +363,78 @@ public class SelectorBrowserFragment extends Fragment {
                 "document.addEventListener('contextmenu', function(e) { e.preventDefault(); }, true);" +
 
                 "console.log('SiteWatcher selector script loaded');" +
+
+                // Try to inject into accessible iframes
+                "function injectIntoIframes() {" +
+                "  var iframes = document.querySelectorAll('iframe');" +
+                "  iframes.forEach(function(iframe) {" +
+                "    try {" +
+                "      var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;" +
+                "      if (iframeDoc) {" +
+                // Add styles to iframe
+                "        var style = iframeDoc.createElement('style');" +
+                "        style.textContent = '.sitewatcher-selected { outline: 3px solid #4CAF50 !important; outline-offset: 2px !important; background-color: rgba(76, 175, 80, 0.2) !important; } .sitewatcher-hover { outline: 2px dashed #2196F3 !important; outline-offset: 1px !important; cursor: pointer !important; }';" +
+                "        iframeDoc.head.appendChild(style);" +
+                // Add click handler to iframe
+                "        iframeDoc.addEventListener('click', function(e) {" +
+                "          e.preventDefault();" +
+                "          e.stopPropagation();" +
+                "          var el = e.target;" +
+                "          if (el.tagName === 'BODY' || el.tagName === 'HTML') return;" +
+                // Generate selector with iframe prefix
+                "          var selector = '';" +
+                "          if (el.id) { selector = '#' + el.id; }" +
+                "          else if (el.className && typeof el.className === 'string') {" +
+                "            var classes = el.className.trim().split(/\\s+/).filter(function(c) { return c && !c.startsWith('sitewatcher-'); });" +
+                "            if (classes.length > 0) { selector = el.tagName.toLowerCase() + '.' + classes.join('.'); }" +
+                "            else { selector = el.tagName.toLowerCase(); }" +
+                "          } else { selector = el.tagName.toLowerCase(); }" +
+                // Add iframe context to selector
+                "          var iframeSelector = '';" +
+                "          if (iframe.id) { iframeSelector = 'iframe#' + iframe.id + ' '; }" +
+                "          else if (iframe.className) { iframeSelector = 'iframe.' + iframe.className.split(' ')[0] + ' '; }" +
+                "          else { iframeSelector = 'iframe '; }" +
+                "          var fullSelector = iframeSelector + selector;" +
+                // Toggle selection
+                "          var index = window.parent.siteWatcherSelected.indexOf(fullSelector);" +
+                "          if (index > -1) {" +
+                "            window.parent.siteWatcherSelected.splice(index, 1);" +
+                "            el.classList.remove('sitewatcher-selected');" +
+                "          } else {" +
+                "            window.parent.siteWatcherSelected.push(fullSelector);" +
+                "            el.classList.add('sitewatcher-selected');" +
+                "          }" +
+                "          window.parent.SelectorBridge.onSelectionChanged(JSON.stringify(window.parent.siteWatcherSelected));" +
+                "        }, true);" +
+                // Add hover handlers
+                "        iframeDoc.addEventListener('mouseover', function(e) {" +
+                "          if (e.target.tagName !== 'BODY' && e.target.tagName !== 'HTML') {" +
+                "            e.target.classList.add('sitewatcher-hover');" +
+                "          }" +
+                "        }, true);" +
+                "        iframeDoc.addEventListener('mouseout', function(e) {" +
+                "          e.target.classList.remove('sitewatcher-hover');" +
+                "        }, true);" +
+                "        console.log('SiteWatcher: Injected into iframe', iframe);" +
+                "      }" +
+                "    } catch (e) {" +
+                "      console.log('SiteWatcher: Cannot access iframe (cross-origin):', e.message);" +
+                "    }" +
+                "  });" +
+                "}" +
+                "injectIntoIframes();" +
+                // Re-inject when new iframes are added
+                "var observer = new MutationObserver(function(mutations) {" +
+                "  mutations.forEach(function(mutation) {" +
+                "    mutation.addedNodes.forEach(function(node) {" +
+                "      if (node.tagName === 'IFRAME') {" +
+                "        setTimeout(injectIntoIframes, 500);" +
+                "      }" +
+                "    });" +
+                "  });" +
+                "});" +
+                "observer.observe(document.body, { childList: true, subtree: true });" +
+
                 "})();";
     }
 
@@ -351,8 +478,11 @@ public class SelectorBrowserFragment extends Fragment {
             btnClear.setVisibility(View.GONE);
             btnConfirm.setEnabled(false);
         } else {
-            textSelectedCount.setText(getResources().getQuantityString(
-                    R.plurals.elements_selected, count, count));
+            // Build display text with count and selector names
+            String countText = getResources().getQuantityString(
+                    R.plurals.elements_selected, count, count);
+            String selectorsText = String.join(", ", selectedSelectors);
+            textSelectedCount.setText(countText + ": " + selectorsText);
             btnClear.setVisibility(View.VISIBLE);
             btnConfirm.setEnabled(true);
         }

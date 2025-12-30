@@ -9,12 +9,18 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.ltrudu.sitewatcher.background.CheckScheduler;
+import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
+import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.ScheduleType;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.data.repository.SiteRepository;
+import com.ltrudu.sitewatcher.network.BuiltInClickPatterns;
 import com.ltrudu.sitewatcher.network.SiteChecker;
 import com.ltrudu.sitewatcher.util.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ViewModel for the Add/Edit Site screen.
@@ -48,10 +54,12 @@ public class AddEditViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> scheduleHour = new MutableLiveData<>(9);
     private final MutableLiveData<Integer> scheduleMinute = new MutableLiveData<>(0);
     private final MutableLiveData<Integer> thresholdPercent = new MutableLiveData<>(25);
+    private final MutableLiveData<FetchMode> fetchMode = new MutableLiveData<>(FetchMode.STATIC);
     private final MutableLiveData<ComparisonMode> comparisonMode = new MutableLiveData<>(ComparisonMode.TEXT_ONLY);
     private final MutableLiveData<String> cssSelector = new MutableLiveData<>("");
     private final MutableLiveData<Integer> minTextLength = new MutableLiveData<>(10);
     private final MutableLiveData<Integer> minWordLength = new MutableLiveData<>(3);
+    private final MutableLiveData<List<AutoClickAction>> autoClickActions = new MutableLiveData<>(new ArrayList<>());
 
     // Validation state
     private final MutableLiveData<Boolean> isUrlValid = new MutableLiveData<>(false);
@@ -97,10 +105,12 @@ public class AddEditViewModel extends AndroidViewModel {
         scheduleHour.setValue(9);
         scheduleMinute.setValue(0);
         thresholdPercent.setValue(25);
+        fetchMode.setValue(FetchMode.STATIC);
         comparisonMode.setValue(ComparisonMode.TEXT_ONLY);
         cssSelector.setValue("");
         minTextLength.setValue(10);
         minWordLength.setValue(3);
+        autoClickActions.setValue(new ArrayList<>());
         isUrlValid.setValue(false);
     }
 
@@ -147,10 +157,15 @@ public class AddEditViewModel extends AndroidViewModel {
         scheduleHour.postValue(site.getScheduleHour());
         scheduleMinute.postValue(site.getScheduleMinute());
         thresholdPercent.postValue(site.getThresholdPercent());
+        fetchMode.postValue(site.getFetchMode());
         comparisonMode.postValue(site.getComparisonMode());
         cssSelector.postValue(site.getCssSelector() != null ? site.getCssSelector() : "");
         minTextLength.postValue(site.getMinTextLength());
         minWordLength.postValue(site.getMinWordLength());
+
+        // Load auto-click actions
+        List<AutoClickAction> actions = site.getAutoClickActions();
+        autoClickActions.postValue(actions);
 
         // Validate URL - use postValue version
         isUrlValid.postValue(true);
@@ -226,6 +241,9 @@ public class AddEditViewModel extends AndroidViewModel {
         Integer threshold = thresholdPercent.getValue();
         site.setThresholdPercent(threshold != null ? threshold : 25);
 
+        FetchMode fetch = fetchMode.getValue();
+        site.setFetchMode(fetch != null ? fetch : FetchMode.STATIC);
+
         ComparisonMode mode = comparisonMode.getValue();
         site.setComparisonMode(mode != null ? mode : ComparisonMode.TEXT_ONLY);
 
@@ -241,6 +259,9 @@ public class AddEditViewModel extends AndroidViewModel {
 
         Integer minWord = minWordLength.getValue();
         site.setMinWordLength(minWord != null ? minWord : 3);
+
+        List<AutoClickAction> actions = autoClickActions.getValue();
+        site.setAutoClickActions(actions);
 
         return site;
     }
@@ -349,6 +370,10 @@ public class AddEditViewModel extends AndroidViewModel {
         return thresholdPercent;
     }
 
+    public MutableLiveData<FetchMode> getFetchMode() {
+        return fetchMode;
+    }
+
     public MutableLiveData<ComparisonMode> getComparisonMode() {
         return comparisonMode;
     }
@@ -363,6 +388,14 @@ public class AddEditViewModel extends AndroidViewModel {
 
     public MutableLiveData<Integer> getMinWordLength() {
         return minWordLength;
+    }
+
+    public MutableLiveData<List<AutoClickAction>> getAutoClickActions() {
+        return autoClickActions;
+    }
+
+    public void setAutoClickActions(List<AutoClickAction> actions) {
+        this.autoClickActions.setValue(actions);
     }
 
     public LiveData<Boolean> getIsUrlValid() {
@@ -417,6 +450,10 @@ public class AddEditViewModel extends AndroidViewModel {
         this.thresholdPercent.setValue(percent);
     }
 
+    public void setFetchMode(FetchMode mode) {
+        this.fetchMode.setValue(mode);
+    }
+
     public void setComparisonMode(ComparisonMode mode) {
         this.comparisonMode.setValue(mode);
     }
@@ -431,6 +468,52 @@ public class AddEditViewModel extends AndroidViewModel {
 
     public void setMinWordLength(int length) {
         this.minWordLength.setValue(length);
+    }
+
+    public void addAutoClickAction(AutoClickAction action) {
+        List<AutoClickAction> current = new ArrayList<>(autoClickActions.getValue());
+        action.setOrder(current.size());
+        current.add(action);
+        autoClickActions.setValue(current);
+    }
+
+    public void updateAutoClickAction(AutoClickAction action) {
+        List<AutoClickAction> current = new ArrayList<>(autoClickActions.getValue());
+        for (int i = 0; i < current.size(); i++) {
+            if (current.get(i).getId().equals(action.getId())) {
+                current.set(i, action);
+                break;
+            }
+        }
+        autoClickActions.setValue(current);
+    }
+
+    public void removeAutoClickAction(String actionId) {
+        List<AutoClickAction> current = new ArrayList<>(autoClickActions.getValue());
+        current.removeIf(a -> a.getId().equals(actionId));
+        // Reorder remaining actions
+        for (int i = 0; i < current.size(); i++) {
+            current.get(i).setOrder(i);
+        }
+        autoClickActions.setValue(current);
+    }
+
+    public void setAutoClickActionEnabled(String actionId, boolean enabled) {
+        List<AutoClickAction> current = new ArrayList<>(autoClickActions.getValue());
+        for (AutoClickAction action : current) {
+            if (action.getId().equals(actionId)) {
+                action.setEnabled(enabled);
+                break;
+            }
+        }
+        autoClickActions.setValue(current);
+    }
+
+    public void reorderAutoClickActions(List<AutoClickAction> newOrder) {
+        for (int i = 0; i < newOrder.size(); i++) {
+            newOrder.get(i).setOrder(i);
+        }
+        autoClickActions.setValue(new ArrayList<>(newOrder));
     }
 
     /**

@@ -30,6 +30,8 @@ public class SettingsViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> historyCount = new MutableLiveData<>();
     private final MutableLiveData<Integer> searchEngineIndex = new MutableLiveData<>();
     private final MutableLiveData<Boolean> debugMode = new MutableLiveData<>();
+    private final MutableLiveData<Integer> pageLoadDelay = new MutableLiveData<>();
+    private final MutableLiveData<Integer> postActionDelay = new MutableLiveData<>();
 
     public SettingsViewModel(@NonNull Application application) {
         super(application);
@@ -48,6 +50,8 @@ public class SettingsViewModel extends AndroidViewModel {
         historyCount.setValue(preferencesManager.getHistoryCount());
         searchEngineIndex.setValue(preferencesManager.getSearchEngineIndex());
         debugMode.setValue(preferencesManager.isDebugMode());
+        pageLoadDelay.setValue(preferencesManager.getPageLoadDelay());
+        postActionDelay.setValue(preferencesManager.getPostActionDelay());
 
         Logger.d(TAG, "Settings loaded from preferences");
     }
@@ -80,6 +84,14 @@ public class SettingsViewModel extends AndroidViewModel {
 
     public LiveData<Boolean> getDebugMode() {
         return debugMode;
+    }
+
+    public LiveData<Integer> getPageLoadDelay() {
+        return pageLoadDelay;
+    }
+
+    public LiveData<Integer> getPostActionDelay() {
+        return postActionDelay;
     }
 
     // Setters that update both LiveData and PreferencesManager
@@ -142,6 +154,20 @@ public class SettingsViewModel extends AndroidViewModel {
         debugMode.setValue(enabled);
         Logger.setEnabled(enabled);
         Logger.d(TAG, "Debug mode updated to: " + enabled);
+    }
+
+    public void setPageLoadDelay(int seconds) {
+        int validSeconds = Math.max(0, Math.min(10, seconds));
+        preferencesManager.setPageLoadDelay(validSeconds);
+        pageLoadDelay.setValue(validSeconds);
+        Logger.d(TAG, "Page load delay updated to: " + validSeconds + "s");
+    }
+
+    public void setPostActionDelay(int seconds) {
+        int validSeconds = Math.max(0, Math.min(10, seconds));
+        preferencesManager.setPostActionDelay(validSeconds);
+        postActionDelay.setValue(validSeconds);
+        Logger.d(TAG, "Post-action delay updated to: " + validSeconds + "s");
     }
 
     /**

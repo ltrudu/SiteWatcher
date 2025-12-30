@@ -6,6 +6,8 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.ltrudu.sitewatcher.data.model.AutoClickAction;
+import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.SiteHistory;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.data.repository.SiteRepository;
@@ -20,6 +22,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -37,7 +40,8 @@ public class SiteChecker {
 
     private final Context context;
     private final SiteRepository repository;
-    private final SiteContentFetcher fetcher;
+    private final SiteContentFetcher staticFetcher;
+    private final WebViewContentFetcher jsFetcher;
     private final ContentComparator comparator;
     private final ExecutorService executorService;
 
@@ -69,7 +73,8 @@ public class SiteChecker {
         this.context = context.getApplicationContext();
         this.repository = SiteRepository.getInstance(
                 (android.app.Application) context.getApplicationContext());
-        this.fetcher = new SiteContentFetcher();
+        this.staticFetcher = new SiteContentFetcher();
+        this.jsFetcher = new WebViewContentFetcher(this.context);
         this.comparator = new ContentComparator();
         this.executorService = Executors.newFixedThreadPool(3);
 
@@ -114,11 +119,21 @@ public class SiteChecker {
      */
     private void performCheck(@NonNull WatchedSite site, @NonNull CheckCallback callback) {
         long checkTime = System.currentTimeMillis();
-        Logger.d(TAG, "Starting check for site: " + site.getId() + " - " + site.getUrl());
+        FetchMode fetchMode = site.getFetchMode();
+        Logger.d(TAG, "Starting check for site: " + site.getId() + " - " + site.getUrl() +
+                " (fetch mode: " + fetchMode + ")");
 
         try {
-            // Fetch current content
-            FetchResult fetchResult = fetcher.fetchContent(site.getUrl());
+            // Fetch current content using appropriate fetcher
+            FetchResult fetchResult;
+            if (fetchMode == FetchMode.JAVASCRIPT) {
+                Logger.d(TAG, "Using WebView fetcher for JavaScript-enabled fetch");
+                List<AutoClickAction> autoClickActions = site.getAutoClickActions();
+                fetchResult = jsFetcher.fetchContent(site.getUrl(), autoClickActions);
+            } else {
+                Logger.d(TAG, "Using static fetcher for fast fetch");
+                fetchResult = staticFetcher.fetchContent(site.getUrl());
+            }
 
             if (!fetchResult.isSuccess()) {
                 String error = fetchResult.getError();

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="false"
+    tools:context=".ui.selector.CoordinatePickerFragment">
+
+    <!-- WebView - fullscreen, underneath everything -->
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Crosshair overlay to show selected position -->
+    <View
+        android:id="@+id/crosshairVertical"
+        android:layout_width="2dp"
+        android:layout_height="match_parent"
+        android:background="@color/diff_removed"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <View
+        android:id="@+id/crosshairHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@color/diff_removed"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <!-- Loading overlay - covers entire screen during loading/executing -->
+    <FrameLayout
+        android:id="@+id/loadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        android:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="48dp"
+                android:layout_height="48dp" />
+
+            <TextView
+                android:id="@+id/textStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/loading_page"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+            <TextView
+                android:id="@+id/textCurrentAction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorSecondary"
+                tools:text="Clicking OneTrust Reject"
+                tools:visibility="visible" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- Floating instruction banner - visible during selection mode -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/instructionBanner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        app:cardElevation="8dp"
+        app:cardCornerRadius="24dp"
+        app:cardBackgroundColor="@android:color/black"
+        tools:visibility="visible">
+
+        <TextView
+            android:id="@+id/textInstruction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="12dp"
+            android:text="@string/tap_to_select_location"
+            android:textColor="@android:color/white"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Floating coordinates display - visible after tap -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/coordinatesCard"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        app:cardElevation="8dp"
+        app:cardCornerRadius="24dp"
+        app:cardBackgroundColor="?attr/colorPrimaryContainer"
+        tools:visibility="visible">
+
+        <TextView
+            android:id="@+id/textCoordinates"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="12dp"
+            android:textColor="?attr/colorOnPrimaryContainer"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            tools:text="Position: 50%, 75%" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Floating button bar - visible during selection mode -->
+    <LinearLayout
+        android:id="@+id/floatingButtonBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonCancel"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="@string/cancel" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonConfirm"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:enabled="false"
+            android:text="@string/confirm" />
+
+    </LinearLayout>
+
+</FrameLayout>

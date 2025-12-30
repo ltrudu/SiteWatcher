@@ -213,12 +213,22 @@
 
                 </LinearLayout>
 
+                <!-- View Mode Toggle -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToggleView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/show_rendered"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Diff Content Scroll View -->
+        <!-- Text Diff Container -->
         <ScrollView
+            android:id="@+id/textDiffContainer"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -243,6 +253,99 @@
             </HorizontalScrollView>
 
         </ScrollView>
+
+        <!-- WebView Rendered Container -->
+        <LinearLayout
+            android:id="@+id/webViewContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Before (Previous) Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:padding="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/before_version"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    android:textColor="@color/diff_removed"
+                    android:padding="8dp"
+                    android:background="@color/diff_removed_background" />
+
+                <WebView
+                    android:id="@+id/webViewBefore"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:background="?attr/colorOutline" />
+
+            <!-- After (Current) Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:padding="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/after_version"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    android:textColor="@color/diff_added"
+                    android:padding="8dp"
+                    android:background="@color/diff_added_background" />
+
+                <WebView
+                    android:id="@+id/webViewAfter"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Changes Only Container -->
+        <LinearLayout
+            android:id="@+id/changesOnlyContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/changes_highlighted"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:textColor="?attr/colorError"
+                android:padding="8dp"
+                android:background="?attr/colorErrorContainer" />
+
+            <WebView
+                android:id="@+id/webViewChangesOnly"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

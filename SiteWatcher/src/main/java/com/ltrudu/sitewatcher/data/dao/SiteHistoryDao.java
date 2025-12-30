@@ -26,6 +26,15 @@ public interface SiteHistoryDao {
     long insert(SiteHistory history);
 
     /**
+     * Get a history entry by its ID.
+     *
+     * @param id The history entry ID
+     * @return The history entry, or null if not found
+     */
+    @Query("SELECT * FROM site_history WHERE id = :id")
+    SiteHistory getById(long id);
+
+    /**
      * Delete a history entry.
      *
      * @param history The history entry to delete

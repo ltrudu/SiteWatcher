@@ -30,6 +30,12 @@ public final class Constants {
     public static final int DEFAULT_RETRY_COUNT = 3;
     public static final int DEFAULT_MAX_THREADS = 3;
 
+    // WebView content fetching delays (in seconds)
+    public static final int DEFAULT_PAGE_LOAD_DELAY = 2;   // Delay after page load before actions
+    public static final int DEFAULT_POST_ACTION_DELAY = 3; // Delay after last action before capture
+    public static final int MIN_DELAY_SECONDS = 0;
+    public static final int MAX_DELAY_SECONDS = 10;
+
     // History
     public static final int DEFAULT_HISTORY_COUNT = 10;
 

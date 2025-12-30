@@ -92,6 +92,10 @@ public class BrowserDiscoveryFragment extends Fragment {
         // Enable mixed content (some sites use mixed http/https resources)
         webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
 
+        // Fix for black screen / flickering issues
+        webView.setBackgroundColor(android.graphics.Color.WHITE);
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
         // Set WebViewClient to handle page navigation
         webView.setWebViewClient(new WebViewClient() {
             @Override

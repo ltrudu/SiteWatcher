@@ -70,6 +70,23 @@ public class WatchedSite {
     private int minWordLength;
 
     /**
+     * Fetch mode: STATIC (fast, no JS) or JAVASCRIPT (slower, executes JS).
+     * Use JAVASCRIPT for dynamic sites with calendars, AJAX content, etc.
+     */
+    @NonNull
+    @ColumnInfo(name = "fetch_mode", defaultValue = "STATIC")
+    private FetchMode fetchMode;
+
+    /**
+     * JSON array of auto-click actions to execute when page loads (for JAVASCRIPT mode).
+     * Each action can be CLICK (click element) or WAIT (pause for N seconds).
+     * Used to dismiss cookie consent dialogs and similar overlays.
+     */
+    @Nullable
+    @ColumnInfo(name = "auto_click_actions")
+    private String autoClickActionsJson;
+
+    /**
      * Minimum change percentage (1-99) to trigger notification.
      */
     @ColumnInfo(name = "threshold_percent")
@@ -104,6 +121,7 @@ public class WatchedSite {
         this.url = "";
         this.scheduleType = ScheduleType.PERIODIC;
         this.comparisonMode = ComparisonMode.TEXT_ONLY;
+        this.fetchMode = FetchMode.STATIC;
         this.periodicIntervalMinutes = 60;
         this.enabledDays = 127; // All days enabled by default
         this.minTextLength = 10; // Minimum 10 characters per text block
@@ -215,6 +233,43 @@ public class WatchedSite {
 
     public void setMinWordLength(int minWordLength) {
         this.minWordLength = minWordLength;
+    }
+
+    @NonNull
+    public FetchMode getFetchMode() {
+        return fetchMode;
+    }
+
+    public void setFetchMode(@NonNull FetchMode fetchMode) {
+        this.fetchMode = fetchMode;
+    }
+
+    @Nullable
+    public String getAutoClickActionsJson() {
+        return autoClickActionsJson;
+    }
+
+    public void setAutoClickActionsJson(@Nullable String autoClickActionsJson) {
+        this.autoClickActionsJson = autoClickActionsJson;
+    }
+
+    /**
+     * Get auto-click actions as a list.
+     *
+     * @return List of auto-click actions (empty if none configured)
+     */
+    @NonNull
+    public java.util.List<AutoClickAction> getAutoClickActions() {
+        return AutoClickAction.fromJsonString(autoClickActionsJson);
+    }
+
+    /**
+     * Set auto-click actions from a list.
+     *
+     * @param actions List of auto-click actions (null or empty to clear)
+     */
+    public void setAutoClickActions(@Nullable java.util.List<AutoClickAction> actions) {
+        this.autoClickActionsJson = AutoClickAction.toJsonString(actions);
     }
 
     public int getThresholdPercent() {

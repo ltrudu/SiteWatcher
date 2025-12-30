@@ -9,6 +9,8 @@ import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -20,12 +22,20 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.button.MaterialButton;
 import com.ltrudu.sitewatcher.R;
 import com.ltrudu.sitewatcher.util.Logger;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Fragment for displaying content differences between two versions of a watched site.
@@ -51,6 +61,19 @@ public class DiffViewerFragment extends Fragment {
     private TextView textAddedCount;
     private TextView textRemovedCount;
     private TextView textDiffContent;
+
+    private View textDiffContainer;
+    private LinearLayout webViewContainer;
+    private WebView webViewBefore;
+    private WebView webViewAfter;
+    private MaterialButton btnToggleView;
+    private LinearLayout changesOnlyContainer;
+    private WebView webViewChangesOnly;
+
+    private enum ViewMode { TEXT_DIFF, RENDERED, CHANGES_ONLY }
+    private ViewMode currentViewMode = ViewMode.TEXT_DIFF;
+    private String oldHtmlContent;
+    private String newHtmlContent;
 
     private int colorAdded;
     private int colorRemoved;
@@ -125,6 +148,23 @@ public class DiffViewerFragment extends Fragment {
         textRemovedCount = view.findViewById(R.id.textRemovedCount);
         textDiffContent = view.findViewById(R.id.textDiffContent);
 
+        textDiffContainer = view.findViewById(R.id.textDiffContainer);
+        webViewContainer = view.findViewById(R.id.webViewContainer);
+        webViewBefore = view.findViewById(R.id.webViewBefore);
+        webViewAfter = view.findViewById(R.id.webViewAfter);
+        btnToggleView = view.findViewById(R.id.btnToggleView);
+
+        changesOnlyContainer = view.findViewById(R.id.changesOnlyContainer);
+        webViewChangesOnly = view.findViewById(R.id.webViewChangesOnly);
+
+        // Setup WebViews
+        setupWebView(webViewBefore);
+        setupWebView(webViewAfter);
+        setupWebView(webViewChangesOnly);
+
+        // Setup toggle button
+        btnToggleView.setOnClickListener(v -> toggleViewMode());
+
         // Set up retry button
         btnRetry.setOnClickListener(v -> viewModel.retry());
 
@@ -183,6 +223,10 @@ public class DiffViewerFragment extends Fragment {
         // Set site URL
         textSiteUrl.setText(result.getSiteUrl());
 
+        // Store HTML content for WebView mode
+        oldHtmlContent = result.getOldContent();
+        newHtmlContent = result.getNewContent();
+
         // Set timestamps
         textOldTimestamp.setText(formatTimestamp(result.getOldTimestamp()));
         textNewTimestamp.setText(formatTimestamp(result.getNewTimestamp()));
@@ -239,5 +283,251 @@ public class DiffViewerFragment extends Fragment {
         }
 
         textDiffContent.setText(builder);
+    }
+
+    /**
+     * Setup a WebView with appropriate settings.
+     */
+    private void setupWebView(@NonNull WebView webView) {
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(false);
+        settings.setBuiltInZoomControls(true);
+        settings.setDisplayZoomControls(false);
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
+
+        // Fix for black screen / flickering issues
+        webView.setBackgroundColor(android.graphics.Color.WHITE);
+        webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
+    }
+
+    /**
+     * Cycle through view modes: TEXT_DIFF -> RENDERED -> CHANGES_ONLY -> TEXT_DIFF
+     */
+    private void toggleViewMode() {
+        switch (currentViewMode) {
+            case TEXT_DIFF:
+                currentViewMode = ViewMode.RENDERED;
+                break;
+            case RENDERED:
+                currentViewMode = ViewMode.CHANGES_ONLY;
+                break;
+            case CHANGES_ONLY:
+                currentViewMode = ViewMode.TEXT_DIFF;
+                break;
+        }
+        updateViewMode();
+    }
+
+    /**
+     * Update the view based on current mode.
+     */
+    private void updateViewMode() {
+        // Hide all containers first
+        textDiffContainer.setVisibility(View.GONE);
+        webViewContainer.setVisibility(View.GONE);
+        changesOnlyContainer.setVisibility(View.GONE);
+
+        switch (currentViewMode) {
+            case TEXT_DIFF:
+                textDiffContainer.setVisibility(View.VISIBLE);
+                btnToggleView.setText(R.string.show_rendered);
+                break;
+
+            case RENDERED:
+                webViewContainer.setVisibility(View.VISIBLE);
+                btnToggleView.setText(R.string.show_changes_only);
+                // Load HTML content into WebViews
+                if (oldHtmlContent != null) {
+                    webViewBefore.loadDataWithBaseURL(null, oldHtmlContent, "text/html", "UTF-8", null);
+                }
+                if (newHtmlContent != null) {
+                    webViewAfter.loadDataWithBaseURL(null, newHtmlContent, "text/html", "UTF-8", null);
+                }
+                break;
+
+            case CHANGES_ONLY:
+                changesOnlyContainer.setVisibility(View.VISIBLE);
+                btnToggleView.setText(R.string.show_text_diff);
+                // Generate and load changes-only HTML
+                String changesHtml = generateChangesOnlyHtml();
+                webViewChangesOnly.loadDataWithBaseURL(null, changesHtml, "text/html", "UTF-8", null);
+                break;
+        }
+    }
+
+    /**
+     * Generate HTML showing the current version with changed elements highlighted.
+     * Compares DOM elements between old and new HTML and highlights differences with red borders.
+     */
+    @NonNull
+    private String generateChangesOnlyHtml() {
+        if (oldHtmlContent == null || newHtmlContent == null) {
+            return generateFallbackChangesHtml();
+        }
+
+        try {
+            // Parse both HTML documents
+            Document oldDoc = Jsoup.parse(oldHtmlContent);
+            Document newDoc = Jsoup.parse(newHtmlContent);
+
+            // Get text content from old document elements for comparison
+            Set<String> oldTextContents = extractTextContents(oldDoc);
+
+            // Mark changed elements in new document
+            markChangedElements(newDoc, oldTextContents);
+
+            // Inject CSS for highlighting changed elements
+            injectHighlightStyles(newDoc);
+
+            return newDoc.outerHtml();
+        } catch (Exception e) {
+            Logger.e(TAG, "Error generating changes-only HTML", e);
+            return generateFallbackChangesHtml();
+        }
+    }
+
+    /**
+     * Extract all text contents from a document for comparison.
+     */
+    @NonNull
+    private Set<String> extractTextContents(@NonNull Document doc) {
+        Set<String> textContents = new HashSet<>();
+        Elements allElements = doc.getAllElements();
+        for (Element element : allElements) {
+            String ownText = element.ownText().trim();
+            if (!ownText.isEmpty()) {
+                textContents.add(ownText);
+            }
+        }
+        return textContents;
+    }
+
+    /**
+     * Mark elements that have changed (new or modified text content) with a CSS class.
+     */
+    private void markChangedElements(@NonNull Document newDoc, @NonNull Set<String> oldTextContents) {
+        Elements allElements = newDoc.getAllElements();
+        for (Element element : allElements) {
+            String ownText = element.ownText().trim();
+            if (!ownText.isEmpty() && !oldTextContents.contains(ownText)) {
+                // This text wasn't in the old version - mark as changed
+                element.addClass("sw-changed-element");
+            }
+        }
+    }
+
+    /**
+     * Inject CSS styles for highlighting changed elements.
+     */
+    private void injectHighlightStyles(@NonNull Document doc) {
+        Element head = doc.head();
+        if (head == null) {
+            head = doc.appendElement("head");
+        }
+
+        // Add viewport meta for proper mobile rendering
+        head.appendElement("meta")
+                .attr("name", "viewport")
+                .attr("content", "width=device-width, initial-scale=1.0");
+
+        // Add highlight styles
+        String highlightCss =
+                ".sw-changed-element { " +
+                "  outline: 3px solid #F44336 !important; " +
+                "  outline-offset: 2px !important; " +
+                "  background-color: rgba(244, 67, 54, 0.1) !important; " +
+                "} " +
+                ".sw-changed-element::before { " +
+                "  content: 'CHANGED' !important; " +
+                "  position: absolute !important; " +
+                "  top: -20px !important; " +
+                "  left: 0 !important; " +
+                "  background: #F44336 !important; " +
+                "  color: white !important; " +
+                "  font-size: 10px !important; " +
+                "  padding: 2px 6px !important; " +
+                "  border-radius: 3px !important; " +
+                "  font-family: sans-serif !important; " +
+                "}";
+
+        head.appendElement("style")
+                .attr("type", "text/css")
+                .text(highlightCss);
+    }
+
+    /**
+     * Generate fallback HTML when DOM comparison fails.
+     * Shows extracted text differences in a styled format.
+     */
+    @NonNull
+    private String generateFallbackChangesHtml() {
+        StringBuilder html = new StringBuilder();
+        html.append("<!DOCTYPE html><html><head>");
+        html.append("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
+        html.append("<style>");
+        html.append("body { font-family: sans-serif; padding: 16px; margin: 0; }");
+        html.append(".section { margin-bottom: 24px; }");
+        html.append(".label { font-weight: bold; padding: 8px; margin-bottom: 8px; }");
+        html.append(".removed { background-color: #FFEBEE; border: 2px solid #F44336; border-radius: 4px; padding: 12px; margin: 8px 0; }");
+        html.append(".removed .label { background-color: #F44336; color: white; margin: -12px -12px 12px -12px; padding: 8px 12px; }");
+        html.append(".added { background-color: #E8F5E9; border: 2px solid #4CAF50; border-radius: 4px; padding: 12px; margin: 8px 0; }");
+        html.append(".added .label { background-color: #4CAF50; color: white; margin: -12px -12px 12px -12px; padding: 8px 12px; }");
+        html.append(".content { white-space: pre-wrap; word-wrap: break-word; font-family: monospace; font-size: 12px; }");
+        html.append("</style></head><body>");
+
+        // Parse the diff text to extract added and removed lines
+        if (viewModel.getDiffResult().getValue() != null) {
+            String diffText = viewModel.getDiffResult().getValue().getDiffText();
+            String[] lines = diffText.split("\n");
+
+            StringBuilder removedLines = new StringBuilder();
+            StringBuilder addedLines = new StringBuilder();
+
+            for (String line : lines) {
+                if (line.startsWith("- ")) {
+                    if (removedLines.length() > 0) removedLines.append("\n");
+                    removedLines.append(escapeHtml(line.substring(2)));
+                } else if (line.startsWith("+ ")) {
+                    if (addedLines.length() > 0) addedLines.append("\n");
+                    addedLines.append(escapeHtml(line.substring(2)));
+                }
+            }
+
+            // Show removed content (from previous version)
+            if (removedLines.length() > 0) {
+                html.append("<div class='removed'>");
+                html.append("<div class='label'>Removed from previous version</div>");
+                html.append("<div class='content'>").append(removedLines).append("</div>");
+                html.append("</div>");
+            }
+
+            // Show added content (in current version)
+            if (addedLines.length() > 0) {
+                html.append("<div class='added'>");
+                html.append("<div class='label'>Added in current version</div>");
+                html.append("<div class='content'>").append(addedLines).append("</div>");
+                html.append("</div>");
+            }
+
+            if (removedLines.length() == 0 && addedLines.length() == 0) {
+                html.append("<p style='text-align:center; color: #666;'>No text changes detected</p>");
+            }
+        }
+
+        html.append("</body></html>");
+        return html.toString();
+    }
+
+    /**
+     * Escape HTML special characters.
+     */
+    @NonNull
+    private String escapeHtml(@NonNull String text) {
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#39;");
     }
 }

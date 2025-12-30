@@ -85,6 +85,68 @@
     <string name="comparison_text_only">Text Content Only</string>
     <string name="comparison_css_selector">CSS Selector</string>
 
+    <!-- Fetch Modes -->
+    <string name="fetch_mode">Fetch Mode</string>
+    <string name="fetch_mode_static">Static (Fast)</string>
+    <string name="fetch_mode_static_desc">Fetches raw HTML quickly. Does not execute JavaScript.</string>
+    <string name="fetch_mode_javascript">JavaScript (Dynamic)</string>
+    <string name="fetch_mode_javascript_desc">Waits for JavaScript to execute. Required for dynamic content like calendars, AJAX data, SPAs.</string>
+
+    <!-- Auto-Click Actions -->
+    <string name="auto_click_actions">Auto-Click Actions</string>
+    <string name="auto_click_hint">Automatically click elements when page loads. Useful for dismissing cookie consent dialogs.</string>
+    <string name="add_custom_action">Add Custom</string>
+    <string name="action_label">Label</string>
+    <string name="action_label_hint">e.g., Close Cookie Banner</string>
+    <string name="action_selector">CSS Selector</string>
+    <string name="action_selector_hint">e.g., #accept-cookies, .close-btn</string>
+    <string name="edit_action">Edit Action</string>
+    <string name="add_action">Add Action</string>
+    <string name="delete_action_confirm">Delete this action?</string>
+    <string name="built_in_pattern">Built-in</string>
+    <string name="custom_pattern">Custom</string>
+    <string name="pick_click_element">Pick Element</string>
+    <string name="action_type">Action Type</string>
+    <string name="action_type_click">Click Element</string>
+    <string name="action_type_wait">Wait</string>
+    <string name="wait_seconds">Wait Duration (seconds)</string>
+    <string name="wait_seconds_hint">Time to wait before next action</string>
+    <string name="wait_summary">Wait %1$d seconds</string>
+    <string name="auto_click_requires_javascript">Auto-click requires JavaScript fetch mode</string>
+    <string name="drag_to_reorder">Drag to reorder</string>
+
+    <!-- FAB Speed Dial -->
+    <string name="add_standard_action">Add Standard Action</string>
+    <string name="add_sleep_action">Add Sleep</string>
+
+    <!-- Standard Actions Bottom Sheet -->
+    <string name="standard_actions_title">Standard Actions</string>
+    <string name="cookie_consent_frameworks">Cookie Consent Frameworks</string>
+    <string name="generic_patterns">Generic Patterns</string>
+
+    <!-- Add Sleep Dialog -->
+    <string name="add_sleep_title">Add Sleep Action</string>
+    <string name="sleep_label_hint">e.g., Wait for menu to open</string>
+    <string name="sleep_duration_label">Duration (seconds)</string>
+
+    <!-- Interactive Picker -->
+    <string name="executing_actions">Executing actions…</string>
+    <string name="executing_action_progress">Executing action %1$d of %2$d</string>
+    <string name="interactive_picker_progress">Executing action %1$d of %2$d</string>
+    <string name="interactive_picker_select">Tap an element to select it</string>
+    <string name="select_element_prompt">Tap an element to select it</string>
+    <string name="custom_click_action">Custom Click</string>
+
+    <!-- Action Tester -->
+    <string name="test_actions">Test Actions</string>
+    <string name="test_complete">All actions executed!</string>
+    <string name="step_progress">Step %1$d of %2$d</string>
+    <string name="no_actions_to_test">No actions to test</string>
+    <string name="page_loaded">Page loaded</string>
+    <string name="waiting_for_content">Waiting for content…</string>
+    <string name="waiting_for_page_settle">Waiting for page to settle…</string>
+    <string name="open_in_webview">Open in WebView</string>
+
     <!-- Schedule Types -->
     <string name="schedule_periodic">Periodic Interval</string>
     <string name="schedule_specific_hour">Specific Time</string>
@@ -139,6 +201,11 @@
     <string name="search_engine">Search Engine</string>
     <string name="debug_mode">Debug Mode</string>
     <string name="debug_mode_summary">Enable logging for troubleshooting</string>
+    <string name="js_fetch_delays_title">JavaScript Fetch Delays</string>
+    <string name="js_fetch_delays_summary">Delays for sites using JavaScript fetch mode with auto-click actions</string>
+    <string name="page_load_delay">Wait after page load</string>
+    <string name="post_action_delay">Wait after last action</string>
+    <string name="delay_seconds_value">%1$ds</string>
     <string name="permissions_granted">All permissions granted</string>
     <string name="permissions_missing">Some permissions missing</string>
 
@@ -155,9 +222,15 @@
     <string name="backup_size">%1$s</string>
     <string name="delete_backup">Delete Backup</string>
     <string name="view_backup">View Content</string>
+    <string name="view_backup_rendered">View Rendered Page</string>
+    <string name="view_backup_source">View Source</string>
     <string name="backup_deleted">Backup deleted</string>
     <string name="confirm_delete_backup">Delete backup?</string>
     <string name="confirm_delete_backup_message">Delete backup for %1$s from %2$s?</string>
+    <string name="backup_viewer_title">Backup Content</string>
+    <string name="toggle_source">Toggle Source</string>
+    <string name="showing_rendered">Rendered</string>
+    <string name="showing_source">Source</string>
 
     <!-- Diff Viewer -->
     <string name="no_previous_version">No previous version to compare</string>
@@ -168,6 +241,12 @@
     <string name="diff_current_version">Current</string>
     <string name="diff_added_lines">+%1$d lines</string>
     <string name="diff_removed_lines">-%1$d lines</string>
+    <string name="show_rendered">Show Rendered</string>
+    <string name="show_text_diff">Show Text Diff</string>
+    <string name="before_version">Before (Previous)</string>
+    <string name="after_version">After (Current)</string>
+    <string name="show_changes_only">Show Changes Only</string>
+    <string name="changes_highlighted">Rendered Page - Changed Elements Highlighted in Red</string>
 
     <!-- Navigation Errors -->
     <string name="error_navigation">Navigation error</string>
@@ -187,14 +266,40 @@
 
     <!-- General -->
     <string name="ok">OK</string>
+    <string name="close">Close</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="loading">Loading…</string>
     <string name="retry">Retry</string>
+    <string name="restart">Restart</string>
 
     <!-- Plurals -->
     <plurals name="elements_selected">
         <item quantity="one">%d element selected</item>
         <item quantity="other">%d elements selected</item>
     </plurals>
+
+    <!-- Edit Actions -->
+    <string name="edit_actions">Edit Actions</string>
+    <string name="add_action_hint">Tap + to add an action</string>
+
+    <!-- Plurals for action count -->
+    <plurals name="actions_registered">
+        <item quantity="zero">No actions registered</item>
+        <item quantity="one">%d action registered</item>
+        <item quantity="other">%d actions registered</item>
+    </plurals>
+
+    <!-- Tap Coordinates Action -->
+    <string name="add_tap_at_coords">Add Tap at Coords</string>
+    <string name="action_type_tap_coordinates">Tap at Coordinates</string>
+    <string name="tap_to_select_location">Tap on the page to select tap location</string>
+    <string name="coordinates_selected">Position: %1$d%%, %2$d%%</string>
+    <string name="tap_confirmed">Tap location selected</string>
+    <string name="tap_coordinates_summary">Tap at (%1$d%%, %2$d%%)</string>
+    <string name="accessibility_required">Accessibility Service Required</string>
+    <string name="accessibility_required_message">To use \"Tap at Coordinates\" actions, you need to enable the SiteWatcher accessibility service. This allows the app to perform taps at specific screen locations.\n\nWould you like to open accessibility settings?</string>
+    <string name="accessibility_service_description">Allows SiteWatcher to perform tap gestures at specific screen coordinates for clicking elements in cookie consent dialogs and iframes.</string>
+    <string name="enable">Enable</string>
+    <string name="tap_label_hint">e.g., Cookie Dialog Button</string>
 </resources>

@@ -4,6 +4,12 @@
         android:id="@+id/action_open_browser"
         android:title="@string/open_in_browser" />
     <item
+        android:id="@+id/action_open_webview"
+        android:title="@string/open_in_webview" />
+    <item
+        android:id="@+id/action_test_actions"
+        android:title="@string/test_actions" />
+    <item
         android:id="@+id/action_edit"
         android:title="@string/edit" />
     <item

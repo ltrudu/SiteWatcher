@@ -45,6 +45,40 @@
         <action
             android:id="@+id/action_addEdit_to_selectorBrowser"
             app:destination="@id/selectorBrowserFragment" />
+        <action
+            android:id="@+id/action_addEdit_to_interactivePicker"
+            app:destination="@id/interactivePickerFragment" />
+        <action
+            android:id="@+id/action_addEdit_to_actionTester"
+            app:destination="@id/actionTesterFragment" />
+        <action
+            android:id="@+id/action_addEdit_to_editActions"
+            app:destination="@id/editActionsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/editActionsFragment"
+        android:name="com.ltrudu.sitewatcher.ui.addedit.EditActionsFragment"
+        android:label="@string/edit_actions">
+        <argument
+            android:name="url"
+            app:argType="string" />
+        <argument
+            android:name="actions_json"
+            app:argType="string"
+            app:nullable="true" />
+        <action
+            android:id="@+id/action_editActions_to_selectorBrowser"
+            app:destination="@id/selectorBrowserFragment" />
+        <action
+            android:id="@+id/action_editActions_to_interactivePicker"
+            app:destination="@id/interactivePickerFragment" />
+        <action
+            android:id="@+id/action_editActions_to_actionTester"
+            app:destination="@id/actionTesterFragment" />
+        <action
+            android:id="@+id/action_editActions_to_coordinatePicker"
+            app:destination="@id/coordinatePickerFragment" />
     </fragment>
 
     <fragment
@@ -55,6 +89,49 @@
         <argument
             android:name="url"
             app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/interactivePickerFragment"
+        android:name="com.ltrudu.sitewatcher.ui.selector.InteractivePickerFragment"
+        android:label="@string/pick_click_element"
+        tools:layout="@layout/fragment_interactive_picker">
+        <argument
+            android:name="url"
+            app:argType="string" />
+        <argument
+            android:name="actions_json"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/actionTesterFragment"
+        android:name="com.ltrudu.sitewatcher.ui.selector.ActionTesterFragment"
+        android:label="@string/test_actions"
+        tools:layout="@layout/fragment_action_tester">
+        <argument
+            android:name="url"
+            app:argType="string" />
+        <argument
+            android:name="actions_json"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/coordinatePickerFragment"
+        android:name="com.ltrudu.sitewatcher.ui.selector.CoordinatePickerFragment"
+        android:label="@string/add_tap_at_coords"
+        tools:layout="@layout/fragment_coordinate_picker">
+        <argument
+            android:name="url"
+            app:argType="string" />
+        <argument
+            android:name="actions_json"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
     </fragment>
 
     <fragment
@@ -81,6 +158,23 @@
         <action
             android:id="@+id/action_backups_to_diffViewer"
             app:destination="@id/diffViewerFragment" />
+        <action
+            android:id="@+id/action_backups_to_backupViewer"
+            app:destination="@id/backupViewerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/backupViewerFragment"
+        android:name="com.ltrudu.sitewatcher.ui.backups.BackupViewerFragment"
+        android:label="@string/backup_viewer_title"
+        tools:layout="@layout/fragment_backup_viewer">
+        <argument
+            android:name="historyId"
+            app:argType="long" />
+        <argument
+            android:name="showRendered"
+            app:argType="boolean"
+            android:defaultValue="true" />
     </fragment>
 
     <fragment

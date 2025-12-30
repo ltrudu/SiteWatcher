@@ -27,7 +27,7 @@ import com.ltrudu.sitewatcher.data.model.WatchedSite;
         SiteHistory.class,
         CheckResult.class
     },
-    version = 3,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters({Converters.class})
@@ -54,6 +54,26 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL("ALTER TABLE watched_sites ADD COLUMN min_word_length INTEGER NOT NULL DEFAULT 3");
+        }
+    };
+
+    /**
+     * Migration from version 3 to 4: Add fetch_mode column.
+     */
+    private static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN fetch_mode TEXT NOT NULL DEFAULT 'STATIC'");
+        }
+    };
+
+    /**
+     * Migration from version 4 to 5: Add auto_click_actions column.
+     */
+    private static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN auto_click_actions TEXT DEFAULT NULL");
         }
     };
 
@@ -94,7 +114,7 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
                             SiteWatcherDatabase.class,
                             DATABASE_NAME
                     )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .fallbackToDestructiveMigration()
                     .build();
                 }

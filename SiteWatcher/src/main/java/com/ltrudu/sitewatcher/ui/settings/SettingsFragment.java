@@ -81,6 +81,10 @@ public class SettingsFragment extends Fragment {
     private TextView tvMaxThreadsValue;
     private Slider sliderHistoryCount;
     private TextView tvHistoryCountValue;
+    private Slider sliderPageLoadDelay;
+    private TextView tvPageLoadDelayValue;
+    private Slider sliderPostActionDelay;
+    private TextView tvPostActionDelayValue;
     private Spinner spinnerSearchEngine;
     private SwitchMaterial switchDebugMode;
 
@@ -149,6 +153,10 @@ public class SettingsFragment extends Fragment {
         tvMaxThreadsValue = view.findViewById(R.id.tvMaxThreadsValue);
         sliderHistoryCount = view.findViewById(R.id.sliderHistoryCount);
         tvHistoryCountValue = view.findViewById(R.id.tvHistoryCountValue);
+        sliderPageLoadDelay = view.findViewById(R.id.sliderPageLoadDelay);
+        tvPageLoadDelayValue = view.findViewById(R.id.tvPageLoadDelayValue);
+        sliderPostActionDelay = view.findViewById(R.id.sliderPostActionDelay);
+        tvPostActionDelayValue = view.findViewById(R.id.tvPostActionDelayValue);
         spinnerSearchEngine = view.findViewById(R.id.spinnerSearchEngine);
         switchDebugMode = view.findViewById(R.id.switchDebugMode);
     }
@@ -218,6 +226,24 @@ public class SettingsFragment extends Fragment {
             }
         });
 
+        // Page Load Delay slider
+        sliderPageLoadDelay.addOnChangeListener((slider, value, fromUser) -> {
+            int intValue = (int) value;
+            tvPageLoadDelayValue.setText(getString(R.string.delay_seconds_value, intValue));
+            if (fromUser) {
+                viewModel.setPageLoadDelay(intValue);
+            }
+        });
+
+        // Post-Action Delay slider
+        sliderPostActionDelay.addOnChangeListener((slider, value, fromUser) -> {
+            int intValue = (int) value;
+            tvPostActionDelayValue.setText(getString(R.string.delay_seconds_value, intValue));
+            if (fromUser) {
+                viewModel.setPostActionDelay(intValue);
+            }
+        });
+
         // Search Engine spinner
         spinnerSearchEngine.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -284,6 +310,20 @@ public class SettingsFragment extends Fragment {
         viewModel.getDebugMode().observe(getViewLifecycleOwner(), enabled -> {
             if (enabled != null) {
                 switchDebugMode.setChecked(enabled);
+            }
+        });
+
+        viewModel.getPageLoadDelay().observe(getViewLifecycleOwner(), delay -> {
+            if (delay != null) {
+                sliderPageLoadDelay.setValue(delay);
+                tvPageLoadDelayValue.setText(getString(R.string.delay_seconds_value, delay));
+            }
+        });
+
+        viewModel.getPostActionDelay().observe(getViewLifecycleOwner(), delay -> {
+            if (delay != null) {
+                sliderPostActionDelay.setValue(delay);
+                tvPostActionDelayValue.setText(getString(R.string.delay_seconds_value, delay));
             }
         });
     }

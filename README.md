@@ -16,6 +16,38 @@
   - **Text Only** - Compare visible text content (ignores HTML tags)
   - **CSS Selector** - Monitor specific page elements only
 
+### Fetch Modes
+- **Static (Fast)** - Quick HTML fetching without JavaScript execution
+- **JavaScript (Dynamic)** - WebView-based fetching with full JavaScript support
+  - Required for Single Page Applications (SPAs), AJAX content, and dynamic pages
+  - Configurable page load delay (0-10 seconds)
+  - Configurable post-action delay (0-10 seconds)
+
+### Auto-Click Actions
+Automate page interactions before content capture - perfect for dismissing cookie consent dialogs, closing popups, or navigating to specific content.
+
+#### Action Types
+- **Click Element** - Click elements using CSS selectors
+- **Wait** - Pause for 1-60 seconds between actions
+- **Tap at Coordinates** - Tap at specific screen positions (for iframes and shadow DOM elements)
+
+#### Built-in Click Patterns
+Pre-configured patterns for common cookie consent frameworks:
+- **Major Frameworks**: OneTrust, Cookiebot, TrustArc, Quantcast, Didomi, CookieYes, Termly, Osano, CookieFirst, Borlabs
+- **Generic Patterns**: Language-specific reject buttons (English, French, German, Spanish)
+- **Site-Specific**: Bandcamp and other popular sites
+
+#### Interactive Element Pickers
+- **CSS Selector Picker** - Tap elements visually to generate selectors
+- **Coordinate Picker** - Tap anywhere to set exact tap positions with crosshair preview
+- **Action Tester** - Test and preview complete action sequences before saving
+
+#### Actions Management
+- **Drag-to-Reorder** - Arrange action execution order by dragging
+- **Enable/Disable** - Toggle individual actions without deleting
+- **FAB Speed Dial** - Quick menu to add Standard Action, Custom Action, or Sleep
+- **Tap-to-Edit** - Tap any action to edit its properties
+
 ### Smart Scheduling
 - **Periodic Checks** - Set intervals from 15 minutes to 10 hours
 - **Daily Schedule** - Check at a specific time each day
@@ -31,28 +63,47 @@
 - **Discover Sites** - Browse the web directly within the app
 - **Quick Add** - One tap to start monitoring any page you visit
 - **Search Integration** - Choose your preferred search engine (DuckDuckGo, Google, Bing, Qwant)
+- **Open in WebView** - Test sites with JavaScript fetch mode
 
 ### Content Comparison
 - **Diff Viewer** - Visual side-by-side comparison of changes
 - **Color Coding** - Green for additions, red for removals
 - **Statistics** - See exactly how many lines changed
+- **Rendered View** - See changes highlighted on the actual page
+
+### View Data
+- **View Comparison Data** - See raw content used for comparison
+- **Word Wrap Toggle** - Better readability for long lines
+- **Mode Display** - Shows current comparison mode and capture timestamp
 
 ### Backup & Restore
 - **Export Sites** - Save your monitored sites to a JSON file
 - **Import Sites** - Restore from backup or share configurations
 - **Content Backups** - View and manage stored page snapshots
+- **Backup Viewer** - View rendered page or source code for any backup
 
-### Advanced Search
-- **Boolean Operators** - Use AND, OR, NOT for precise filtering
-- **Grouping** - Parentheses support for complex queries
-- **Real-time** - Results update as you type (with smart debouncing)
+### Advanced Filtering
+- **Minimum Text Length** - Filter short text blocks (timestamps, counters)
+- **Minimum Word Length** - Filter short words ("a", "an", "the", numbers) in TEXT_ONLY mode
+- **Boolean Search** - AND, OR, NOT operators with grouping support
+
+### Theme System
+8 beautiful themes to personalize the app:
+- Orange Fire (default)
+- Blue Light
+- Forest Green
+- Ocean Blue
+- Synthwave
+- Coastal Sunset
+- Nordic Red
+- Neon Carnival
 
 ### Additional Features
 - **Check All** - Manually trigger checks for all sites at once
 - **Duplicate Sites** - Quickly clone site configurations
 - **Auto-Resume** - Monitoring continues after device restart
 - **Network Options** - WiFi only, mobile data, or both
-- **Dark Mode** - Full Material Design 3 theming support
+- **Debug Mode** - Enable logging for troubleshooting
 
 ## Screenshots
 
@@ -60,8 +111,8 @@
 |:---------:|:-------------:|:-----------------:|
 | *Coming soon* | *Coming soon* | *Coming soon* |
 
-| Diff Viewer | Settings | Search |
-|:-----------:|:--------:|:------:|
+| Diff Viewer | Settings | Action Editor |
+|:-----------:|:--------:|:-------------:|
 | *Coming soon* | *Coming soon* | *Coming soon* |
 
 ## Quick Start
@@ -77,6 +128,7 @@
 When first launching the app, you'll be asked for:
 - **Notifications** - Required to alert you of changes
 - **Exact Alarms** - Required for precise scheduling
+- **Accessibility Service** (optional) - Required only for "Tap at Coordinates" actions
 
 ### Add Your First Site
 
@@ -85,15 +137,38 @@ When first launching the app, you'll be asked for:
 3. Configure monitoring options:
    - **Name** (optional) - Custom display name
    - **Comparison Mode** - How to detect changes
+   - **Fetch Mode** - Static (fast) or JavaScript (dynamic)
    - **Schedule** - When to check
    - **Threshold** - Minimum change percentage to notify
 4. Tap **Save**
+
+### Add Auto-Click Actions (Optional)
+
+For sites with cookie consent dialogs or dynamic content:
+
+1. In the Add/Edit screen, set **Fetch Mode** to "JavaScript"
+2. Scroll to **Auto-Click Actions** section
+3. Tap the **+** FAB to add actions:
+   - **Add Standard Action** - Choose from built-in patterns
+   - **Add Custom Action** - Pick elements visually
+   - **Add Sleep** - Add delays between actions
+4. Drag actions to reorder, toggle to enable/disable
+5. Tap **Test Actions** to preview the sequence
 
 ### Monitor Changes
 
 - Sites are checked automatically based on your schedule
 - Pull down to see the latest status
-- Long-press a site for quick actions (Edit, Check Now, View Diff, Delete)
+- Long-press a site for quick actions:
+  - Open in Browser
+  - Open in WebView
+  - Test Actions
+  - Edit
+  - Duplicate
+  - Check Now
+  - View Changes
+  - View Data
+  - Delete
 
 ## Configuration Guide
 
@@ -104,6 +179,21 @@ When first launching the app, you'll be asked for:
 | **Full HTML** | Technical changes | Detects any change including invisible elements |
 | **Text Only** | Content updates | Ignores styling, focuses on readable text |
 | **CSS Selector** | Specific elements | Monitor only matching elements (e.g., `.price`, `#stock-status`) |
+
+### Fetch Modes
+
+| Mode | Best For | Description |
+|------|----------|-------------|
+| **Static** | Simple pages | Fast HTML fetch, no JavaScript |
+| **JavaScript** | Dynamic content | Full WebView rendering, supports SPAs and AJAX |
+
+### Auto-Click Action Types
+
+| Type | Best For | Description |
+|------|----------|-------------|
+| **Click Element** | Buttons, links | Uses CSS selector to find and click element |
+| **Wait** | Animations, loads | Pauses 1-60 seconds before next action |
+| **Tap at Coordinates** | iframes, shadow DOM | Taps at exact screen position via Accessibility Service |
 
 ### Schedule Types
 
@@ -133,33 +223,39 @@ When first launching the app, you'll be asked for:
 ### Requirements
 - **Android 14** (API 34) or higher
 - **Permissions**: Notifications, Exact Alarms
+- **Optional**: Accessibility Service (for Tap at Coordinates actions)
 
 ### Architecture
 - **Pattern**: Single Activity with Navigation Component, MVVM with Repository
-- **Database**: Room for persistent storage
-- **Networking**: OkHttp + Jsoup for content fetching and parsing
+- **Database**: Room for persistent storage with migrations
+- **Networking**: OkHttp + Jsoup for static content, WebView for JavaScript
 - **Background**: AlarmManager with exact alarms
+- **Accessibility**: Custom service for tap gesture execution
 
 ### Project Structure
 ```
 com.ltrudu.sitewatcher/
+├── accessibility/     # Accessibility service for tap gestures
 ├── data/
 │   ├── dao/           # Room DAOs
-│   ├── database/      # Room Database
-│   ├── model/         # Entity classes
+│   ├── database/      # Room Database with migrations
+│   ├── model/         # Entity classes (WatchedSite, AutoClickAction, etc.)
 │   └── repository/    # Data access layer
 ├── ui/
 │   ├── sitelist/      # Main site list
-│   ├── addedit/       # Add/Edit forms
+│   ├── addedit/       # Add/Edit forms and action management
+│   ├── selector/      # Interactive pickers (CSS, coordinates, tester)
 │   ├── browser/       # Built-in browser
 │   ├── diff/          # Diff viewer
-│   ├── backups/       # Backup manager
+│   ├── dataviewer/    # View comparison data
+│   ├── backups/       # Backup manager and viewer
 │   ├── settings/      # App settings
+│   ├── view/          # Custom views (TapCrosshairView)
 │   └── about/         # About screen
 ├── background/        # Schedulers and receivers
-├── network/           # HTTP client and comparators
+├── network/           # HTTP client, WebView fetcher, auto-click executor
 ├── notification/      # Notification handling
-└── util/              # Utilities and helpers
+└── util/              # Utilities, theme manager, logger
 ```
 
 ## Building from Source
@@ -213,10 +309,22 @@ Contributions are welcome! Here's how you can help:
 - Check that notifications are enabled for the app in system settings
 - Ensure the change exceeds your configured threshold
 
+### Auto-click actions not working?
+- Ensure **Fetch Mode** is set to "JavaScript"
+- Check that actions are enabled (toggle is on)
+- Use **Test Actions** to verify the sequence works
+- For Tap at Coordinates, enable the **Accessibility Service**
+
+### Tap at Coordinates not working?
+- Enable **SiteWatcher Accessibility Service** in Android settings
+- The app will prompt you when TAP_COORDINATES actions exist
+- Ensure coordinates are correct using the Coordinate Picker
+
 ### High battery usage?
 - Increase check intervals to reduce frequency
 - Use WiFi-only mode to avoid mobile data checks
 - Reduce the number of monitored sites
+- Use Static fetch mode when JavaScript isn't needed
 
 ## License
 
@@ -232,7 +340,6 @@ You are free to copy, modify, publish, use, compile, sell, or distribute this so
 
 ---
 
-Made with care for people who need to stay informed.
+<p align="center">Made with care for people who need to stay informed.</p>
 
 <p align="center">❤️ Made with <a href="https://claude.ai">Claude.ai</a> ❤️</p>
-

@@ -60,7 +60,12 @@ public class CoordinatePickerFragment extends Fragment {
     private static final String TAG = "CoordinatePicker";
     private static final String ARG_URL = "url";
     private static final String ARG_ACTIONS_JSON = "actions_json";
-    private static final String FRAGMENT_RESULT_KEY = "coordinatePickerResult";
+    private static final String ARG_RESULT_KEY = "result_key";
+    private static final String ARG_ACTION_ID = "action_id";
+    private static final String DEFAULT_RESULT_KEY = "coordinatePickerResult";
+
+    private String fragmentResultKey = DEFAULT_RESULT_KEY;
+    private String actionIdToEdit = null;
 
     /**
      * Fragment states.
@@ -123,6 +128,8 @@ public class CoordinatePickerFragment extends Fragment {
         if (getArguments() != null) {
             targetUrl = getArguments().getString(ARG_URL, "");
             actionsJson = getArguments().getString(ARG_ACTIONS_JSON, null);
+            fragmentResultKey = getArguments().getString(ARG_RESULT_KEY, DEFAULT_RESULT_KEY);
+            actionIdToEdit = getArguments().getString(ARG_ACTION_ID, null);
         }
 
         // Parse actions from JSON
@@ -566,8 +573,13 @@ public class CoordinatePickerFragment extends Fragment {
         Bundle result = new Bundle();
         result.putFloat("tapX", selectedX);
         result.putFloat("tapY", selectedY);
-        getParentFragmentManager().setFragmentResult(FRAGMENT_RESULT_KEY, result);
-        Logger.d(TAG, "Returning coordinates: " + selectedX + ", " + selectedY);
+        if (actionIdToEdit != null) {
+            result.putString("action_id", actionIdToEdit);
+        }
+        getParentFragmentManager().setFragmentResult(fragmentResultKey, result);
+        Logger.d(TAG, "Returning coordinates: " + selectedX + ", " + selectedY +
+                " with key: " + fragmentResultKey +
+                (actionIdToEdit != null ? " for action: " + actionIdToEdit : " (new action)"));
         navigateBack();
     }
 

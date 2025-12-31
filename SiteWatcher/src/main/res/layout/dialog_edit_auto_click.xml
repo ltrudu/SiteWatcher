@@ -93,6 +93,31 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Tap Coordinates Input (for TAP_COORDINATES action) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/coordinatesInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="@string/coordinates_selected"
+        android:visibility="gone"
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_touch_app"
+        app:endIconContentDescription="@string/tap_to_select_location"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        tools:visibility="visible">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editCoordinates"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:focusable="false"
+            android:clickable="false"
+            tools:text="Position: 50%, 30%" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
     <!-- Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"

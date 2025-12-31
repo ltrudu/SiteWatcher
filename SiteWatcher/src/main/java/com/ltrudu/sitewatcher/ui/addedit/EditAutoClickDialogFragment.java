@@ -46,6 +46,8 @@ public class EditAutoClickDialogFragment extends DialogFragment {
     // Fragment result key for selector picker
     private static final String SELECTOR_RESULT_KEY = "autoClickSelectorResult";
     private static final String SELECTOR_KEY = "selector";
+    // Use a DIFFERENT key for editing coordinates (vs adding new)
+    private static final String COORDINATE_PICKER_EDIT_RESULT_KEY = "coordinatePickerEditResult";
 
     // Views
     private Spinner actionTypeSpinner;
@@ -55,6 +57,8 @@ public class EditAutoClickDialogFragment extends DialogFragment {
     private TextInputEditText selectorEditText;
     private TextInputLayout waitInputLayout;
     private TextInputEditText waitSecondsEditText;
+    private TextInputLayout coordinatesInputLayout;
+    private TextInputEditText coordinatesEditText;
     private MaterialButton cancelButton;
     private MaterialButton saveButton;
 
@@ -62,6 +66,8 @@ public class EditAutoClickDialogFragment extends DialogFragment {
     private AutoClickAction existingAction;
     private String siteUrl;
     private boolean isEditMode = false;
+    private float pendingTapX = -1f;
+    private float pendingTapY = -1f;
 
     /**
      * Create a new instance for adding a new action.
@@ -177,6 +183,8 @@ public class EditAutoClickDialogFragment extends DialogFragment {
         selectorEditText = view.findViewById(R.id.editSelector);
         waitInputLayout = view.findViewById(R.id.waitInputLayout);
         waitSecondsEditText = view.findViewById(R.id.editWaitSeconds);
+        coordinatesInputLayout = view.findViewById(R.id.coordinatesInputLayout);
+        coordinatesEditText = view.findViewById(R.id.editCoordinates);
         cancelButton = view.findViewById(R.id.buttonCancel);
         saveButton = view.findViewById(R.id.buttonSave);
     }
@@ -232,6 +240,9 @@ public class EditAutoClickDialogFragment extends DialogFragment {
         // Selector input end icon click (opens selector browser)
         selectorInputLayout.setEndIconOnClickListener(v -> navigateToSelectorBrowser());
 
+        // Coordinates input end icon click (opens coordinate picker)
+        coordinatesInputLayout.setEndIconOnClickListener(v -> navigateToCoordinatePicker());
+
         // Text watchers for validation
         labelEditText.addTextChangedListener(new SimpleTextWatcher() {
             @Override
@@ -281,7 +292,14 @@ public class EditAutoClickDialogFragment extends DialogFragment {
             } else if (existingAction.getType() == ActionType.WAIT) {
                 waitSecondsEditText.setText(String.valueOf(existingAction.getWaitSeconds()));
             }
-            // TAP_COORDINATES: coordinates are read-only, just show them in the summary
+            // TAP_COORDINATES: show coordinates in the field
+            if (existingAction.getType() == ActionType.TAP_COORDINATES) {
+                int xPercent = Math.round(existingAction.getTapX() * 100);
+                int yPercent = Math.round(existingAction.getTapY() * 100);
+                coordinatesEditText.setText(getString(R.string.coordinates_selected, xPercent, yPercent));
+                pendingTapX = existingAction.getTapX();
+                pendingTapY = existingAction.getTapY();
+            }
         }
 
         validateInput();
@@ -291,13 +309,16 @@ public class EditAutoClickDialogFragment extends DialogFragment {
         if (type == ActionType.CLICK) {
             selectorInputLayout.setVisibility(View.VISIBLE);
             waitInputLayout.setVisibility(View.GONE);
+            coordinatesInputLayout.setVisibility(View.GONE);
         } else if (type == ActionType.WAIT) {
             selectorInputLayout.setVisibility(View.GONE);
             waitInputLayout.setVisibility(View.VISIBLE);
+            coordinatesInputLayout.setVisibility(View.GONE);
         } else {
-            // TAP_COORDINATES - hide both, coordinates are set via picker
+            // TAP_COORDINATES - show coordinates field
             selectorInputLayout.setVisibility(View.GONE);
             waitInputLayout.setVisibility(View.GONE);
+            coordinatesInputLayout.setVisibility(View.VISIBLE);
         }
         validateInput();
     }
@@ -333,10 +354,11 @@ public class EditAutoClickDialogFragment extends DialogFragment {
                 }
             }
         } else if (type == ActionType.TAP_COORDINATES) {
-            // TAP_COORDINATES: must be editing existing action with valid coordinates
-            if (existingAction == null || existingAction.getType() != ActionType.TAP_COORDINATES) {
-                // Can't create new TAP_COORDINATES from this dialog - use CoordinatePicker
-                isValid = false;
+            // TAP_COORDINATES: need valid coordinates
+            if (pendingTapX < 0 || pendingTapY < 0) {
+                if (existingAction == null || existingAction.getType() != ActionType.TAP_COORDINATES) {
+                    isValid = false;
+                }
             }
         }
 
@@ -361,8 +383,14 @@ public class EditAutoClickDialogFragment extends DialogFragment {
                 action.setSelector(null);
                 int waitSeconds = parseWaitSeconds();
                 action.setWaitSeconds(waitSeconds);
+            } else if (type == ActionType.TAP_COORDINATES) {
+                action.setSelector(null);
+                action.setWaitSeconds(0);
+                if (pendingTapX >= 0 && pendingTapY >= 0) {
+                    action.setTapX(pendingTapX);
+                    action.setTapY(pendingTapY);
+                }
             }
-            // TAP_COORDINATES: keep existing coordinates, just update label
         } else {
             // Create new action
             if (type == ActionType.CLICK) {
@@ -382,9 +410,22 @@ public class EditAutoClickDialogFragment extends DialogFragment {
                         true,  // enabled
                         0      // order will be set by parent
                 );
+            } else if (type == ActionType.TAP_COORDINATES) {
+                if (pendingTapX >= 0 && pendingTapY >= 0) {
+                    action = AutoClickAction.createTapCoordinatesAction(
+                            java.util.UUID.randomUUID().toString(),
+                            label,
+                            pendingTapX,
+                            pendingTapY,
+                            true,
+                            0
+                    );
+                } else {
+                    dismiss();
+                    return;
+                }
             } else {
-                // TAP_COORDINATES should not be created from this dialog
-                // Return without saving
+                // Unknown type - return without saving
                 dismiss();
                 return;
             }
@@ -437,6 +478,34 @@ public class EditAutoClickDialogFragment extends DialogFragment {
         }
     }
 
+    private void navigateToCoordinatePicker() {
+        if (TextUtils.isEmpty(siteUrl)) {
+            coordinatesInputLayout.setError(getString(R.string.url_required_for_selector));
+            return;
+        }
+
+        coordinatesInputLayout.setError(null);
+
+        try {
+            Bundle args = new Bundle();
+            args.putString("url", siteUrl);
+            // Use a different result key for editing and pass the action ID
+            args.putString("result_key", COORDINATE_PICKER_EDIT_RESULT_KEY);
+            if (existingAction != null) {
+                args.putString("action_id", existingAction.getId());
+            }
+
+            dismiss();
+
+            if (getParentFragment() != null && getParentFragment().getView() != null) {
+                NavController navController = Navigation.findNavController(getParentFragment().getView());
+                navController.navigate(R.id.coordinatePickerFragment, args);
+            }
+        } catch (Exception e) {
+            Logger.e(TAG, "Error navigating to coordinate picker", e);
+        }
+    }
+
     private void listenForSelectorResult() {
         // Listen for result from SelectorBrowserFragment
         getParentFragmentManager().setFragmentResultListener(
@@ -450,6 +519,10 @@ public class EditAutoClickDialogFragment extends DialogFragment {
                     }
                 }
         );
+
+        // Note: CoordinatePickerFragment result is handled by EditActionsFragment
+        // since this dialog is dismissed before navigating to the picker.
+        // EditActionsFragment uses the action_id to update the correct action.
     }
 
     @NonNull

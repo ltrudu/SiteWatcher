@@ -234,6 +234,13 @@ public class AutoClickActionAdapter extends RecyclerView.Adapter<AutoClickAction
             buttonEdit.setVisibility(View.GONE);
             buttonDelete.setVisibility(View.GONE);
 
+            // Set up click listener to open edit view
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onEdit(action);
+                }
+            });
+
             // Set up long press listener for context menu
             itemView.setOnLongClickListener(v -> {
                 if (listener != null) {

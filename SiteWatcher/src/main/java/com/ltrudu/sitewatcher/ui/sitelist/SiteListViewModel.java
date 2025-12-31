@@ -8,6 +8,8 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.ltrudu.sitewatcher.background.CheckScheduler;
+import com.ltrudu.sitewatcher.data.model.ActionType;
+import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.data.repository.SiteRepository;
 import com.ltrudu.sitewatcher.network.SiteChecker;
@@ -222,5 +224,28 @@ public class SiteListViewModel extends AndroidViewModel {
                 });
             }
         }
+    }
+
+    /**
+     * Check if any site has TAP_COORDINATES actions configured.
+     * Used to determine if accessibility service prompt is needed at startup.
+     *
+     * @return true if any site has TAP_COORDINATES actions
+     */
+    public boolean hasTapCoordinatesActions() {
+        List<WatchedSite> sites = allSites.getValue();
+        if (sites == null || sites.isEmpty()) {
+            return false;
+        }
+
+        for (WatchedSite site : sites) {
+            List<AutoClickAction> actions = site.getAutoClickActions();
+            for (AutoClickAction action : actions) {
+                if (action.getType() == ActionType.TAP_COORDINATES && action.isEnabled()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

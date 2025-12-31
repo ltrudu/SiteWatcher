@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -31,6 +32,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.ltrudu.sitewatcher.R;
+import com.ltrudu.sitewatcher.accessibility.TapAccessibilityService;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.util.Logger;
 import com.ltrudu.sitewatcher.util.SearchQueryParser;
@@ -57,6 +59,9 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     // Handler for search debounce
     private final Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
+
+    // Flag to avoid showing accessibility dialog multiple times per session
+    private boolean accessibilityDialogShown = false;
 
     // Handler for periodic UI refresh
     private final Handler refreshHandler = new Handler(Looper.getMainLooper());
@@ -238,6 +243,9 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
             Logger.d(TAG, "Sites updated: " + (sites != null ? sites.size() : 0) + " sites");
             adapter.submitList(sites);
             updateEmptyState();
+
+            // Check if accessibility service is needed for TAP_COORDINATES actions
+            checkAccessibilityServiceNeeded();
         });
 
         // Observe checking events to update the progress indicator
@@ -433,6 +441,53 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
                 .setMessage(R.string.confirm_delete_message)
                 .setPositiveButton(R.string.delete, (dialog, which) -> {
                     viewModel.deleteSite(site);
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    /**
+     * Check if accessibility service is needed but not enabled.
+     * Shows a prompt dialog if TAP_COORDINATES actions exist but service is disabled.
+     */
+    private void checkAccessibilityServiceNeeded() {
+        // Only show once per session
+        if (accessibilityDialogShown) {
+            return;
+        }
+
+        // Check if any site has TAP_COORDINATES actions
+        if (!viewModel.hasTapCoordinatesActions()) {
+            return;
+        }
+
+        // Check if accessibility service is already enabled
+        if (TapAccessibilityService.isServiceEnabled()) {
+            return;
+        }
+
+        // Show the accessibility dialog
+        accessibilityDialogShown = true;
+        Logger.d(TAG, "TAP_COORDINATES actions found but accessibility not enabled, showing prompt");
+        showAccessibilityDialog();
+    }
+
+    /**
+     * Show dialog prompting user to enable accessibility service.
+     */
+    private void showAccessibilityDialog() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.accessibility_required)
+                .setMessage(R.string.accessibility_required_message)
+                .setPositiveButton(R.string.enable, (dialog, which) -> {
+                    // Open accessibility settings
+                    Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                    try {
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        Logger.e(TAG, "Failed to open accessibility settings", e);
+                        Toast.makeText(requireContext(), R.string.error_navigation, Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();

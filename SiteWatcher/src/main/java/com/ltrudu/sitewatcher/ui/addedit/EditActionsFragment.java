@@ -50,6 +50,7 @@ public class EditActionsFragment extends Fragment {
     private static final String INTERACTIVE_PICKER_RESULT_KEY = "interactivePickerResult";
     private static final String SELECTOR_KEY = "selector";
     private static final String COORDINATE_PICKER_RESULT_KEY = "coordinatePickerResult";
+    private static final String COORDINATE_PICKER_EDIT_RESULT_KEY = "coordinatePickerEditResult";
 
     // Views
     private RecyclerView recyclerActions;
@@ -266,7 +267,7 @@ public class EditActionsFragment extends Fragment {
                 }
         );
 
-        // Listen for CoordinatePickerFragment result (from parent fragment manager)
+        // Listen for CoordinatePickerFragment result (from parent fragment manager) - for NEW actions
         getParentFragmentManager().setFragmentResultListener(
                 COORDINATE_PICKER_RESULT_KEY,
                 getViewLifecycleOwner(),
@@ -275,6 +276,20 @@ public class EditActionsFragment extends Fragment {
                     float tapY = result.getFloat("tapY", -1f);
                     if (tapX >= 0 && tapY >= 0) {
                         addTapCoordinatesAction(tapX, tapY);
+                    }
+                }
+        );
+
+        // Listen for CoordinatePickerFragment EDIT result - for updating EXISTING actions
+        getParentFragmentManager().setFragmentResultListener(
+                COORDINATE_PICKER_EDIT_RESULT_KEY,
+                getViewLifecycleOwner(),
+                (requestKey, result) -> {
+                    float tapX = result.getFloat("tapX", -1f);
+                    float tapY = result.getFloat("tapY", -1f);
+                    String actionId = result.getString("action_id");
+                    if (tapX >= 0 && tapY >= 0 && actionId != null) {
+                        updateTapCoordinatesAction(actionId, tapX, tapY);
                     }
                 }
         );
@@ -452,6 +467,32 @@ public class EditActionsFragment extends Fragment {
         actions.add(action);
         Logger.d(TAG, "Added tap coordinates action: " + label);
         refreshActionsList();
+    }
+
+    /**
+     * Update an existing TAP_COORDINATES action with new coordinates.
+     *
+     * @param actionId The ID of the action to update
+     * @param tapX     New X coordinate (0.0-1.0)
+     * @param tapY     New Y coordinate (0.0-1.0)
+     */
+    private void updateTapCoordinatesAction(String actionId, float tapX, float tapY) {
+        for (AutoClickAction action : actions) {
+            if (action.getId().equals(actionId)) {
+                action.setTapX(tapX);
+                action.setTapY(tapY);
+
+                // Update label to reflect new coordinates
+                int xPercent = Math.round(tapX * 100);
+                int yPercent = Math.round(tapY * 100);
+                action.setLabel(getString(R.string.tap_coordinates_summary, xPercent, yPercent));
+
+                Logger.d(TAG, "Updated tap coordinates action: " + actionId + " to (" + xPercent + "%, " + yPercent + "%)");
+                refreshActionsList();
+                return;
+            }
+        }
+        Logger.w(TAG, "Action not found for update: " + actionId);
     }
 
     private void navigateToActionTester() {

@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
+import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.ScheduleType;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 
@@ -42,8 +43,14 @@ public class SiteExporter {
     private static final String KEY_THRESHOLD_PERCENT = "thresholdPercent";
     private static final String KEY_IS_ENABLED = "isEnabled";
 
+    // v2 fields
+    private static final String KEY_MIN_TEXT_LENGTH = "minTextLength";
+    private static final String KEY_MIN_WORD_LENGTH = "minWordLength";
+    private static final String KEY_FETCH_MODE = "fetchMode";
+    private static final String KEY_AUTO_CLICK_ACTIONS = "autoClickActions";
+
     // Current export format version
-    private static final int CURRENT_VERSION = 1;
+    private static final int CURRENT_VERSION = 2;
 
     /**
      * Generates a filename with the format: SiteWatcher_YY-MM-DD_HH-MM-SS.sw
@@ -131,6 +138,17 @@ public class SiteExporter {
         json.put(KEY_THRESHOLD_PERCENT, site.getThresholdPercent());
         json.put(KEY_IS_ENABLED, site.isEnabled());
 
+        // v2 fields
+        json.put(KEY_MIN_TEXT_LENGTH, site.getMinTextLength());
+        json.put(KEY_MIN_WORD_LENGTH, site.getMinWordLength());
+        json.put(KEY_FETCH_MODE, site.getFetchMode().name());
+
+        // Export auto-click actions as JSON array
+        String actionsJson = site.getAutoClickActionsJson();
+        if (actionsJson != null && !actionsJson.isEmpty()) {
+            json.put(KEY_AUTO_CLICK_ACTIONS, new JSONArray(actionsJson));
+        }
+
         return json;
     }
 
@@ -178,6 +196,26 @@ public class SiteExporter {
             site.setCssSelector(json.optString(KEY_CSS_SELECTOR, null));
             site.setThresholdPercent(json.optInt(KEY_THRESHOLD_PERCENT, 5));
             site.setEnabled(json.optBoolean(KEY_IS_ENABLED, true));
+
+            // v2 fields (with defaults for v1 imports)
+            site.setMinTextLength(json.optInt(KEY_MIN_TEXT_LENGTH, 10));
+            site.setMinWordLength(json.optInt(KEY_MIN_WORD_LENGTH, 3));
+
+            // Parse fetch mode
+            String fetchModeStr = json.optString(KEY_FETCH_MODE, FetchMode.STATIC.name());
+            try {
+                site.setFetchMode(FetchMode.valueOf(fetchModeStr));
+            } catch (IllegalArgumentException e) {
+                site.setFetchMode(FetchMode.STATIC);
+            }
+
+            // Parse auto-click actions
+            if (json.has(KEY_AUTO_CLICK_ACTIONS)) {
+                JSONArray actionsArray = json.optJSONArray(KEY_AUTO_CLICK_ACTIONS);
+                if (actionsArray != null) {
+                    site.setAutoClickActionsJson(actionsArray.toString());
+                }
+            }
 
             // Reset runtime state for imported sites
             site.setId(0); // Will be auto-generated

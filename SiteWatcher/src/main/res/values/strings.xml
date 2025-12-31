@@ -182,6 +182,7 @@
     <string name="export_failed">Export failed: %1$s</string>
     <string name="import_success">Imported %1$d sites successfully</string>
     <string name="import_failed">Import failed: %1$s</string>
+    <string name="import_invalid_file_type">Please select a JSON file</string>
     <string name="import_confirm_title">Import Sites</string>
     <string name="import_confirm_message">This will import %1$d sites. Existing sites with the same URL will be skipped. Continue?</string>
     <string name="no_sites_to_export">No sites to export</string>

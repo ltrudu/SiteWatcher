@@ -242,6 +242,11 @@ public class SiteRepository {
                 duplicate.setCssSelector(site.getCssSelector());
                 duplicate.setThresholdPercent(site.getThresholdPercent());
                 duplicate.setEnabled(site.isEnabled());
+                // v2 fields
+                duplicate.setMinTextLength(site.getMinTextLength());
+                duplicate.setMinWordLength(site.getMinWordLength());
+                duplicate.setFetchMode(site.getFetchMode());
+                duplicate.setAutoClickActionsJson(site.getAutoClickActionsJson());
                 duplicate.setCreatedAt(System.currentTimeMillis());
                 duplicate.setUpdatedAt(System.currentTimeMillis());
 

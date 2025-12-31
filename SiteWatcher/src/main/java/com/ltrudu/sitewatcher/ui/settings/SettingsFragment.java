@@ -51,6 +51,7 @@ import android.widget.ArrayAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,7 +64,7 @@ import java.util.concurrent.Executors;
 public class SettingsFragment extends Fragment {
 
     private static final String TAG = "SettingsFragment";
-    private static final String MIME_TYPE = "application/octet-stream";
+    private static final String MIME_TYPE_JSON = "application/json";
 
     private SettingsViewModel viewModel;
     private SiteRepository repository;
@@ -102,14 +103,22 @@ public class SettingsFragment extends Fragment {
                     this::onPermissionsResult);
 
     // SAF launcher for creating export file
-    private final ActivityResultLauncher<String> exportLauncher =
-            registerForActivityResult(new ActivityResultContracts.CreateDocument(MIME_TYPE),
-                    this::onExportFileCreated);
+    private final ActivityResultLauncher<Intent> exportLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                            onExportFileCreated(result.getData().getData());
+                        }
+                    });
 
     // SAF launcher for opening import file
-    private final ActivityResultLauncher<String[]> importLauncher =
-            registerForActivityResult(new ActivityResultContracts.OpenDocument(),
-                    this::onImportFileSelected);
+    private final ActivityResultLauncher<Intent> importLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                            onImportFileSelected(result.getData().getData());
+                        }
+                    });
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -533,7 +542,11 @@ public class SettingsFragment extends Fragment {
                 } else {
                     // Launch SAF file picker with suggested filename
                     String filename = SiteExporter.generateFilename();
-                    exportLauncher.launch(filename);
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType(MIME_TYPE_JSON);
+                    intent.putExtra(Intent.EXTRA_TITLE, filename);
+                    exportLauncher.launch(intent);
                 }
             });
         });
@@ -543,7 +556,10 @@ public class SettingsFragment extends Fragment {
      * Starts the import process by opening the file picker.
      */
     private void startImport() {
-        importLauncher.launch(new String[]{MIME_TYPE, "*/*"});
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(MIME_TYPE_JSON);
+        importLauncher.launch(intent);
     }
 
     /**
@@ -590,6 +606,14 @@ public class SettingsFragment extends Fragment {
     private void onImportFileSelected(@Nullable Uri uri) {
         if (uri == null) {
             Logger.d(TAG, "Import cancelled by user");
+            return;
+        }
+
+        // Validate file extension
+        String fileName = getFileNameFromUri(uri);
+        if (fileName == null || !fileName.toLowerCase(Locale.US).endsWith(".json")) {
+            Logger.w(TAG, "Invalid file type selected: " + fileName);
+            Toast.makeText(requireContext(), R.string.import_invalid_file_type, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -740,6 +764,31 @@ public class SettingsFragment extends Fragment {
                 // Don't report error to user, initial check failure is not critical
             }
         });
+    }
+
+    /**
+     * Gets the file name from a URI using ContentResolver.
+     */
+    @Nullable
+    private String getFileNameFromUri(@NonNull Uri uri) {
+        String fileName = null;
+        if ("content".equals(uri.getScheme())) {
+            try (android.database.Cursor cursor = requireContext().getContentResolver()
+                    .query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                    if (nameIndex >= 0) {
+                        fileName = cursor.getString(nameIndex);
+                    }
+                }
+            } catch (Exception e) {
+                Logger.e(TAG, "Error getting file name from URI", e);
+            }
+        }
+        if (fileName == null) {
+            fileName = uri.getLastPathSegment();
+        }
+        return fileName;
     }
 
     /**

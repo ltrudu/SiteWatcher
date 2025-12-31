@@ -53,7 +53,7 @@ public class SiteExporter {
     private static final int CURRENT_VERSION = 2;
 
     /**
-     * Generates a filename with the format: SiteWatcher_YY-MM-DD_HH-MM-SS.sw
+     * Generates a filename with the format: SiteWatcher_YY-MM-DD_HH-MM-SS.json
      *
      * @return The generated filename
      */
@@ -61,7 +61,7 @@ public class SiteExporter {
     public static String generateFilename() {
         SimpleDateFormat sdf = new SimpleDateFormat("yy-MM-dd_HH-mm-ss", Locale.US);
         String timestamp = sdf.format(new Date());
-        return "SiteWatcher_" + timestamp + ".sw";
+        return "SiteWatcher_" + timestamp + ".json";
     }
 
     /**
@@ -145,6 +145,9 @@ public class SiteExporter {
 
         // Export auto-click actions as JSON array
         String actionsJson = site.getAutoClickActionsJson();
+        Logger.d(TAG, "Exporting site: " + site.getUrl() +
+                ", fetchMode=" + site.getFetchMode().name() +
+                ", actionsJson=" + (actionsJson != null ? actionsJson.length() + " chars" : "null"));
         if (actionsJson != null && !actionsJson.isEmpty()) {
             json.put(KEY_AUTO_CLICK_ACTIONS, new JSONArray(actionsJson));
         }
@@ -216,6 +219,11 @@ public class SiteExporter {
                     site.setAutoClickActionsJson(actionsArray.toString());
                 }
             }
+
+            Logger.d(TAG, "Imported site: " + url +
+                    ", fetchMode=" + site.getFetchMode().name() +
+                    ", actionsJson=" + (site.getAutoClickActionsJson() != null ?
+                            site.getAutoClickActionsJson().length() + " chars" : "null"));
 
             // Reset runtime state for imported sites
             site.setId(0); // Will be auto-generated

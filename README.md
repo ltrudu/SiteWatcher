@@ -334,6 +334,8 @@ You are free to copy, modify, publish, use, compile, sell, or distribute this so
 
 ## Acknowledgments
 
+Dependencies are subject to their own licences. Check links for more informations.
+
 - [OkHttp](https://square.github.io/okhttp/) - HTTP client
 - [Jsoup](https://jsoup.org/) - HTML parser
 - [Material Design 3](https://m3.material.io/) - UI components

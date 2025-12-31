@@ -109,11 +109,17 @@ Pre-configured patterns for common cookie consent frameworks:
 
 | Site List | Add/Edit Site | Browser Discovery |
 |:---------:|:-------------:|:-----------------:|
-| *Coming soon* | *Coming soon* | *Coming soon* |
+| <img width="108" height="240" alt="image" src="https://github.com/user-attachments/assets/45449d2b-6f8e-403f-85d3-8224169e35ce" />
+ | <img width="108" height="240" alt="image" src="https://github.com/user-attachments/assets/40ec7c7f-f06c-4e92-bc67-45f16d687704" />
+ | <img width="108" height="240" alt="image" src="https://github.com/user-attachments/assets/29390a9d-5e03-4c2f-abff-ccad5c609134" />
+ |
 
 | Diff Viewer | Settings | Action Editor |
 |:-----------:|:--------:|:-------------:|
-| *Coming soon* | *Coming soon* | *Coming soon* |
+| <img width="108" height="240" alt="image" src="https://github.com/user-attachments/assets/003a4ac1-20ad-4d57-b5fc-163418adf93f" />
+ | <img width="108" height="240" alt="image" src="https://github.com/user-attachments/assets/db397e64-513f-4012-8612-c1d6d0eccf2f" />
+ | <img width="108" height="240" alt="image" src="https://github.com/user-attachments/assets/3c9bbc3e-477e-4106-85dd-977904a8990b" />
+ |
 
 ## Quick Start
 

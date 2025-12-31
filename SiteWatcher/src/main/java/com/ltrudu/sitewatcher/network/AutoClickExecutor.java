@@ -68,6 +68,18 @@ public class AutoClickExecutor {
         default void onActionResult(String actionId, boolean success) {
             // Optional callback
         }
+
+        /**
+         * Called just before a TAP_COORDINATES action is executed.
+         * Provides the screen coordinates where the tap will occur.
+         * Use this for visual feedback (e.g., showing a crosshair).
+         *
+         * @param screenX Absolute screen X coordinate
+         * @param screenY Absolute screen Y coordinate
+         */
+        default void onBeforeTap(float screenX, float screenY) {
+            // Optional callback for tap visual feedback
+        }
     }
 
     private final Handler mainHandler;
@@ -247,7 +259,7 @@ public class AutoClickExecutor {
 
         } else if (action.getType() == ActionType.TAP_COORDINATES) {
             // TAP_COORDINATES action: use accessibility service
-            executeTapCoordinatesAction(webView, action, result -> {
+            executeTapCoordinatesAction(webView, action, callback, result -> {
                 callback.onActionResult(action.getId(), result);
 
                 mainHandler.postDelayed(() -> {
@@ -309,12 +321,19 @@ public class AutoClickExecutor {
     }
 
     /**
+     * Delay after showing tap visual before actually tapping.
+     * This allows the user to see the crosshair before the tap happens.
+     */
+    private static final int TAP_VISUAL_DELAY_MS = 400;
+
+    /**
      * Execute a TAP_COORDINATES action using the accessibility service.
      * Assumes fullscreen mode has already been entered if needed.
      */
     private void executeTapCoordinatesAction(
             @NonNull WebView webView,
             @NonNull AutoClickAction action,
+            @NonNull ExecutionCallback executionCallback,
             @NonNull TapResultCallback callback) {
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
@@ -345,16 +364,22 @@ public class AutoClickExecutor {
                 "), size " + webView.getWidth() + "x" + webView.getHeight() +
                 ", tapping at (" + screenX + ", " + screenY + ")");
 
-        boolean dispatched = service.performTap(screenX, screenY);
+        // Notify callback about the tap location for visual feedback
+        executionCallback.onBeforeTap(screenX, screenY);
 
-        if (dispatched) {
-            Logger.d(TAG, "Tap gesture dispatched successfully");
-            // Give time for the tap to be processed
-            mainHandler.postDelayed(() -> callback.onResult(true), 200);
-        } else {
-            Logger.e(TAG, "Failed to dispatch tap gesture");
-            callback.onResult(false);
-        }
+        // Delay the tap slightly so the user can see the crosshair
+        mainHandler.postDelayed(() -> {
+            boolean dispatched = service.performTap(screenX, screenY);
+
+            if (dispatched) {
+                Logger.d(TAG, "Tap gesture dispatched successfully");
+                // Give time for the tap to be processed
+                mainHandler.postDelayed(() -> callback.onResult(true), 200);
+            } else {
+                Logger.e(TAG, "Failed to dispatch tap gesture");
+                callback.onResult(false);
+            }
+        }, TAP_VISUAL_DELAY_MS);
     }
 
     /**

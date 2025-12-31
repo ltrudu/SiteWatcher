@@ -18,7 +18,7 @@
         android:id="@+id/crosshairVertical"
         android:layout_width="2dp"
         android:layout_height="match_parent"
-        android:background="@color/diff_removed"
+        android:background="@color/picker_crosshair"
         android:visibility="gone"
         tools:visibility="visible" />
 
@@ -26,7 +26,7 @@
         android:id="@+id/crosshairHorizontal"
         android:layout_width="match_parent"
         android:layout_height="2dp"
-        android:background="@color/diff_removed"
+        android:background="@color/picker_crosshair"
         android:visibility="gone"
         tools:visibility="visible" />
 
@@ -35,7 +35,7 @@
         android:id="@+id/loadingOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/white"
+        android:background="@color/sw_background"
         android:visibility="visible">
 
         <LinearLayout
@@ -83,7 +83,7 @@
         android:visibility="gone"
         app:cardElevation="8dp"
         app:cardCornerRadius="24dp"
-        app:cardBackgroundColor="@android:color/black"
+        app:cardBackgroundColor="@color/sw_surface_container_highest"
         tools:visibility="visible">
 
         <TextView
@@ -93,7 +93,7 @@
             android:paddingHorizontal="20dp"
             android:paddingVertical="12dp"
             android:text="@string/tap_to_select_location"
-            android:textColor="@android:color/white"
+            android:textColor="@color/sw_on_surface"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
     </com.google.android.material.card.MaterialCardView>

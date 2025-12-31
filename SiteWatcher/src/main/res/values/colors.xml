@@ -1,11 +1,333 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Base Colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Diff Colors -->
-    <color name="diff_added">#FF2E7D32</color>
-    <color name="diff_removed">#FFC62828</color>
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Orange Fire
+
+         Warm accent palette:
+         - FC4F4F (Coral Red) - Emphasis, warnings
+         - FFBC80 (Peach) - Soft highlights
+         - FF9F45 (Bright Orange) - Secondary
+         - F76E11 (Dark Orange) - Primary
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Orange Fire - Primary Colors -->
+    <color name="orange_fire_primary">#FFF76E11</color>
+    <color name="orange_fire_on_primary">#FF1C1C1C</color>
+    <color name="orange_fire_primary_container">#FF4D2A08</color>
+    <color name="orange_fire_on_primary_container">#FFFFBC80</color>
+
+    <!-- Orange Fire - Secondary Colors -->
+    <color name="orange_fire_secondary">#FFFF9F45</color>
+    <color name="orange_fire_on_secondary">#FF1C1C1C</color>
+    <color name="orange_fire_secondary_container">#FF3D2A15</color>
+    <color name="orange_fire_on_secondary_container">#FFFFBC80</color>
+
+    <!-- Orange Fire - Tertiary Colors -->
+    <color name="orange_fire_tertiary">#FFFC4F4F</color>
+    <color name="orange_fire_on_tertiary">#FFFFFFFF</color>
+    <color name="orange_fire_tertiary_container">#FF4D1515</color>
+    <color name="orange_fire_on_tertiary_container">#FFFFCDD2</color>
+
+    <!-- Orange Fire - Accent -->
+    <color name="orange_fire_accent">#FFFFBC80</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Blue Light
+
+         Cool accent palette:
+         - 111D5E (Dark Navy) - Deep background tint
+         - 6A097D (Purple) - Primary
+         - C060A1 (Pink/Magenta) - Secondary
+         - FFDCB4 (Peach/Cream) - Accent
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Blue Light - Primary Colors (Purple - 6A097D) -->
+    <color name="blue_light_primary">#FF6A097D</color>
+    <color name="blue_light_on_primary">#FFFFFFFF</color>
+    <color name="blue_light_primary_container">#FF2D0435</color>
+    <color name="blue_light_on_primary_container">#FFFFDCB4</color>
+
+    <!-- Blue Light - Secondary Colors (Pink - C060A1) -->
+    <color name="blue_light_secondary">#FFC060A1</color>
+    <color name="blue_light_on_secondary">#FF1C1C1C</color>
+    <color name="blue_light_secondary_container">#FF4D2040</color>
+    <color name="blue_light_on_secondary_container">#FFFFDCB4</color>
+
+    <!-- Blue Light - Tertiary Colors (Navy - 111D5E) -->
+    <color name="blue_light_tertiary">#FF3D5A9E</color>
+    <color name="blue_light_on_tertiary">#FFFFFFFF</color>
+    <color name="blue_light_tertiary_container">#FF111D5E</color>
+    <color name="blue_light_on_tertiary_container">#FFBBC5E5</color>
+
+    <!-- Blue Light - Accent (Peach/Cream) -->
+    <color name="blue_light_accent">#FFFFDCB4</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Forest Green
+
+         Nature accent palette:
+         - 0D4715 (Dark Green) - Primary
+         - 41644A (Forest Green) - Secondary
+         - E9762B (Burnt Orange) - Tertiary/Accent
+         - F1F0E9 (Off-white/Cream) - Highlight
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Forest Green - Primary Colors (Dark Green - 0D4715) -->
+    <color name="forest_green_primary">#FF0D4715</color>
+    <color name="forest_green_on_primary">#FFFFFFFF</color>
+    <color name="forest_green_primary_container">#FF1A5C25</color>
+    <color name="forest_green_on_primary_container">#FFF1F0E9</color>
+
+    <!-- Forest Green - Secondary Colors (Forest Green - 41644A) -->
+    <color name="forest_green_secondary">#FF41644A</color>
+    <color name="forest_green_on_secondary">#FFFFFFFF</color>
+    <color name="forest_green_secondary_container">#FF2A4230</color>
+    <color name="forest_green_on_secondary_container">#FFF1F0E9</color>
+
+    <!-- Forest Green - Tertiary Colors (Burnt Orange - E9762B) -->
+    <color name="forest_green_tertiary">#FFE9762B</color>
+    <color name="forest_green_on_tertiary">#FF1C1C1C</color>
+    <color name="forest_green_tertiary_container">#FF5D3010</color>
+    <color name="forest_green_on_tertiary_container">#FFF1F0E9</color>
+
+    <!-- Forest Green - Accent (Cream) -->
+    <color name="forest_green_accent">#FFF1F0E9</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Ocean Blue
+
+         Cool blue accent palette:
+         - 333A73 (Dark Navy) - Primary
+         - 387ADF (Medium Blue) - Secondary
+         - 50C4ED (Light Cyan) - Tertiary
+         - FBA834 (Golden Amber) - Accent
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Ocean Blue - Primary Colors (Dark Navy - 333A73) -->
+    <color name="ocean_blue_primary">#FF333A73</color>
+    <color name="ocean_blue_on_primary">#FFFFFFFF</color>
+    <color name="ocean_blue_primary_container">#FF1A1D3A</color>
+    <color name="ocean_blue_on_primary_container">#FFFBA834</color>
+
+    <!-- Ocean Blue - Secondary Colors (Medium Blue - 387ADF) -->
+    <color name="ocean_blue_secondary">#FF387ADF</color>
+    <color name="ocean_blue_on_secondary">#FFFFFFFF</color>
+    <color name="ocean_blue_secondary_container">#FF1C3D6F</color>
+    <color name="ocean_blue_on_secondary_container">#FF50C4ED</color>
+
+    <!-- Ocean Blue - Tertiary Colors (Light Cyan - 50C4ED) -->
+    <color name="ocean_blue_tertiary">#FF50C4ED</color>
+    <color name="ocean_blue_on_tertiary">#FF1C1C1C</color>
+    <color name="ocean_blue_tertiary_container">#FF1E4A5C</color>
+    <color name="ocean_blue_on_tertiary_container">#FFFBA834</color>
+
+    <!-- Ocean Blue - Accent (Golden Amber) -->
+    <color name="ocean_blue_accent">#FFFBA834</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Synthwave
+
+         Retro-futuristic neon palette:
+         - F72585 (Hot Pink) - Primary
+         - 7209B7 (Purple) - Secondary
+         - 3A0CA3 (Deep Purple) - Container tint
+         - 4361EE (Electric Blue) - Tertiary
+         - 4CC9F0 (Cyan) - Accent
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Synthwave - Primary Colors (Hot Pink - F72585) -->
+    <color name="synthwave_primary">#FFF72585</color>
+    <color name="synthwave_on_primary">#FFFFFFFF</color>
+    <color name="synthwave_primary_container">#FF5E0E33</color>
+    <color name="synthwave_on_primary_container">#FF4CC9F0</color>
+
+    <!-- Synthwave - Secondary Colors (Purple - 7209B7) -->
+    <color name="synthwave_secondary">#FF7209B7</color>
+    <color name="synthwave_on_secondary">#FFFFFFFF</color>
+    <color name="synthwave_secondary_container">#FF3A0CA3</color>
+    <color name="synthwave_on_secondary_container">#FF4CC9F0</color>
+
+    <!-- Synthwave - Tertiary Colors (Electric Blue - 4361EE) -->
+    <color name="synthwave_tertiary">#FF4361EE</color>
+    <color name="synthwave_on_tertiary">#FFFFFFFF</color>
+    <color name="synthwave_tertiary_container">#FF1A2766</color>
+    <color name="synthwave_on_tertiary_container">#FF4CC9F0</color>
+
+    <!-- Synthwave - Accent (Cyan) -->
+    <color name="synthwave_accent">#FF4CC9F0</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Coastal Sunset
+
+         Mediterranean coastal palette:
+         - 264653 (Deep Teal) - Primary
+         - 2A9D8F (Teal) - Secondary
+         - E76F51 (Coral) - Tertiary
+         - E9C46A (Sand Gold) - Accent
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Coastal Sunset - Primary Colors (Deep Teal - 264653) -->
+    <color name="coastal_sunset_primary">#FF264653</color>
+    <color name="coastal_sunset_on_primary">#FFFFFFFF</color>
+    <color name="coastal_sunset_primary_container">#FF1A3038</color>
+    <color name="coastal_sunset_on_primary_container">#FFE9C46A</color>
+
+    <!-- Coastal Sunset - Secondary Colors (Teal - 2A9D8F) -->
+    <color name="coastal_sunset_secondary">#FF2A9D8F</color>
+    <color name="coastal_sunset_on_secondary">#FF1C1C1C</color>
+    <color name="coastal_sunset_secondary_container">#FF1A4D47</color>
+    <color name="coastal_sunset_on_secondary_container">#FFE9C46A</color>
+
+    <!-- Coastal Sunset - Tertiary Colors (Coral - E76F51) -->
+    <color name="coastal_sunset_tertiary">#FFE76F51</color>
+    <color name="coastal_sunset_on_tertiary">#FF1C1C1C</color>
+    <color name="coastal_sunset_tertiary_container">#FF5C2C20</color>
+    <color name="coastal_sunset_on_tertiary_container">#FFF4A261</color>
+
+    <!-- Coastal Sunset - Accent (Sand Gold) -->
+    <color name="coastal_sunset_accent">#FFE9C46A</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Nordic Red
+
+         Scandinavian minimalist palette:
+         - EF233C (Crimson Red) - Primary
+         - D90429 (Dark Red) - Secondary
+         - 8D99AE (Cool Gray) - Tertiary
+         - EDF2F4 (Snow White) - Accent
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Nordic Red - Primary Colors (Crimson Red - EF233C) -->
+    <color name="nordic_red_primary">#FFEF233C</color>
+    <color name="nordic_red_on_primary">#FFFFFFFF</color>
+    <color name="nordic_red_primary_container">#FF5C0D17</color>
+    <color name="nordic_red_on_primary_container">#FFEDF2F4</color>
+
+    <!-- Nordic Red - Secondary Colors (Dark Red - D90429) -->
+    <color name="nordic_red_secondary">#FFD90429</color>
+    <color name="nordic_red_on_secondary">#FFFFFFFF</color>
+    <color name="nordic_red_secondary_container">#FF4D0210</color>
+    <color name="nordic_red_on_secondary_container">#FFEDF2F4</color>
+
+    <!-- Nordic Red - Tertiary Colors (Cool Gray - 8D99AE) -->
+    <color name="nordic_red_tertiary">#FF8D99AE</color>
+    <color name="nordic_red_on_tertiary">#FF1C1C1C</color>
+    <color name="nordic_red_tertiary_container">#FF2B2D42</color>
+    <color name="nordic_red_on_tertiary_container">#FFEDF2F4</color>
+
+    <!-- Nordic Red - Accent (Snow White) -->
+    <color name="nordic_red_accent">#FFEDF2F4</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Neon Carnival
+
+         Vibrant festival palette:
+         - FF006E (Magenta) - Primary
+         - FB5607 (Orange) - Secondary
+         - 8338EC (Purple) - Tertiary
+         - FFBE0B (Yellow) - Accent
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Neon Carnival - Primary Colors (Magenta - FF006E) -->
+    <color name="neon_carnival_primary">#FFFF006E</color>
+    <color name="neon_carnival_on_primary">#FFFFFFFF</color>
+    <color name="neon_carnival_primary_container">#FF66002C</color>
+    <color name="neon_carnival_on_primary_container">#FFFFBE0B</color>
+
+    <!-- Neon Carnival - Secondary Colors (Orange - FB5607) -->
+    <color name="neon_carnival_secondary">#FFFB5607</color>
+    <color name="neon_carnival_on_secondary">#FF1C1C1C</color>
+    <color name="neon_carnival_secondary_container">#FF632203</color>
+    <color name="neon_carnival_on_secondary_container">#FFFFBE0B</color>
+
+    <!-- Neon Carnival - Tertiary Colors (Purple - 8338EC) -->
+    <color name="neon_carnival_tertiary">#FF8338EC</color>
+    <color name="neon_carnival_on_tertiary">#FFFFFFFF</color>
+    <color name="neon_carnival_tertiary_container">#FF34165E</color>
+    <color name="neon_carnival_on_tertiary_container">#FF3A86FF</color>
+
+    <!-- Neon Carnival - Accent (Yellow) -->
+    <color name="neon_carnival_accent">#FFFFBE0B</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Common Dark Background Colors (shared across themes)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <color name="sw_background">#FF121212</color>
+    <color name="sw_surface">#FF1C1C1C</color>
+    <color name="sw_surface_variant">#FF2D2D2D</color>
+    <color name="sw_surface_container">#FF252525</color>
+    <color name="sw_surface_container_high">#FF353535</color>
+    <color name="sw_surface_container_highest">#FF424242</color>
+
+    <!-- Text Colors (shared) -->
+    <color name="sw_on_background">#FFFFFFFF</color>
+    <color name="sw_on_surface">#FFFFFFFF</color>
+    <color name="sw_on_surface_variant">#FFAAAAAA</color>
+    <color name="sw_text_disabled">#66FFFFFF</color>
+
+    <!-- Outline Colors (shared) -->
+    <color name="sw_outline">#FF5D5D5D</color>
+    <color name="sw_outline_variant">#FF3D3D3D</color>
+
+    <!-- Error Colors (shared) -->
+    <color name="sw_error">#FFCF6679</color>
+    <color name="sw_on_error">#FF1C1C1C</color>
+    <color name="sw_error_container">#FF4D1A1A</color>
+    <color name="sw_on_error_container">#FFFFB4AB</color>
+
+    <!-- Inverse Colors (shared) -->
+    <color name="sw_inverse_surface">#FFE5E5E5</color>
+    <color name="sw_inverse_on_surface">#FF1C1C1C</color>
+
+    <!-- Scrim (shared) -->
+    <color name="sw_scrim">#CC000000</color>
+
+    <!-- Card backgrounds (shared) -->
+    <color name="sw_card_background">#FF1C1C1C</color>
+    <color name="sw_card_background_elevated">#FF252525</color>
+
+    <!-- Navigation bar background (shared) -->
+    <color name="sw_nav_bar_background">#FF1C1C1C</color>
+
+    <!-- Switch off state (shared) -->
+    <color name="sw_switch_track_off">#FF3D3D3D</color>
+    <color name="sw_switch_thumb_off">#FF757575</color>
+
+    <!-- Divider (shared) -->
+    <color name="sw_divider">#FF3D3D3D</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Status Colors (shared)
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <color name="sw_status_success">#FF4CAF50</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Diff Viewer Colors (shared)
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <color name="diff_added">#FF4CAF50</color>
+    <color name="diff_removed">#FFCF6679</color>
     <color name="diff_added_background">#1A4CAF50</color>
-    <color name="diff_removed_background">#1AE53935</color>
+    <color name="diff_removed_background">#1ACF6679</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         WebView Picker Colors (shared)
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <color name="picker_card_background">#E6121212</color>
+    <color name="picker_crosshair">#FFF76E11</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Legacy/Fallback Colors (for backwards compatibility)
+         These use Orange Fire defaults but should be replaced with ?attr/color*
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <color name="sw_primary">#FFF76E11</color>
+    <color name="sw_on_primary">#FF1C1C1C</color>
+    <color name="sw_tertiary">#FFFC4F4F</color>
+    <color name="sw_switch_track_on">#FFF76E11</color>
+    <color name="sw_switch_thumb_on">#FFFFFFFF</color>
+
 </resources>

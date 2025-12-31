@@ -28,6 +28,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.ltrudu.sitewatcher.ui.sitelist.SiteListViewModel;
 import com.ltrudu.sitewatcher.util.Logger;
+import com.ltrudu.sitewatcher.util.ThemeManager;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,6 +56,10 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply saved theme before super.onCreate() and setContentView()
+        ThemeManager themeManager = new ThemeManager(this);
+        themeManager.applyTheme(this);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 

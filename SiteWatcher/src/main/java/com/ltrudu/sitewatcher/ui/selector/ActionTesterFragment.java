@@ -26,6 +26,7 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.ltrudu.sitewatcher.R;
+import com.ltrudu.sitewatcher.ui.view.TapCrosshairView;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.preferences.PreferencesManager;
 import com.ltrudu.sitewatcher.network.AutoClickExecutor;
@@ -51,6 +52,7 @@ public class ActionTesterFragment extends Fragment {
     private static final String ARG_EXECUTE_ACTIONS = "execute_actions";
 
     private WebView webView;
+    private TapCrosshairView tapCrosshair;
     private LinearLayout loadingOverlay;
     private MaterialCardView statusCard;
     private ProgressBar progressBar;
@@ -116,6 +118,7 @@ public class ActionTesterFragment extends Fragment {
 
     private void initializeViews(@NonNull View view) {
         webView = view.findViewById(R.id.webView);
+        tapCrosshair = view.findViewById(R.id.tapCrosshair);
         loadingOverlay = view.findViewById(R.id.loadingOverlay);
         statusCard = view.findViewById(R.id.statusCard);
         progressBar = view.findViewById(R.id.progressBar);
@@ -171,7 +174,7 @@ public class ActionTesterFragment extends Fragment {
                         "Chrome/120.0.0.0 Mobile Safari/537.36 SiteWatcher/1.0");
 
         // Fix for black screen / flickering issues
-        webView.setBackgroundColor(android.graphics.Color.WHITE);
+        webView.setBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.sw_background));
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         // Set WebViewClient
@@ -290,7 +293,34 @@ public class ActionTesterFragment extends Fragment {
                     }
                 });
             }
+
+            @Override
+            public void onBeforeTap(float screenX, float screenY) {
+                mainHandler.post(() -> showTapCrosshair(screenX, screenY));
+            }
         });
+    }
+
+    /**
+     * Show the crosshair at the tap location.
+     * The coordinates are absolute screen coordinates, so we need to convert
+     * them to coordinates relative to our view.
+     */
+    private void showTapCrosshair(float screenX, float screenY) {
+        if (tapCrosshair == null || !isAdded()) return;
+
+        // Convert screen coordinates to coordinates relative to our crosshair view
+        int[] viewLocation = new int[2];
+        tapCrosshair.getLocationOnScreen(viewLocation);
+
+        float localX = screenX - viewLocation[0];
+        float localY = screenY - viewLocation[1];
+
+        Logger.d(TAG, "Showing crosshair at screen(" + screenX + ", " + screenY +
+                ") -> local(" + localX + ", " + localY + ")");
+
+        // Show crosshair for 1.2 seconds (the tap happens after 400ms delay)
+        tapCrosshair.showAt(localX, localY);
     }
 
     private void updateProgressUI(int currentIndex, int totalActions) {

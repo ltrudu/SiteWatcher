@@ -209,6 +209,18 @@
     <string name="permissions_granted">All permissions granted</string>
     <string name="permissions_missing">Some permissions missing</string>
 
+    <!-- Theme -->
+    <string name="theme_selector">Theme</string>
+    <string name="theme_orange_fire">Orange Fire</string>
+    <string name="theme_blue_light">Blue Light</string>
+    <string name="theme_forest_green">Forest Green</string>
+    <string name="theme_ocean_blue">Ocean Blue</string>
+    <string name="theme_synthwave">Synthwave</string>
+    <string name="theme_coastal_sunset">Coastal Sunset</string>
+    <string name="theme_nordic_red">Nordic Red</string>
+    <string name="theme_neon_carnival">Neon Carnival</string>
+    <string name="theme_changed_restart">Theme will apply after restart</string>
+
     <!-- Search Engines -->
     <string name="search_duckduckgo">DuckDuckGo</string>
     <string name="search_google">Google</string>

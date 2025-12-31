@@ -1,9 +1,410 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.SiteWatcher" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Base Theme (shared dark background and structure)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="Base.Theme.SiteWatcher" parent="Theme.Material3.Dark.NoActionBar">
+
+        <!-- Background & Surface (shared) -->
+        <item name="android:colorBackground">@color/sw_background</item>
+        <item name="colorOnBackground">@color/sw_on_background</item>
+        <item name="colorSurface">@color/sw_surface</item>
+        <item name="colorOnSurface">@color/sw_on_surface</item>
+        <item name="colorSurfaceVariant">@color/sw_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/sw_on_surface_variant</item>
+
+        <!-- Outline Colors (shared) -->
+        <item name="colorOutline">@color/sw_outline</item>
+        <item name="colorOutlineVariant">@color/sw_outline_variant</item>
+
+        <!-- Error Colors (shared) -->
+        <item name="colorError">@color/sw_error</item>
+        <item name="colorOnError">@color/sw_on_error</item>
+        <item name="colorErrorContainer">@color/sw_error_container</item>
+        <item name="colorOnErrorContainer">@color/sw_on_error_container</item>
+
+        <!-- Status Bar and Navigation Bar -->
+        <item name="android:statusBarColor">@color/sw_background</item>
+        <item name="android:navigationBarColor">@color/sw_nav_bar_background</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
+
     </style>
 
-    <style name="Theme.SiteWatcher" parent="Base.Theme.SiteWatcher" />
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Orange Fire
+
+         Warm accent palette:
+         - Primary: Dark Orange (F76E11)
+         - Secondary: Bright Orange (FF9F45)
+         - Tertiary: Coral Red (FC4F4F)
+         - Accent: Peach (FFBC80)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.SiteWatcher.OrangeFire" parent="Base.Theme.SiteWatcher">
+
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/orange_fire_primary</item>
+        <item name="colorOnPrimary">@color/orange_fire_on_primary</item>
+        <item name="colorPrimaryContainer">@color/orange_fire_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/orange_fire_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/orange_fire_primary</item>
+
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/orange_fire_secondary</item>
+        <item name="colorOnSecondary">@color/orange_fire_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/orange_fire_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/orange_fire_on_secondary_container</item>
+
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/orange_fire_tertiary</item>
+        <item name="colorOnTertiary">@color/orange_fire_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/orange_fire_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/orange_fire_on_tertiary_container</item>
+
+        <!-- Ripple color -->
+        <item name="colorControlHighlight">#33F76E11</item>
+
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Blue Light
+
+         Cool accent palette:
+         - Primary: Purple (6A097D)
+         - Secondary: Pink/Magenta (C060A1)
+         - Tertiary: Navy Blue (111D5E)
+         - Accent: Peach/Cream (FFDCB4)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.SiteWatcher.BlueLight" parent="Base.Theme.SiteWatcher">
+
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/blue_light_primary</item>
+        <item name="colorOnPrimary">@color/blue_light_on_primary</item>
+        <item name="colorPrimaryContainer">@color/blue_light_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/blue_light_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/blue_light_primary</item>
+
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/blue_light_secondary</item>
+        <item name="colorOnSecondary">@color/blue_light_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/blue_light_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/blue_light_on_secondary_container</item>
+
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/blue_light_tertiary</item>
+        <item name="colorOnTertiary">@color/blue_light_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/blue_light_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/blue_light_on_tertiary_container</item>
+
+        <!-- Ripple color -->
+        <item name="colorControlHighlight">#336A097D</item>
+
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Forest Green
+
+         Nature accent palette:
+         - Primary: Dark Green (0D4715)
+         - Secondary: Forest Green (41644A)
+         - Tertiary: Burnt Orange (E9762B)
+         - Accent: Cream (F1F0E9)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.SiteWatcher.ForestGreen" parent="Base.Theme.SiteWatcher">
+
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/forest_green_primary</item>
+        <item name="colorOnPrimary">@color/forest_green_on_primary</item>
+        <item name="colorPrimaryContainer">@color/forest_green_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/forest_green_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/forest_green_primary</item>
+
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/forest_green_secondary</item>
+        <item name="colorOnSecondary">@color/forest_green_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/forest_green_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/forest_green_on_secondary_container</item>
+
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/forest_green_tertiary</item>
+        <item name="colorOnTertiary">@color/forest_green_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/forest_green_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/forest_green_on_tertiary_container</item>
+
+        <!-- Ripple color -->
+        <item name="colorControlHighlight">#330D4715</item>
+
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Ocean Blue
+
+         Cool blue accent palette:
+         - Primary: Dark Navy (333A73)
+         - Secondary: Medium Blue (387ADF)
+         - Tertiary: Light Cyan (50C4ED)
+         - Accent: Golden Amber (FBA834)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.SiteWatcher.OceanBlue" parent="Base.Theme.SiteWatcher">
+
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/ocean_blue_primary</item>
+        <item name="colorOnPrimary">@color/ocean_blue_on_primary</item>
+        <item name="colorPrimaryContainer">@color/ocean_blue_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/ocean_blue_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/ocean_blue_primary</item>
+
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/ocean_blue_secondary</item>
+        <item name="colorOnSecondary">@color/ocean_blue_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/ocean_blue_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/ocean_blue_on_secondary_container</item>
+
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/ocean_blue_tertiary</item>
+        <item name="colorOnTertiary">@color/ocean_blue_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/ocean_blue_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/ocean_blue_on_tertiary_container</item>
+
+        <!-- Ripple color -->
+        <item name="colorControlHighlight">#33333A73</item>
+
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Synthwave
+
+         Retro-futuristic neon palette:
+         - Primary: Hot Pink (F72585)
+         - Secondary: Purple (7209B7)
+         - Tertiary: Electric Blue (4361EE)
+         - Accent: Cyan (4CC9F0)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.SiteWatcher.Synthwave" parent="Base.Theme.SiteWatcher">
+
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/synthwave_primary</item>
+        <item name="colorOnPrimary">@color/synthwave_on_primary</item>
+        <item name="colorPrimaryContainer">@color/synthwave_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/synthwave_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/synthwave_primary</item>
+
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/synthwave_secondary</item>
+        <item name="colorOnSecondary">@color/synthwave_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/synthwave_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/synthwave_on_secondary_container</item>
+
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/synthwave_tertiary</item>
+        <item name="colorOnTertiary">@color/synthwave_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/synthwave_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/synthwave_on_tertiary_container</item>
+
+        <!-- Ripple color -->
+        <item name="colorControlHighlight">#33F72585</item>
+
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Coastal Sunset
+
+         Mediterranean coastal palette:
+         - Primary: Deep Teal (264653)
+         - Secondary: Teal (2A9D8F)
+         - Tertiary: Coral (E76F51)
+         - Accent: Sand Gold (E9C46A)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.SiteWatcher.CoastalSunset" parent="Base.Theme.SiteWatcher">
+
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/coastal_sunset_primary</item>
+        <item name="colorOnPrimary">@color/coastal_sunset_on_primary</item>
+        <item name="colorPrimaryContainer">@color/coastal_sunset_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/coastal_sunset_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/coastal_sunset_primary</item>
+
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/coastal_sunset_secondary</item>
+        <item name="colorOnSecondary">@color/coastal_sunset_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/coastal_sunset_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/coastal_sunset_on_secondary_container</item>
+
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/coastal_sunset_tertiary</item>
+        <item name="colorOnTertiary">@color/coastal_sunset_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/coastal_sunset_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/coastal_sunset_on_tertiary_container</item>
+
+        <!-- Ripple color -->
+        <item name="colorControlHighlight">#33264653</item>
+
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Nordic Red
+
+         Scandinavian minimalist palette:
+         - Primary: Crimson Red (EF233C)
+         - Secondary: Dark Red (D90429)
+         - Tertiary: Cool Gray (8D99AE)
+         - Accent: Snow White (EDF2F4)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.SiteWatcher.NordicRed" parent="Base.Theme.SiteWatcher">
+
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/nordic_red_primary</item>
+        <item name="colorOnPrimary">@color/nordic_red_on_primary</item>
+        <item name="colorPrimaryContainer">@color/nordic_red_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/nordic_red_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/nordic_red_primary</item>
+
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/nordic_red_secondary</item>
+        <item name="colorOnSecondary">@color/nordic_red_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/nordic_red_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/nordic_red_on_secondary_container</item>
+
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/nordic_red_tertiary</item>
+        <item name="colorOnTertiary">@color/nordic_red_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/nordic_red_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/nordic_red_on_tertiary_container</item>
+
+        <!-- Ripple color -->
+        <item name="colorControlHighlight">#33EF233C</item>
+
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         THEME: Neon Carnival
+
+         Vibrant festival palette:
+         - Primary: Magenta (FF006E)
+         - Secondary: Orange (FB5607)
+         - Tertiary: Purple (8338EC)
+         - Accent: Yellow (FFBE0B)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.SiteWatcher.NeonCarnival" parent="Base.Theme.SiteWatcher">
+
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/neon_carnival_primary</item>
+        <item name="colorOnPrimary">@color/neon_carnival_on_primary</item>
+        <item name="colorPrimaryContainer">@color/neon_carnival_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/neon_carnival_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/neon_carnival_primary</item>
+
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/neon_carnival_secondary</item>
+        <item name="colorOnSecondary">@color/neon_carnival_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/neon_carnival_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/neon_carnival_on_secondary_container</item>
+
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/neon_carnival_tertiary</item>
+        <item name="colorOnTertiary">@color/neon_carnival_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/neon_carnival_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/neon_carnival_on_tertiary_container</item>
+
+        <!-- Ripple color -->
+        <item name="colorControlHighlight">#33FF006E</item>
+
+    </style>
+
+    <!-- Default theme alias (used in AndroidManifest) -->
+    <style name="Theme.SiteWatcher" parent="Theme.SiteWatcher.OrangeFire" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Shared Component Styles
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Card View -->
+    <style name="Widget.SiteWatcher.CardView" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/sw_card_background</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.SiteWatcher.Card</item>
+    </style>
+
+    <style name="Widget.SiteWatcher.CardView.Elevated" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/sw_card_background_elevated</item>
+        <item name="cardElevation">4dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.SiteWatcher.Card</item>
+    </style>
+
+    <!-- Buttons use theme colors automatically via ?attr/colorPrimary -->
+    <style name="Widget.SiteWatcher.Button" parent="Widget.Material3.Button">
+        <item name="shapeAppearance">@style/ShapeAppearance.SiteWatcher.Button</item>
+    </style>
+
+    <style name="Widget.SiteWatcher.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="shapeAppearance">@style/ShapeAppearance.SiteWatcher.Button</item>
+    </style>
+
+    <style name="Widget.SiteWatcher.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="shapeAppearance">@style/ShapeAppearance.SiteWatcher.Button</item>
+    </style>
+
+    <style name="Widget.SiteWatcher.Button.Text" parent="Widget.Material3.Button.TextButton" />
+
+    <!-- Text Input -->
+    <style name="Widget.SiteWatcher.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="android:textColorHint">@color/sw_on_surface_variant</item>
+    </style>
+
+    <style name="Widget.SiteWatcher.TextInputLayout.Dense" parent="Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+        <item name="android:textColorHint">@color/sw_on_surface_variant</item>
+    </style>
+
+    <!-- Toolbar -->
+    <style name="Widget.SiteWatcher.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/sw_surface</item>
+        <item name="titleTextColor">@color/sw_on_surface</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Shape Appearances
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="ShapeAppearance.SiteWatcher.Card" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="ShapeAppearance.SiteWatcher.Button" parent="ShapeAppearance.Material3.Corner.Full">
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <style name="ShapeAppearance.SiteWatcher.FAB" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Text Appearances
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <style name="TextAppearance.SiteWatcher.Headline" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:textColor">@color/sw_on_surface</item>
+    </style>
+
+    <style name="TextAppearance.SiteWatcher.Title" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">@color/sw_on_surface</item>
+    </style>
+
+    <style name="TextAppearance.SiteWatcher.Body" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textColor">@color/sw_on_surface</item>
+    </style>
+
+    <style name="TextAppearance.SiteWatcher.Label" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textColor">@color/sw_on_surface_variant</item>
+    </style>
+
 </resources>

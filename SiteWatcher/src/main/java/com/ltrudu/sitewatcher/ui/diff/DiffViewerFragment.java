@@ -297,7 +297,7 @@ public class DiffViewerFragment extends Fragment {
         settings.setLoadWithOverviewMode(true);
 
         // Fix for black screen / flickering issues
-        webView.setBackgroundColor(android.graphics.Color.WHITE);
+        webView.setBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.sw_background));
         webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
     }
 

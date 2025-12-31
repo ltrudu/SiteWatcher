@@ -156,7 +156,7 @@ public class BackupViewerFragment extends Fragment {
         settings.setLoadWithOverviewMode(true);
 
         // Fix for black screen / flickering issues
-        webViewContent.setBackgroundColor(android.graphics.Color.WHITE);
+        webViewContent.setBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.sw_background));
         webViewContent.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
     }
 

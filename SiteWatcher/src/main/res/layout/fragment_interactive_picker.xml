@@ -20,7 +20,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:background="@color/white"
+        android:background="@color/sw_background"
         android:visibility="visible">
 
         <ProgressBar
@@ -47,7 +47,7 @@
         android:visibility="gone"
         app:cardElevation="8dp"
         app:cardCornerRadius="24dp"
-        app:cardBackgroundColor="@android:color/black"
+        app:cardBackgroundColor="@color/sw_surface_container_highest"
         tools:visibility="visible">
 
         <LinearLayout
@@ -63,7 +63,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:textColor="@android:color/white"
+                android:textColor="@color/sw_on_surface"
                 tools:text="Executing action 1/5" />
 
             <TextView
@@ -73,7 +73,7 @@
                 android:layout_marginTop="4dp"
                 android:visibility="gone"
                 android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="#CCCCCC"
+                android:textColor="@color/sw_on_surface_variant"
                 tools:text="Dismissing cookie consent..."
                 tools:visibility="visible" />
 
@@ -86,8 +86,8 @@
                 android:indeterminate="false"
                 android:max="100"
                 android:progress="20"
-                android:progressTint="@android:color/white"
-                android:progressBackgroundTint="#666666" />
+                android:progressTint="?attr/colorPrimary"
+                android:progressBackgroundTint="@color/sw_outline_variant" />
 
         </LinearLayout>
 

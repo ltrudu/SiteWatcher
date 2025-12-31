@@ -171,7 +171,7 @@ public class InteractivePickerFragment extends Fragment {
                         "Chrome/120.0.0.0 Mobile Safari/537.36 SiteWatcher/1.0");
 
         // Fix for black screen / flickering issues
-        webView.setBackgroundColor(android.graphics.Color.WHITE);
+        webView.setBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.sw_background));
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         // Add JavaScript interface for communication

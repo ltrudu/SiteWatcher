@@ -37,6 +37,7 @@ import com.ltrudu.sitewatcher.data.repository.SiteRepository;
 import com.ltrudu.sitewatcher.network.SiteChecker;
 import com.ltrudu.sitewatcher.util.Logger;
 import com.ltrudu.sitewatcher.util.SiteExporter;
+import com.ltrudu.sitewatcher.util.ThemeManager;
 
 import org.json.JSONException;
 
@@ -46,6 +47,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import android.widget.ArrayAdapter;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -87,6 +90,8 @@ public class SettingsFragment extends Fragment {
     private TextView tvPostActionDelayValue;
     private Spinner spinnerSearchEngine;
     private SwitchMaterial switchDebugMode;
+    private ThemeManager themeManager;
+    private Spinner spinnerTheme;
 
     // Flag to prevent spinner callbacks during initial setup
     private boolean isInitializing = true;
@@ -120,6 +125,7 @@ public class SettingsFragment extends Fragment {
         repository = SiteRepository.getInstance(requireActivity().getApplication());
         checkScheduler = CheckScheduler.getInstance(requireContext());
         siteChecker = SiteChecker.getInstance(requireContext());
+        themeManager = new ThemeManager(requireContext());
 
         initViews(view);
         setupListeners();
@@ -159,6 +165,7 @@ public class SettingsFragment extends Fragment {
         tvPostActionDelayValue = view.findViewById(R.id.tvPostActionDelayValue);
         spinnerSearchEngine = view.findViewById(R.id.spinnerSearchEngine);
         switchDebugMode = view.findViewById(R.id.switchDebugMode);
+        spinnerTheme = view.findViewById(R.id.spinnerTheme);
     }
 
     private void setupListeners() {
@@ -263,6 +270,46 @@ public class SettingsFragment extends Fragment {
         switchDebugMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (!isInitializing) {
                 viewModel.setDebugMode(isChecked);
+            }
+        });
+
+        // Theme spinner
+        setupThemeSpinner();
+    }
+
+    /**
+     * Sets up the theme spinner with theme options and handles selection changes.
+     */
+    private void setupThemeSpinner() {
+        // Create adapter with theme display names
+        ArrayAdapter<String> themeAdapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                ThemeManager.getThemeDisplayNames()
+        );
+        themeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerTheme.setAdapter(themeAdapter);
+
+        // Set current selection without triggering the listener
+        spinnerTheme.setSelection(themeManager.getCurrentThemeIndex());
+
+        // Add listener for theme changes
+        spinnerTheme.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!isInitializing) {
+                    int currentIndex = themeManager.getCurrentThemeIndex();
+                    if (position != currentIndex) {
+                        themeManager.setThemeByIndex(position);
+                        // Recreate activity to apply theme immediately
+                        requireActivity().recreate();
+                    }
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // No action needed
             }
         });
     }

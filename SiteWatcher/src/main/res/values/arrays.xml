@@ -28,4 +28,15 @@
         <item>@string/search_bing</item>
         <item>@string/search_qwant</item>
     </string-array>
+
+    <string-array name="themes">
+        <item>@string/theme_orange_fire</item>
+        <item>@string/theme_blue_light</item>
+        <item>@string/theme_forest_green</item>
+        <item>@string/theme_ocean_blue</item>
+        <item>@string/theme_synthwave</item>
+        <item>@string/theme_coastal_sunset</item>
+        <item>@string/theme_nordic_red</item>
+        <item>@string/theme_neon_carnival</item>
+    </string-array>
 </resources>

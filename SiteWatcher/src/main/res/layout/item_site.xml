@@ -75,7 +75,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textColor="#F44336"
+                    android:textColor="?attr/colorTertiary"
                     android:textAppearance="?attr/textAppearanceCaption"
                     android:visibility="gone" />
 
@@ -90,7 +90,7 @@
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="6dp"
                 android:textAppearance="?attr/textAppearanceBody2"
-                android:textColor="@android:color/white" />
+                android:textColor="?attr/colorOnPrimary" />
 
         </LinearLayout>
 

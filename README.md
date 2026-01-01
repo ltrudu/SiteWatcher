@@ -59,6 +59,9 @@ Create multiple schedules per site with flexible calendar-based rules:
 
 #### Interval Options
 - **Periodic** - Set intervals from 15 minutes to 10 hours
+- **Live Tracking** - Real-time monitoring with second-level precision (1-960 seconds)
+  - Two sliders: minutes (0-15) and seconds (1-60)
+  - Perfect for time-sensitive monitoring (auctions, flash sales, stock availability)
 - **Specific Hour** - Check at an exact time each day
 
 #### Schedule Management
@@ -66,6 +69,14 @@ Create multiple schedules per site with flexible calendar-based rules:
 - **Drag-to-Reorder** - Arrange schedule priority
 - **Enable/Disable** - Toggle individual schedules without deleting
 - **Duplicate** - Clone schedules for quick setup
+- **Clear Outdated** - One-tap removal of expired schedules with dramatic animations
+  - Removes SELECTED_DAY schedules with dates before today
+  - Removes DATE_RANGE schedules where end date has passed
+
+#### Real-Time Countdown
+- **Live Display** - See next check time counting down in real-time
+- **Seconds Precision** - Shows seconds when under 1 minute
+- **Dramatic Effect** - Shows tenths (X.X sec) when under 10 seconds with rapid updates
 
 ### Notifications
 - **Instant Alerts** - Get notified immediately when changes are detected
@@ -163,9 +174,13 @@ When first launching the app, you'll be asked for:
    - **Selected Day** - Pick a specific date
    - **From Date To Date** - Set a date range
    - **Every Weeks** - Choose days and week parity
-3. Configure the interval (Periodic or Specific Hour)
+3. Configure the interval:
+   - **Periodic** - Check every 15 minutes to 10 hours
+   - **Live Tracking** - Check every 1 second to 16 minutes (for real-time monitoring)
+   - **Specific Hour** - Check at an exact time each day
 4. Toggle schedules on/off as needed
 5. Drag to reorder priority
+6. Tap the broom icon to clear outdated schedules
 
 ### Add Auto-Click Actions (Optional)
 
@@ -234,6 +249,7 @@ For sites with cookie consent dialogs or dynamic content:
 | Type | Use Case | Example |
 |------|----------|---------|
 | **Periodic** | Frequent checks | Every 30 minutes, 2 hours, etc. |
+| **Live Tracking** | Real-time monitoring | Every 30 seconds, 2 minutes, etc. |
 | **Specific Hour** | Precise timing | At exactly 9:00 AM |
 
 ### Multi-Schedule Examples
@@ -243,6 +259,8 @@ For sites with cookie consent dialogs or dynamic content:
 | **Business hours monitoring** | Every Weeks (Mon-Fri) + Specific Hour (9:00 AM) |
 | **Sale period + regular** | Date Range (Nov 25-30) + Every 15min, All The Time + Every 2h |
 | **Weekend only** | Every Weeks (Sat, Sun) + Periodic (1 hour) |
+| **Auction countdown** | Selected Day (auction date) + Live Tracking (every 30 sec) |
+| **Flash sale watch** | Date Range (sale period) + Live Tracking (every 10 sec) |
 
 ### Change Threshold
 

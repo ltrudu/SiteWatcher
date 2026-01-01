@@ -102,12 +102,12 @@ Create multiple schedules per site with flexible calendar-based rules:
 
 ### Theme System
 8 beautiful themes to personalize the app:
-- Orange Fire (default)
+- Orange Fire
 - Blue Light
 - Forest Green
 - Ocean Blue
 - Synthwave
-- Coastal Sunset
+- Coastal Sunset (default)
 - Nordic Red
 - Neon Carnival
 

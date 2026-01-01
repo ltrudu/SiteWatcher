@@ -227,10 +227,14 @@ public final class CheckScheduler {
         }
 
         // Then apply the interval timing
-        if (schedule.getIntervalType() == ScheduleType.PERIODIC) {
-            return calculatePeriodicAlarmTimeForSchedule(schedule, site, now, nextValidDate);
-        } else {
-            return calculateSpecificHourAlarmTimeForSchedule(schedule, nextValidDate);
+        switch (schedule.getIntervalType()) {
+            case PERIODIC:
+                return calculatePeriodicAlarmTimeForSchedule(schedule, site, now, nextValidDate);
+            case LIVE_TRACKING:
+                return calculateLiveTrackingAlarmTimeForSchedule(schedule, site, now, nextValidDate);
+            case SPECIFIC_HOUR:
+            default:
+                return calculateSpecificHourAlarmTimeForSchedule(schedule, nextValidDate);
         }
     }
 
@@ -374,6 +378,70 @@ public final class CheckScheduler {
             next.set(Calendar.SECOND, 0);
             next.set(Calendar.MILLISECOND, 0);
             next.add(Calendar.MINUTE, intervalMinutes);
+            return next.getTimeInMillis();
+        }
+
+        return nextAlarm.getTimeInMillis();
+    }
+
+    /**
+     * Calculate next live tracking alarm time for a Schedule object.
+     * Live tracking uses seconds-level intervals for real-time monitoring.
+     * @param schedule The schedule
+     * @param site The WatchedSite (for last check time)
+     * @param now Current time
+     * @param nextValidDate The next date when the schedule is active
+     * @return Next alarm time in milliseconds
+     */
+    private long calculateLiveTrackingAlarmTimeForSchedule(@NonNull Schedule schedule,
+            @NonNull WatchedSite site, @NonNull Calendar now, @NonNull Calendar nextValidDate) {
+
+        int intervalSeconds = schedule.getLiveTrackingIntervalSeconds();
+        if (intervalSeconds <= 0) {
+            intervalSeconds = 30; // Default to 30 seconds
+        }
+
+        Calendar nextAlarm = (Calendar) nextValidDate.clone();
+
+        // If the valid date is today, calculate based on last check time
+        if (isSameDay(now.getTimeInMillis(), nextValidDate.getTimeInMillis())) {
+            if (site.getLastCheckTime() > 0) {
+                Calendar fromLastCheck = Calendar.getInstance();
+                fromLastCheck.setTimeInMillis(site.getLastCheckTime());
+                fromLastCheck.add(Calendar.SECOND, intervalSeconds);
+
+                // If the calculated time is in the future and on a valid date, use it
+                if (fromLastCheck.after(now)) {
+                    // Verify it's still on a valid date
+                    if (isDateValidForSchedule(schedule, fromLastCheck)) {
+                        return fromLastCheck.getTimeInMillis();
+                    }
+                }
+            }
+            // No previous check or time already passed, schedule for interval from now
+            nextAlarm = (Calendar) now.clone();
+            nextAlarm.add(Calendar.SECOND, intervalSeconds);
+        } else {
+            // Future date: schedule for start of that day plus interval
+            nextAlarm.set(Calendar.HOUR_OF_DAY, 0);
+            nextAlarm.set(Calendar.MINUTE, 0);
+            nextAlarm.set(Calendar.SECOND, 0);
+            nextAlarm.set(Calendar.MILLISECOND, 0);
+            nextAlarm.add(Calendar.SECOND, intervalSeconds);
+        }
+
+        // Validate the result is still on a valid date for the schedule
+        if (!isDateValidForSchedule(schedule, nextAlarm)) {
+            // Move to next valid date
+            Calendar next = findNextValidDate(schedule, nextAlarm);
+            if (next == null) {
+                return -1;
+            }
+            next.set(Calendar.HOUR_OF_DAY, 0);
+            next.set(Calendar.MINUTE, 0);
+            next.set(Calendar.SECOND, 0);
+            next.set(Calendar.MILLISECOND, 0);
+            next.add(Calendar.SECOND, intervalSeconds);
             return next.getTimeInMillis();
         }
 
@@ -679,34 +747,46 @@ public final class CheckScheduler {
      * @return true if it's time for a check based on the interval
      */
     private boolean checkIntervalMatches(@NonNull Schedule schedule, @NonNull Calendar now, long lastCheckTime) {
-        if (schedule.getIntervalType() == ScheduleType.PERIODIC) {
-            // For periodic: check if enough time has passed since last check
-            if (lastCheckTime <= 0) {
-                return true; // Never checked, should check now
-            }
-            long intervalMillis = schedule.getIntervalMinutes() * 60L * 1000L;
-            long elapsed = now.getTimeInMillis() - lastCheckTime;
-            return elapsed >= intervalMillis;
-        } else {
-            // For specific hour: check if current time matches scheduled time
-            int currentHour = now.get(Calendar.HOUR_OF_DAY);
-            int currentMinute = now.get(Calendar.MINUTE);
-
-            // Allow a 5-minute window for the scheduled time
-            int scheduledMinuteOfDay = schedule.getScheduleHour() * 60 + schedule.getScheduleMinute();
-            int currentMinuteOfDay = currentHour * 60 + currentMinute;
-            int diff = Math.abs(currentMinuteOfDay - scheduledMinuteOfDay);
-
-            if (diff <= 5) {
-                // Within the window, check if we haven't already checked today
+        switch (schedule.getIntervalType()) {
+            case PERIODIC:
+                // For periodic: check if enough time has passed since last check
                 if (lastCheckTime <= 0) {
-                    return true;
+                    return true; // Never checked, should check now
                 }
-                // Don't trigger if we already checked within the last hour
+                long intervalMillis = schedule.getIntervalMinutes() * 60L * 1000L;
                 long elapsed = now.getTimeInMillis() - lastCheckTime;
-                return elapsed >= 60L * 60L * 1000L;
-            }
-            return false;
+                return elapsed >= intervalMillis;
+
+            case LIVE_TRACKING:
+                // For live tracking: check if enough seconds have passed since last check
+                if (lastCheckTime <= 0) {
+                    return true; // Never checked, should check now
+                }
+                long intervalSecondsMillis = schedule.getLiveTrackingIntervalSeconds() * 1000L;
+                long elapsedLive = now.getTimeInMillis() - lastCheckTime;
+                return elapsedLive >= intervalSecondsMillis;
+
+            case SPECIFIC_HOUR:
+            default:
+                // For specific hour: check if current time matches scheduled time
+                int currentHour = now.get(Calendar.HOUR_OF_DAY);
+                int currentMinute = now.get(Calendar.MINUTE);
+
+                // Allow a 5-minute window for the scheduled time
+                int scheduledMinuteOfDay = schedule.getScheduleHour() * 60 + schedule.getScheduleMinute();
+                int currentMinuteOfDay = currentHour * 60 + currentMinute;
+                int diff = Math.abs(currentMinuteOfDay - scheduledMinuteOfDay);
+
+                if (diff <= 5) {
+                    // Within the window, check if we haven't already checked today
+                    if (lastCheckTime <= 0) {
+                        return true;
+                    }
+                    // Don't trigger if we already checked within the last hour
+                    long elapsedSpecific = now.getTimeInMillis() - lastCheckTime;
+                    return elapsedSpecific >= 60L * 60L * 1000L;
+                }
+                return false;
         }
     }
 }

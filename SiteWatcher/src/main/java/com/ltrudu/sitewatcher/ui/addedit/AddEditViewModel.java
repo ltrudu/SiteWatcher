@@ -11,6 +11,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.ltrudu.sitewatcher.background.CheckScheduler;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
+import com.ltrudu.sitewatcher.data.model.DiffAlgorithmType;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
@@ -55,6 +56,7 @@ public class AddEditViewModel extends AndroidViewModel {
     private final MutableLiveData<String> cssSelector = new MutableLiveData<>("");
     private final MutableLiveData<Integer> minTextLength = new MutableLiveData<>(10);
     private final MutableLiveData<Integer> minWordLength = new MutableLiveData<>(3);
+    private final MutableLiveData<DiffAlgorithmType> diffAlgorithm = new MutableLiveData<>(DiffAlgorithmType.LINE);
     private final MutableLiveData<List<AutoClickAction>> autoClickActions = new MutableLiveData<>(new ArrayList<>());
 
     // Schedules system (JSON format)
@@ -104,6 +106,7 @@ public class AddEditViewModel extends AndroidViewModel {
         cssSelector.setValue("");
         minTextLength.setValue(10);
         minWordLength.setValue(3);
+        diffAlgorithm.setValue(DiffAlgorithmType.LINE);
         autoClickActions.setValue(new ArrayList<>());
         schedulesJson = Schedule.toJsonString(Schedule.createDefaultList());
         isUrlValid.setValue(false);
@@ -152,6 +155,7 @@ public class AddEditViewModel extends AndroidViewModel {
         cssSelector.postValue(site.getCssSelector() != null ? site.getCssSelector() : "");
         minTextLength.postValue(site.getMinTextLength());
         minWordLength.postValue(site.getMinWordLength());
+        diffAlgorithm.postValue(site.getDiffAlgorithm());
 
         // Load auto-click actions
         List<AutoClickAction> actions = site.getAutoClickActions();
@@ -237,6 +241,9 @@ public class AddEditViewModel extends AndroidViewModel {
 
         Integer minWord = minWordLength.getValue();
         site.setMinWordLength(minWord != null ? minWord : 3);
+
+        DiffAlgorithmType algorithm = diffAlgorithm.getValue();
+        site.setDiffAlgorithm(algorithm != null ? algorithm : DiffAlgorithmType.LINE);
 
         List<AutoClickAction> actions = autoClickActions.getValue();
         site.setAutoClickActions(actions);
@@ -351,6 +358,10 @@ public class AddEditViewModel extends AndroidViewModel {
         return minWordLength;
     }
 
+    public MutableLiveData<DiffAlgorithmType> getDiffAlgorithm() {
+        return diffAlgorithm;
+    }
+
     public MutableLiveData<List<AutoClickAction>> getAutoClickActions() {
         return autoClickActions;
     }
@@ -408,6 +419,10 @@ public class AddEditViewModel extends AndroidViewModel {
 
     public void setMinWordLength(int length) {
         this.minWordLength.setValue(length);
+    }
+
+    public void setDiffAlgorithm(DiffAlgorithmType algorithm) {
+        this.diffAlgorithm.setValue(algorithm);
     }
 
     public void addAutoClickAction(AutoClickAction action) {

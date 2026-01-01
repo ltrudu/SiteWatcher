@@ -35,6 +35,8 @@
     <string name="next_check_in_days">Next check in: %1$d day(s)</string>
     <string name="next_check_on">Next check: %1$s</string>
     <string name="next_check_soon">Next check in: &lt;1 min</string>
+    <string name="next_check_in_seconds">Next check in: %d sec</string>
+    <string name="next_check_in_millis">Next check in: %1$d.%2$d sec</string>
     <string name="next_check_overdue">Check overdue</string>
     <string name="never_checked">Never checked</string>
     <string name="change_percent">%1$.1f%% changed</string>
@@ -93,6 +95,15 @@
     <string name="fetch_mode_static_desc">Fetches raw HTML quickly. Does not execute JavaScript.</string>
     <string name="fetch_mode_javascript">JavaScript (Dynamic)</string>
     <string name="fetch_mode_javascript_desc">Waits for JavaScript to execute. Required for dynamic content like calendars, AJAX data, SPAs.</string>
+
+    <!-- Diff Algorithms -->
+    <string name="diff_algorithm">Diff Algorithm</string>
+    <string name="diff_algorithm_line">Line-based (Default)</string>
+    <string name="diff_algorithm_line_desc">Standard diff like Git. Compares whole lines. Best for code and HTML.</string>
+    <string name="diff_algorithm_word">Word-based</string>
+    <string name="diff_algorithm_word_desc">Compares individual words. Better for text, articles, and prose.</string>
+    <string name="diff_algorithm_character">Character-based</string>
+    <string name="diff_algorithm_character_desc">Compares individual characters. Most sensitive. Best for prices and numbers.</string>
 
     <!-- Auto-Click Actions -->
     <string name="auto_click_actions">Auto-Click Actions</string>
@@ -186,7 +197,15 @@
 
     <!-- Interval Types -->
     <string name="interval_periodic">Periodic</string>
+    <string name="interval_live_tracking">Live Tracking</string>
     <string name="interval_specific_hour">Specific Time</string>
+
+    <!-- Live Tracking -->
+    <string name="live_tracking_minutes">Minutes</string>
+    <string name="live_tracking_seconds">Seconds</string>
+    <string name="live_tracking_minutes_value">%d min</string>
+    <string name="live_tracking_seconds_value">%d sec</string>
+    <string name="live_tracking_total_interval">Total interval: %s</string>
 
     <!-- Week Parity -->
     <string name="week_parity_both">Every Week</string>
@@ -196,6 +215,10 @@
     <!-- Schedule Messages -->
     <string name="schedule_already_exists">This schedule type already exists</string>
     <string name="cannot_delete_last_schedule">Cannot delete the last schedule</string>
+    <string name="clear_outdated">Clear Outdated</string>
+    <string name="clear_outdated_hint">Remove schedules with dates before today</string>
+    <string name="outdated_schedules_cleared">%d outdated schedule(s) removed</string>
+    <string name="no_outdated_schedules">No outdated schedules found</string>
     <string name="delete_schedule_confirm">Delete this schedule?</string>
     <string name="edit_schedule">Edit Schedule</string>
     <string name="add_new_schedule">Add Schedule</string>

@@ -68,9 +68,10 @@ public class SiteCheckWorker implements Runnable {
          * Compare two content strings and return the change percentage.
          * @param oldContent The previous content
          * @param newContent The new content
+         * @param site The watched site (provides comparison mode, diff algorithm, etc.)
          * @return Change percentage (0-100)
          */
-        float compareContent(@Nullable String oldContent, @NonNull String newContent);
+        float compareContent(@Nullable String oldContent, @NonNull String newContent, @NonNull WatchedSite site);
     }
 
     /**
@@ -445,7 +446,7 @@ public class SiteCheckWorker implements Runnable {
             return 0f;
         }
 
-        return contentComparator.compareContent(oldContent, newContent);
+        return contentComparator.compareContent(oldContent, newContent, site);
     }
 
     /**

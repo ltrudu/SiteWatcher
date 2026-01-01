@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
+import com.ltrudu.sitewatcher.data.model.DiffAlgorithmType;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
@@ -42,9 +43,10 @@ public class SiteExporter {
     private static final String KEY_FETCH_MODE = "fetchMode";
     private static final String KEY_AUTO_CLICK_ACTIONS = "autoClickActions";
     private static final String KEY_SCHEDULES = "schedules";
+    private static final String KEY_DIFF_ALGORITHM = "diffAlgorithm";
 
     // Current export format version
-    private static final int CURRENT_VERSION = 3;
+    private static final int CURRENT_VERSION = 4;
 
     /**
      * Generates a filename with the format: SiteWatcher_YY-MM-DD_HH-MM-SS.json
@@ -129,6 +131,7 @@ public class SiteExporter {
         json.put(KEY_MIN_TEXT_LENGTH, site.getMinTextLength());
         json.put(KEY_MIN_WORD_LENGTH, site.getMinWordLength());
         json.put(KEY_FETCH_MODE, site.getFetchMode().name());
+        json.put(KEY_DIFF_ALGORITHM, site.getDiffAlgorithm().name());
 
         // Export auto-click actions as JSON array
         String actionsJson = site.getAutoClickActionsJson();
@@ -188,6 +191,14 @@ public class SiteExporter {
                 site.setFetchMode(FetchMode.valueOf(fetchModeStr));
             } catch (IllegalArgumentException e) {
                 site.setFetchMode(FetchMode.STATIC);
+            }
+
+            // Parse diff algorithm
+            String diffAlgorithmStr = json.optString(KEY_DIFF_ALGORITHM, DiffAlgorithmType.LINE.name());
+            try {
+                site.setDiffAlgorithm(DiffAlgorithmType.valueOf(diffAlgorithmStr));
+            } catch (IllegalArgumentException e) {
+                site.setDiffAlgorithm(DiffAlgorithmType.LINE);
             }
 
             // Parse auto-click actions

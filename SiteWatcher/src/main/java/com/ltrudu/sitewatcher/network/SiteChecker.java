@@ -182,14 +182,15 @@ public class SiteChecker {
                 return;
             }
 
-            // Compare content using the configured comparison mode
+            // Compare content using the configured comparison mode and diff algorithm
             ComparisonResult comparisonResult = comparator.compareContent(
                     oldContent,
                     newContent,
                     site.getComparisonMode(),
                     site.getCssSelector(),
                     site.getMinTextLength(),
-                    site.getMinWordLength()
+                    site.getMinWordLength(),
+                    site.getDiffAlgorithm()
             );
 
             float changePercent = comparisonResult.getChangePercent();

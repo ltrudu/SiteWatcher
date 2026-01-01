@@ -4,6 +4,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
+import com.ltrudu.sitewatcher.data.model.DiffAlgorithmType;
+import com.ltrudu.sitewatcher.network.diff.DiffAlgorithm;
+import com.ltrudu.sitewatcher.network.diff.DiffAlgorithmFactory;
 import com.ltrudu.sitewatcher.util.Logger;
 
 import org.jsoup.Jsoup;
@@ -22,12 +25,13 @@ public class ContentComparator {
     /**
      * Compare two content strings based on the specified mode.
      *
-     * @param oldContent    The previous content
-     * @param newContent    The current content
-     * @param mode          The comparison mode to use
-     * @param cssSelector   CSS selector for CSS_SELECTOR mode (can be null for other modes)
-     * @param minTextLength Minimum text block length for TEXT_ONLY mode (3-50, filters small elements)
-     * @param minWordLength Minimum word length for TEXT_ONLY mode (words shorter than this are filtered out)
+     * @param oldContent     The previous content
+     * @param newContent     The current content
+     * @param mode           The comparison mode to use
+     * @param cssSelector    CSS selector for CSS_SELECTOR mode (can be null for other modes)
+     * @param minTextLength  Minimum text block length for TEXT_ONLY mode (3-50, filters small elements)
+     * @param minWordLength  Minimum word length for TEXT_ONLY mode (words shorter than this are filtered out)
+     * @param diffAlgorithm  The diff algorithm to use for change detection
      * @return ComparisonResult containing change metrics
      */
     @NonNull
@@ -36,7 +40,8 @@ public class ContentComparator {
                                            @NonNull ComparisonMode mode,
                                            @Nullable String cssSelector,
                                            int minTextLength,
-                                           int minWordLength) {
+                                           int minWordLength,
+                                           @NonNull DiffAlgorithmType diffAlgorithm) {
         // Handle null cases
         if (oldContent == null && newContent == null) {
             return ComparisonResult.noChange(0);
@@ -59,42 +64,40 @@ public class ContentComparator {
 
         switch (mode) {
             case TEXT_ONLY:
-                return compareTextOnly(oldContent, newContent, minTextLength, minWordLength);
+                return compareTextOnly(oldContent, newContent, minTextLength, minWordLength, diffAlgorithm);
             case CSS_SELECTOR:
-                return compareCssSelector(oldContent, newContent, cssSelector);
+                return compareCssSelector(oldContent, newContent, cssSelector, diffAlgorithm);
             case FULL_HTML:
             default:
-                return compareFullHtml(oldContent, newContent);
+                return compareFullHtml(oldContent, newContent, diffAlgorithm);
         }
     }
 
     /**
-     * Compare full HTML content.
+     * Compare full HTML content using the selected diff algorithm.
      *
-     * @param oldContent Previous HTML
-     * @param newContent Current HTML
+     * @param oldContent    Previous HTML
+     * @param newContent    Current HTML
+     * @param algorithmType The diff algorithm to use
      * @return Comparison result
      */
     @NonNull
     private ComparisonResult compareFullHtml(@NonNull String oldContent,
-                                             @NonNull String newContent) {
+                                             @NonNull String newContent,
+                                             @NonNull DiffAlgorithmType algorithmType) {
         int oldSize = oldContent.length();
         int newSize = newContent.length();
 
-        float changePercent = calculateSizeBasedChangePercent(oldSize, newSize);
-
-        // If sizes are similar, do a more sophisticated character-level comparison
-        if (changePercent < 20) {
-            float charDiffPercent = calculateCharacterDifference(oldContent, newContent);
-            // Use the higher of the two metrics
-            changePercent = Math.max(changePercent, charDiffPercent);
-        }
+        // Use the selected diff algorithm for change detection
+        DiffAlgorithm algorithm = DiffAlgorithmFactory.create(algorithmType);
+        DiffAlgorithm.DiffResult diffResult = algorithm.computeDiff(oldContent, newContent);
+        float changePercent = diffResult.getChangePercent();
 
         if (changePercent < 0.01f) {
             return ComparisonResult.noChange(oldSize);
         }
 
-        String description = buildChangeDescription(oldSize, newSize, changePercent);
+        String description = diffResult.getDescription();
         return ComparisonResult.changed(changePercent, oldSize, newSize, description);
     }
 
@@ -102,18 +105,21 @@ public class ContentComparator {
      * Compare only the text content, stripping HTML tags.
      * Filters out text blocks shorter than minTextLength to reduce false positives
      * from dynamic content like timestamps, counters, etc.
+     * Uses the selected diff algorithm for accurate change detection.
      *
      * @param oldContent    Previous HTML
      * @param newContent    Current HTML
      * @param minTextLength Minimum text block length (elements with shorter text are ignored)
      * @param minWordLength Minimum word length (words shorter than this are filtered out)
+     * @param algorithmType The diff algorithm to use
      * @return Comparison result
      */
     @NonNull
     private ComparisonResult compareTextOnly(@NonNull String oldContent,
                                              @NonNull String newContent,
                                              int minTextLength,
-                                             int minWordLength) {
+                                             int minWordLength,
+                                             @NonNull DiffAlgorithmType algorithmType) {
         try {
             String oldText = extractTextFiltered(oldContent, minTextLength, minWordLength);
             String newText = extractTextFiltered(newContent, minTextLength, minWordLength);
@@ -125,39 +131,39 @@ public class ContentComparator {
             int oldSize = oldText.length();
             int newSize = newText.length();
 
-            float changePercent = calculateSizeBasedChangePercent(oldSize, newSize);
+            // Use the selected diff algorithm for change detection
+            DiffAlgorithm algorithm = DiffAlgorithmFactory.create(algorithmType);
+            DiffAlgorithm.DiffResult diffResult = algorithm.computeDiff(oldText, newText);
+            float changePercent = diffResult.getChangePercent();
 
-            // For similar-sized text, do character comparison
-            if (changePercent < 20) {
-                float charDiffPercent = calculateCharacterDifference(oldText, newText);
-                changePercent = Math.max(changePercent, charDiffPercent);
-            }
-
-            String description = buildChangeDescription(oldSize, newSize, changePercent);
+            String description = diffResult.getDescription();
             return ComparisonResult.changed(changePercent, oldSize, newSize, description);
 
         } catch (Exception e) {
             Logger.e(TAG, "Error comparing text content", e);
             // Fall back to full HTML comparison
-            return compareFullHtml(oldContent, newContent);
+            return compareFullHtml(oldContent, newContent, algorithmType);
         }
     }
 
     /**
      * Compare content matched by a CSS selector.
+     * Uses the selected diff algorithm for accurate change detection.
      *
-     * @param oldContent  Previous HTML
-     * @param newContent  Current HTML
-     * @param cssSelector The CSS selector to use
+     * @param oldContent    Previous HTML
+     * @param newContent    Current HTML
+     * @param cssSelector   The CSS selector to use
+     * @param algorithmType The diff algorithm to use
      * @return Comparison result
      */
     @NonNull
     private ComparisonResult compareCssSelector(@NonNull String oldContent,
                                                 @NonNull String newContent,
-                                                @Nullable String cssSelector) {
+                                                @Nullable String cssSelector,
+                                                @NonNull DiffAlgorithmType algorithmType) {
         if (cssSelector == null || cssSelector.trim().isEmpty()) {
             Logger.w(TAG, "CSS selector is empty, falling back to text comparison");
-            return compareTextOnly(oldContent, newContent, 3, 1); // Use minimal filtering for fallback
+            return compareTextOnly(oldContent, newContent, 3, 1, algorithmType); // Use minimal filtering for fallback
         }
 
         try {
@@ -186,16 +192,12 @@ public class ContentComparator {
             int oldSize = oldSelected.length();
             int newSize = newSelected.length();
 
-            float changePercent = calculateSizeBasedChangePercent(oldSize, newSize);
+            // Use the selected diff algorithm for change detection
+            DiffAlgorithm algorithm = DiffAlgorithmFactory.create(algorithmType);
+            DiffAlgorithm.DiffResult diffResult = algorithm.computeDiff(oldSelected, newSelected);
+            float changePercent = diffResult.getChangePercent();
 
-            // For similar sizes, compare characters
-            if (changePercent < 20) {
-                float charDiffPercent = calculateCharacterDifference(oldSelected, newSelected);
-                changePercent = Math.max(changePercent, charDiffPercent);
-            }
-
-            String description = "Element changed (" + cssSelector + "): " +
-                    buildChangeDescription(oldSize, newSize, changePercent);
+            String description = "Element changed (" + cssSelector + "): " + diffResult.getDescription();
             return ComparisonResult.changed(changePercent, oldSize, newSize, description);
 
         } catch (Exception e) {
@@ -320,111 +322,5 @@ public class ContentComparator {
         }
 
         return sb.toString();
-    }
-
-    /**
-     * Calculate change percentage based on size difference.
-     * Formula: |newSize - oldSize| / max(oldSize, newSize) * 100
-     *
-     * @param oldSize Old content size
-     * @param newSize New content size
-     * @return Change percentage (0-100)
-     */
-    private float calculateSizeBasedChangePercent(int oldSize, int newSize) {
-        if (oldSize == 0 && newSize == 0) {
-            return 0f;
-        }
-
-        int maxSize = Math.max(oldSize, newSize);
-        int sizeDiff = Math.abs(newSize - oldSize);
-
-        return (sizeDiff / (float) maxSize) * 100f;
-    }
-
-    /**
-     * Calculate a more sophisticated character-level difference percentage.
-     * Uses Levenshtein-like approach but optimized for large strings.
-     *
-     * @param oldContent Old content
-     * @param newContent New content
-     * @return Difference percentage (0-100)
-     */
-    private float calculateCharacterDifference(@NonNull String oldContent,
-                                               @NonNull String newContent) {
-        // For very large strings, sample instead of full comparison
-        int maxSampleSize = 10000;
-
-        String oldSample = oldContent.length() > maxSampleSize ?
-                sampleString(oldContent, maxSampleSize) : oldContent;
-        String newSample = newContent.length() > maxSampleSize ?
-                sampleString(newContent, maxSampleSize) : newContent;
-
-        // Count differing characters using a simple approach
-        int maxLen = Math.max(oldSample.length(), newSample.length());
-        int minLen = Math.min(oldSample.length(), newSample.length());
-
-        if (maxLen == 0) {
-            return 0f;
-        }
-
-        int diffCount = 0;
-
-        // Compare overlapping portion
-        for (int i = 0; i < minLen; i++) {
-            if (oldSample.charAt(i) != newSample.charAt(i)) {
-                diffCount++;
-            }
-        }
-
-        // Add non-overlapping portion as differences
-        diffCount += (maxLen - minLen);
-
-        return (diffCount / (float) maxLen) * 100f;
-    }
-
-    /**
-     * Sample a string by taking characters from beginning, middle, and end.
-     *
-     * @param input      The string to sample
-     * @param sampleSize Target sample size
-     * @return Sampled string
-     */
-    @NonNull
-    private String sampleString(@NonNull String input, int sampleSize) {
-        if (input.length() <= sampleSize) {
-            return input;
-        }
-
-        int thirdSize = sampleSize / 3;
-        int start = thirdSize;
-        int middle = input.length() / 2;
-        int end = input.length() - thirdSize;
-
-        return input.substring(0, start) +
-                input.substring(middle - thirdSize / 2, middle + thirdSize / 2) +
-                input.substring(end);
-    }
-
-    /**
-     * Build a human-readable change description.
-     *
-     * @param oldSize       Old content size
-     * @param newSize       New content size
-     * @param changePercent Change percentage
-     * @return Description string
-     */
-    @NonNull
-    private String buildChangeDescription(int oldSize, int newSize, float changePercent) {
-        int diff = newSize - oldSize;
-
-        if (diff > 0) {
-            return String.format("Content increased by %d chars (%.1f%% change)",
-                    diff, changePercent);
-        } else if (diff < 0) {
-            return String.format("Content decreased by %d chars (%.1f%% change)",
-                    Math.abs(diff), changePercent);
-        } else {
-            return String.format("Content modified (%.1f%% change)", changePercent);
-        }
     }
 }

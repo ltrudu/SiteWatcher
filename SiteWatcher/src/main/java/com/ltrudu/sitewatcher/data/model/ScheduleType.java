@@ -10,7 +10,14 @@ public enum ScheduleType {
     SPECIFIC_HOUR,
 
     /**
-     * Check periodically at a defined interval.
+     * Check periodically at a defined interval (minimum 15 minutes).
      */
-    PERIODIC
+    PERIODIC,
+
+    /**
+     * Live tracking mode with very short intervals (seconds to minutes).
+     * Used for real-time monitoring when changes need to be detected immediately.
+     * Interval is specified in minutes (0-15) + seconds (1-60).
+     */
+    LIVE_TRACKING
 }

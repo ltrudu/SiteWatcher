@@ -240,6 +240,7 @@ public class SiteRepository {
                 duplicate.setMinTextLength(site.getMinTextLength());
                 duplicate.setMinWordLength(site.getMinWordLength());
                 duplicate.setFetchMode(site.getFetchMode());
+                duplicate.setDiffAlgorithm(site.getDiffAlgorithm());
                 duplicate.setAutoClickActionsJson(site.getAutoClickActionsJson());
                 duplicate.setSchedulesJson(site.getSchedulesJson());
                 duplicate.setCreatedAt(System.currentTimeMillis());

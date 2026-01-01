@@ -77,6 +77,16 @@ public class WatchedSite {
     private String schedulesJson;
 
     /**
+     * Diff algorithm to use for content comparison.
+     * LINE (default) = line-based LCS like Git
+     * WORD = word-based for prose/articles
+     * CHARACTER = character-based for maximum sensitivity
+     */
+    @NonNull
+    @ColumnInfo(name = "diff_algorithm", defaultValue = "LINE")
+    private DiffAlgorithmType diffAlgorithm;
+
+    /**
      * Minimum change percentage (1-99) to trigger notification.
      */
     @ColumnInfo(name = "threshold_percent")
@@ -111,6 +121,7 @@ public class WatchedSite {
         this.url = "";
         this.comparisonMode = ComparisonMode.TEXT_ONLY;
         this.fetchMode = FetchMode.STATIC;
+        this.diffAlgorithm = DiffAlgorithmType.LINE;
         this.minTextLength = 10; // Minimum 10 characters per text block
         this.minWordLength = 3; // Minimum 3 characters per word
         this.thresholdPercent = 5;
@@ -188,6 +199,15 @@ public class WatchedSite {
 
     public void setFetchMode(@NonNull FetchMode fetchMode) {
         this.fetchMode = fetchMode;
+    }
+
+    @NonNull
+    public DiffAlgorithmType getDiffAlgorithm() {
+        return diffAlgorithm != null ? diffAlgorithm : DiffAlgorithmType.LINE;
+    }
+
+    public void setDiffAlgorithm(@NonNull DiffAlgorithmType diffAlgorithm) {
+        this.diffAlgorithm = diffAlgorithm;
     }
 
     @Nullable

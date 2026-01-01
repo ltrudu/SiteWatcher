@@ -1,9 +1,13 @@
 package com.ltrudu.sitewatcher.ui.addedit;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateInterpolator;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.Toast;
@@ -28,6 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -43,16 +48,24 @@ public class EditSchedulesFragment extends Fragment {
     public static final String RESULT_KEY = "editSchedulesResult";
     public static final String RESULT_SCHEDULES_JSON = "schedules_json";
 
+    // Animation constants
+    private static final int ANIMATION_DURATION = 400;
+    private static final int ANIMATION_STAGGER_DELAY = 300;
+    private static final float SLIDE_DISTANCE = 300f;
+    private static final float SCALE_END = 0.5f;
+
     // Views
     private RecyclerView recyclerSchedules;
     private LinearLayout emptyState;
     private MaterialButton buttonClose;
     private FloatingActionButton fabAddSchedule;
+    private ImageButton buttonClearOutdated;
 
     // Data
     private List<Schedule> schedules;
     private ScheduleAdapter adapter;
     private ItemTouchHelper itemTouchHelper;
+    private Handler handler;
 
     public EditSchedulesFragment() {
         // Required empty public constructor
@@ -61,6 +74,8 @@ public class EditSchedulesFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        handler = new Handler(Looper.getMainLooper());
 
         // Parse arguments
         if (getArguments() != null) {
@@ -102,6 +117,7 @@ public class EditSchedulesFragment extends Fragment {
         emptyState = view.findViewById(R.id.emptyState);
         buttonClose = view.findViewById(R.id.buttonClose);
         fabAddSchedule = view.findViewById(R.id.fabAddSchedule);
+        buttonClearOutdated = view.findViewById(R.id.buttonClearOutdated);
     }
 
     private void setupRecyclerView() {
@@ -271,6 +287,139 @@ public class EditSchedulesFragment extends Fragment {
             saveSchedulesResult();
             Navigation.findNavController(requireView()).popBackStack();
         });
+
+        buttonClearOutdated.setOnClickListener(v -> clearOutdatedSchedules());
+    }
+
+    /**
+     * Clear all outdated schedules with dramatic animations.
+     * Outdated schedules are:
+     * - SELECTED_DAY where selectedDate < today
+     * - DATE_RANGE where toDate < today
+     */
+    private void clearOutdatedSchedules() {
+        // Get today's date at midnight (start of day)
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+        long todayMidnight = today.getTimeInMillis();
+
+        // Find all outdated schedules
+        List<Schedule> outdatedSchedules = new ArrayList<>();
+        for (Schedule schedule : schedules) {
+            CalendarScheduleType type = schedule.getCalendarType();
+
+            if (type == CalendarScheduleType.SELECTED_DAY) {
+                if (schedule.getSelectedDate() < todayMidnight) {
+                    outdatedSchedules.add(schedule);
+                }
+            } else if (type == CalendarScheduleType.DATE_RANGE) {
+                if (schedule.getToDate() < todayMidnight) {
+                    outdatedSchedules.add(schedule);
+                }
+            }
+        }
+
+        // Check if no outdated schedules found
+        if (outdatedSchedules.isEmpty()) {
+            Toast.makeText(requireContext(), R.string.no_outdated_schedules, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Ensure we keep at least one schedule
+        int maxDeletions = schedules.size() - 1;
+        if (outdatedSchedules.size() > maxDeletions) {
+            // Trim the list to keep at least one schedule
+            outdatedSchedules = outdatedSchedules.subList(0, maxDeletions);
+        }
+
+        if (outdatedSchedules.isEmpty()) {
+            Toast.makeText(requireContext(), R.string.cannot_delete_last_schedule, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Logger.d(TAG, "Found " + outdatedSchedules.size() + " outdated schedules to delete");
+
+        // Animate and delete each outdated schedule
+        final int totalToDelete = outdatedSchedules.size();
+        animateAndDeleteSchedules(outdatedSchedules, 0, totalToDelete);
+    }
+
+    /**
+     * Recursively animate and delete schedules one by one with staggered timing.
+     *
+     * @param schedulesToDelete List of schedules to delete
+     * @param currentIndex      Current index being processed
+     * @param totalDeleted      Total number being deleted (for final message)
+     */
+    private void animateAndDeleteSchedules(List<Schedule> schedulesToDelete, int currentIndex, int totalDeleted) {
+        if (currentIndex >= schedulesToDelete.size()) {
+            // All done - show completion message
+            String message = getString(R.string.outdated_schedules_cleared, totalDeleted);
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+
+            // Update order values
+            for (int i = 0; i < schedules.size(); i++) {
+                schedules.get(i).setOrder(i);
+            }
+            return;
+        }
+
+        Schedule scheduleToDelete = schedulesToDelete.get(currentIndex);
+        int position = schedules.indexOf(scheduleToDelete);
+
+        if (position < 0) {
+            // Schedule already removed, move to next
+            animateAndDeleteSchedules(schedulesToDelete, currentIndex + 1, totalDeleted);
+            return;
+        }
+
+        // Get the ViewHolder for animation
+        RecyclerView.ViewHolder viewHolder = recyclerSchedules.findViewHolderForAdapterPosition(position);
+
+        if (viewHolder != null) {
+            View itemView = viewHolder.itemView;
+
+            // Create dramatic animation: slide right + fade out + scale down
+            itemView.animate()
+                    .translationX(SLIDE_DISTANCE)
+                    .alpha(0f)
+                    .scaleX(SCALE_END)
+                    .scaleY(SCALE_END)
+                    .setDuration(ANIMATION_DURATION)
+                    .setInterpolator(new AccelerateInterpolator())
+                    .withEndAction(() -> {
+                        // Remove from data after animation
+                        schedules.remove(scheduleToDelete);
+                        adapter.notifyItemRemoved(position);
+
+                        // Reset view properties for recycling
+                        itemView.setTranslationX(0f);
+                        itemView.setAlpha(1f);
+                        itemView.setScaleX(1f);
+                        itemView.setScaleY(1f);
+
+                        updateEmptyState();
+
+                        // Schedule next deletion with staggered delay
+                        handler.postDelayed(() -> {
+                            animateAndDeleteSchedules(schedulesToDelete, currentIndex + 1, totalDeleted);
+                        }, ANIMATION_STAGGER_DELAY);
+                    })
+                    .start();
+        } else {
+            // ViewHolder not visible, just remove without animation
+            schedules.remove(scheduleToDelete);
+            adapter.notifyDataSetChanged();
+            updateEmptyState();
+
+            // Continue to next
+            handler.postDelayed(() -> {
+                animateAndDeleteSchedules(schedulesToDelete, currentIndex + 1, totalDeleted);
+            }, ANIMATION_STAGGER_DELAY);
+        }
     }
 
     private void setupFragmentResultListeners() {
@@ -435,9 +584,14 @@ public class EditSchedulesFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        // Remove any pending callbacks to prevent memory leaks
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+        }
         recyclerSchedules = null;
         emptyState = null;
         buttonClose = null;
         fabAddSchedule = null;
+        buttonClearOutdated = null;
     }
 }

@@ -27,7 +27,7 @@ import com.ltrudu.sitewatcher.data.model.WatchedSite;
         SiteHistory.class,
         CheckResult.class
     },
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters({Converters.class})
@@ -137,6 +137,17 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
     };
 
     /**
+     * Migration from version 7 to 8: Add diff_algorithm column.
+     * Allows users to select different diff algorithms (LINE, WORD, CHARACTER).
+     */
+    private static final Migration MIGRATION_7_8 = new Migration(7, 8) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN diff_algorithm TEXT NOT NULL DEFAULT 'LINE'");
+        }
+    };
+
+    /**
      * Get the WatchedSite DAO.
      *
      * @return WatchedSiteDao instance
@@ -173,7 +184,7 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
                             SiteWatcherDatabase.class,
                             DATABASE_NAME
                     )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .fallbackToDestructiveMigration()
                     .build();
                 }

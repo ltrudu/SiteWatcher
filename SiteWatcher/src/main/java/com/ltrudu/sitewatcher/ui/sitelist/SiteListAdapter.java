@@ -1,6 +1,8 @@
 package com.ltrudu.sitewatcher.ui.sitelist;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -250,6 +252,7 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
 
     /**
      * ViewHolder for site items.
+     * Supports real-time countdown for next check time when under 1 minute.
      */
     class SiteViewHolder extends RecyclerView.ViewHolder {
 
@@ -259,6 +262,11 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
         private final TextView textNextCheck;
         private final TextView textError;
         private final TextView textChangePercent;
+
+        private final Handler countdownHandler = new Handler(Looper.getMainLooper());
+        private Runnable countdownRunnable;
+        private long nextCheckTime = -1;
+        private WatchedSite boundSite;
 
         SiteViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -271,11 +279,74 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
         }
 
         /**
+         * Stop the countdown timer.
+         */
+        void stopCountdown() {
+            if (countdownRunnable != null) {
+                countdownHandler.removeCallbacks(countdownRunnable);
+                countdownRunnable = null;
+            }
+        }
+
+        /**
+         * Start the real-time countdown timer for seconds display.
+         * Shows milliseconds when under 10 seconds for dramatic effect.
+         */
+        private void startCountdown() {
+            stopCountdown();
+
+            countdownRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (boundSite == null || nextCheckTime <= 0) {
+                        return;
+                    }
+
+                    long now = System.currentTimeMillis();
+                    long diffMs = nextCheckTime - now;
+                    long diffSeconds = diffMs / 1000;
+
+                    Context context = itemView.getContext();
+
+                    if (diffMs < 0) {
+                        // Overdue
+                        textNextCheck.setText(R.string.next_check_overdue);
+                        // Stop countdown, will be refreshed when site is checked
+                    } else if (diffMs < 10000) {
+                        // Less than 10 seconds - show with tenths for dramatic effect
+                        int secs = (int) (diffMs / 1000);
+                        int tenths = (int) ((diffMs % 1000) / 100);
+                        textNextCheck.setText(context.getString(R.string.next_check_in_millis, secs, tenths));
+                        // Update every 100ms for smooth countdown
+                        countdownHandler.postDelayed(this, 100);
+                    } else if (diffSeconds < 60) {
+                        // Less than a minute - show seconds and continue countdown
+                        textNextCheck.setText(context.getString(R.string.next_check_in_seconds, (int) diffSeconds));
+                        countdownHandler.postDelayed(this, 1000);
+                    } else {
+                        // More than a minute - show minutes (no need for per-second updates)
+                        long diffMinutes = diffSeconds / 60;
+                        textNextCheck.setText(context.getString(R.string.next_check_in, (int) diffMinutes));
+                        // Schedule next update in 1 second to catch when it drops below 1 minute
+                        countdownHandler.postDelayed(this, 1000);
+                    }
+                }
+            };
+
+            // Start immediately
+            countdownHandler.post(countdownRunnable);
+        }
+
+        /**
          * Bind a site to this ViewHolder.
          * @param site The site to display
          */
         void bind(@NonNull WatchedSite site) {
             Context context = itemView.getContext();
+            boundSite = site;
+
+            // Stop any existing countdown
+            stopCountdown();
 
             // Show/hide checking indicator
             boolean isCurrentlyChecking = checkingSites.contains(site.getId());
@@ -309,23 +380,33 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
 
             // Set next check time
             if (site.isEnabled()) {
-                long nextCheckTime = calculateNextCheckTime(context, site);
+                nextCheckTime = calculateNextCheckTime(context, site);
                 if (nextCheckTime > 0) {
                     long now = System.currentTimeMillis();
                     long diffMs = nextCheckTime - now;
-                    long diffMinutes = diffMs / (1000 * 60);
+                    long diffSeconds = diffMs / 1000;
+                    long diffMinutes = diffSeconds / 60;
                     long diffHours = diffMinutes / 60;
                     long diffDays = diffHours / 24;
 
-                    if (diffMinutes < 0) {
+                    if (diffMs < 0) {
                         // Overdue
                         textNextCheck.setText(R.string.next_check_overdue);
-                    } else if (diffMinutes < 1) {
-                        // Less than a minute
-                        textNextCheck.setText(R.string.next_check_soon);
+                    } else if (diffMs < 10000) {
+                        // Less than 10 seconds - show with tenths for dramatic effect
+                        int secs = (int) (diffMs / 1000);
+                        int tenths = (int) ((diffMs % 1000) / 100);
+                        textNextCheck.setText(context.getString(R.string.next_check_in_millis, secs, tenths));
+                        startCountdown();
+                    } else if (diffSeconds < 60) {
+                        // Less than a minute - show seconds and start countdown
+                        textNextCheck.setText(context.getString(R.string.next_check_in_seconds, (int) diffSeconds));
+                        startCountdown();
                     } else if (diffMinutes < 60) {
                         // Less than an hour, show minutes
                         textNextCheck.setText(context.getString(R.string.next_check_in, (int) diffMinutes));
+                        // Start countdown to update when it drops below 1 minute
+                        startCountdown();
                     } else if (diffHours < 24) {
                         // Less than a day, show hours and minutes
                         int hours = (int) diffHours;
@@ -343,9 +424,11 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
                     }
                     textNextCheck.setVisibility(View.VISIBLE);
                 } else {
+                    nextCheckTime = -1;
                     textNextCheck.setVisibility(View.GONE);
                 }
             } else {
+                nextCheckTime = -1;
                 textNextCheck.setVisibility(View.GONE);
             }
 
@@ -369,5 +452,12 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
                 return true;
             });
         }
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull SiteViewHolder holder) {
+        super.onViewRecycled(holder);
+        // Stop countdown when view is recycled to prevent memory leaks
+        holder.stopCountdown();
     }
 }

@@ -320,6 +320,32 @@
 
             </LinearLayout>
 
+            <!-- Diff Algorithm Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/diff_algorithm"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurface" />
+
+            <Spinner
+                android:id="@+id/diffAlgorithmSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/spinner_background"
+                android:padding="8dp" />
+
+            <TextView
+                android:id="@+id/diffAlgorithmHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/diff_algorithm_line_desc"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
             <!-- Threshold Section -->
             <LinearLayout
                 android:layout_width="match_parent"

@@ -28,6 +28,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.ltrudu.sitewatcher.background.CheckScheduler;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
+import com.ltrudu.sitewatcher.data.model.DiffAlgorithmType;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
@@ -66,6 +67,8 @@ public class AddEditFragment extends Fragment {
     private View minWordLengthSection;
     private Slider minWordLengthSlider;
     private android.widget.TextView minWordLengthValueLabel;
+    private Spinner diffAlgorithmSpinner;
+    private android.widget.TextView diffAlgorithmHint;
 
     // Auto-click views
     private View autoClickSection;
@@ -80,6 +83,7 @@ public class AddEditFragment extends Fragment {
     // Adapters
     private ArrayAdapter<String> fetchModeAdapter;
     private ArrayAdapter<String> comparisonModeAdapter;
+    private ArrayAdapter<String> diffAlgorithmAdapter;
 
     // Flag to prevent listener callbacks during initialization
     private boolean isInitializing = true;
@@ -153,6 +157,8 @@ public class AddEditFragment extends Fragment {
         minWordLengthSection = view.findViewById(R.id.minWordLengthSection);
         minWordLengthSlider = view.findViewById(R.id.minWordLengthSlider);
         minWordLengthValueLabel = view.findViewById(R.id.minWordLengthValueLabel);
+        diffAlgorithmSpinner = view.findViewById(R.id.diffAlgorithmSpinner);
+        diffAlgorithmHint = view.findViewById(R.id.diffAlgorithmHint);
 
         // Auto-click views
         autoClickSection = view.findViewById(R.id.autoClickSection);
@@ -206,6 +212,20 @@ public class AddEditFragment extends Fragment {
         );
         comparisonModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         comparisonModeSpinner.setAdapter(comparisonModeAdapter);
+
+        // Diff algorithm spinner
+        String[] diffAlgorithms = new String[]{
+                getString(R.string.diff_algorithm_line),
+                getString(R.string.diff_algorithm_word),
+                getString(R.string.diff_algorithm_character)
+        };
+        diffAlgorithmAdapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                diffAlgorithms
+        );
+        diffAlgorithmAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        diffAlgorithmSpinner.setAdapter(diffAlgorithmAdapter);
     }
 
     private void setupAutoClickSection() {
@@ -396,6 +416,22 @@ public class AddEditFragment extends Fragment {
             updateMinWordLengthLabel((int) value);
         });
 
+        // Diff algorithm spinner
+        diffAlgorithmSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!isInitializing) {
+                    DiffAlgorithmType algorithm = getDiffAlgorithmFromPosition(position);
+                    viewModel.setDiffAlgorithm(algorithm);
+                }
+                updateDiffAlgorithmHint(position);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
         // Cancel button
         cancelButton.setOnClickListener(v -> navigateBack());
 
@@ -472,6 +508,17 @@ public class AddEditFragment extends Fragment {
             if (minLength != null) {
                 minWordLengthSlider.setValue(minLength);
                 updateMinWordLengthLabel(minLength);
+            }
+        });
+
+        // Observe diff algorithm
+        viewModel.getDiffAlgorithm().observe(getViewLifecycleOwner(), algorithm -> {
+            if (algorithm != null) {
+                int position = getPositionFromDiffAlgorithm(algorithm);
+                if (diffAlgorithmSpinner.getSelectedItemPosition() != position) {
+                    diffAlgorithmSpinner.setSelection(position);
+                }
+                updateDiffAlgorithmHint(position);
             }
         });
 
@@ -580,6 +627,49 @@ public class AddEditFragment extends Fragment {
                 return 2;
             default:
                 return 1;
+        }
+    }
+
+    private DiffAlgorithmType getDiffAlgorithmFromPosition(int position) {
+        switch (position) {
+            case 0:
+                return DiffAlgorithmType.LINE;
+            case 1:
+                return DiffAlgorithmType.WORD;
+            case 2:
+                return DiffAlgorithmType.CHARACTER;
+            default:
+                return DiffAlgorithmType.LINE;
+        }
+    }
+
+    private int getPositionFromDiffAlgorithm(DiffAlgorithmType algorithm) {
+        switch (algorithm) {
+            case LINE:
+                return 0;
+            case WORD:
+                return 1;
+            case CHARACTER:
+                return 2;
+            default:
+                return 0;
+        }
+    }
+
+    private void updateDiffAlgorithmHint(int position) {
+        switch (position) {
+            case 0:
+                diffAlgorithmHint.setText(R.string.diff_algorithm_line_desc);
+                break;
+            case 1:
+                diffAlgorithmHint.setText(R.string.diff_algorithm_word_desc);
+                break;
+            case 2:
+                diffAlgorithmHint.setText(R.string.diff_algorithm_character_desc);
+                break;
+            default:
+                diffAlgorithmHint.setText(R.string.diff_algorithm_line_desc);
+                break;
         }
     }
 

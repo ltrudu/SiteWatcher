@@ -3,6 +3,7 @@ package com.ltrudu.sitewatcher.data.database;
 import androidx.room.TypeConverter;
 
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
+import com.ltrudu.sitewatcher.data.model.DiffAlgorithmType;
 import com.ltrudu.sitewatcher.data.model.NetworkMode;
 import com.ltrudu.sitewatcher.data.model.ScheduleType;
 
@@ -82,5 +83,29 @@ public class Converters {
     @TypeConverter
     public static NetworkMode toNetworkMode(String value) {
         return value == null ? null : NetworkMode.valueOf(value);
+    }
+
+    // DiffAlgorithmType converters
+
+    /**
+     * Convert DiffAlgorithmType enum to String for database storage.
+     *
+     * @param diffAlgorithmType The enum value
+     * @return String representation, or null if input is null
+     */
+    @TypeConverter
+    public static String fromDiffAlgorithmType(DiffAlgorithmType diffAlgorithmType) {
+        return diffAlgorithmType == null ? null : diffAlgorithmType.name();
+    }
+
+    /**
+     * Convert String from database to DiffAlgorithmType enum.
+     *
+     * @param value The stored string value
+     * @return DiffAlgorithmType enum, or null if input is null
+     */
+    @TypeConverter
+    public static DiffAlgorithmType toDiffAlgorithmType(String value) {
+        return value == null ? null : DiffAlgorithmType.valueOf(value);
     }
 }

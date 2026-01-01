@@ -32,6 +32,10 @@ public class Schedule {
     private int scheduleHour;         // For SPECIFIC_HOUR: hour (0-23)
     private int scheduleMinute;       // For SPECIFIC_HOUR: minute (0-59)
 
+    // LIVE_TRACKING specific
+    private int liveTrackingMinutes;  // For LIVE_TRACKING: minutes (0-15)
+    private int liveTrackingSeconds;  // For LIVE_TRACKING: seconds (1-60)
+
     // SELECTED_DAY specific
     private long selectedDate;        // Timestamp of the selected date
 
@@ -65,6 +69,8 @@ public class Schedule {
         this.intervalMinutes = 60;
         this.scheduleHour = 9;
         this.scheduleMinute = 0;
+        this.liveTrackingMinutes = 0;
+        this.liveTrackingSeconds = 30;  // Default 30 seconds for live tracking
         this.selectedDate = System.currentTimeMillis();
         this.fromDate = System.currentTimeMillis();
         this.toDate = System.currentTimeMillis() + (7L * 24 * 60 * 60 * 1000); // 1 week later
@@ -192,6 +198,31 @@ public class Schedule {
 
     public void setScheduleMinute(int scheduleMinute) {
         this.scheduleMinute = Math.max(0, Math.min(59, scheduleMinute));
+    }
+
+    public int getLiveTrackingMinutes() {
+        return liveTrackingMinutes;
+    }
+
+    public void setLiveTrackingMinutes(int liveTrackingMinutes) {
+        this.liveTrackingMinutes = Math.max(0, Math.min(15, liveTrackingMinutes));
+    }
+
+    public int getLiveTrackingSeconds() {
+        return liveTrackingSeconds;
+    }
+
+    public void setLiveTrackingSeconds(int liveTrackingSeconds) {
+        this.liveTrackingSeconds = Math.max(1, Math.min(60, liveTrackingSeconds));
+    }
+
+    /**
+     * Get the total live tracking interval in seconds.
+     *
+     * @return Total interval in seconds (minutes * 60 + seconds)
+     */
+    public int getLiveTrackingIntervalSeconds() {
+        return liveTrackingMinutes * 60 + liveTrackingSeconds;
     }
 
     public long getSelectedDate() {
@@ -331,6 +362,14 @@ public class Schedule {
     public String getSummary() {
         if (intervalType == ScheduleType.SPECIFIC_HOUR) {
             return String.format(Locale.getDefault(), "At %02d:%02d", scheduleHour, scheduleMinute);
+        } else if (intervalType == ScheduleType.LIVE_TRACKING) {
+            if (liveTrackingMinutes > 0 && liveTrackingSeconds > 0) {
+                return String.format(Locale.getDefault(), "Every %dm %ds", liveTrackingMinutes, liveTrackingSeconds);
+            } else if (liveTrackingMinutes > 0) {
+                return String.format(Locale.getDefault(), "Every %d min", liveTrackingMinutes);
+            } else {
+                return String.format(Locale.getDefault(), "Every %d sec", liveTrackingSeconds);
+            }
         } else {
             if (intervalMinutes >= 60) {
                 int hours = intervalMinutes / 60;
@@ -365,6 +404,8 @@ public class Schedule {
         json.put("intervalMinutes", intervalMinutes);
         json.put("scheduleHour", scheduleHour);
         json.put("scheduleMinute", scheduleMinute);
+        json.put("liveTrackingMinutes", liveTrackingMinutes);
+        json.put("liveTrackingSeconds", liveTrackingSeconds);
         json.put("selectedDate", selectedDate);
         json.put("fromDate", fromDate);
         json.put("toDate", toDate);
@@ -393,6 +434,8 @@ public class Schedule {
         schedule.intervalMinutes = json.optInt("intervalMinutes", 60);
         schedule.scheduleHour = json.optInt("scheduleHour", 9);
         schedule.scheduleMinute = json.optInt("scheduleMinute", 0);
+        schedule.liveTrackingMinutes = json.optInt("liveTrackingMinutes", 0);
+        schedule.liveTrackingSeconds = json.optInt("liveTrackingSeconds", 30);
         schedule.selectedDate = json.optLong("selectedDate", System.currentTimeMillis());
         schedule.fromDate = json.optLong("fromDate", System.currentTimeMillis());
         schedule.toDate = json.optLong("toDate", System.currentTimeMillis());
@@ -489,6 +532,8 @@ public class Schedule {
         copy.intervalMinutes = this.intervalMinutes;
         copy.scheduleHour = this.scheduleHour;
         copy.scheduleMinute = this.scheduleMinute;
+        copy.liveTrackingMinutes = this.liveTrackingMinutes;
+        copy.liveTrackingSeconds = this.liveTrackingSeconds;
         copy.selectedDate = this.selectedDate;
         copy.fromDate = this.fromDate;
         copy.toDate = this.toDate;

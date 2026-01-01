@@ -61,6 +61,14 @@ public class EditScheduleDialogFragment extends DialogFragment {
     private View specificTimeSection;
     private MaterialButton timePickerButton;
 
+    // Views - Live Tracking
+    private View liveTrackingSection;
+    private Slider liveTrackingMinutesSlider;
+    private Slider liveTrackingSecondsSlider;
+    private TextView liveTrackingMinutesLabel;
+    private TextView liveTrackingSecondsLabel;
+    private TextView liveTrackingTotalLabel;
+
     // Views - Selected Day
     private View selectedDaySection;
     private MaterialButton datePickerButton;
@@ -198,6 +206,14 @@ public class EditScheduleDialogFragment extends DialogFragment {
         specificTimeSection = view.findViewById(R.id.specificTimeSection);
         timePickerButton = view.findViewById(R.id.timePickerButton);
 
+        // Live tracking section
+        liveTrackingSection = view.findViewById(R.id.liveTrackingSection);
+        liveTrackingMinutesSlider = view.findViewById(R.id.liveTrackingMinutesSlider);
+        liveTrackingSecondsSlider = view.findViewById(R.id.liveTrackingSecondsSlider);
+        liveTrackingMinutesLabel = view.findViewById(R.id.liveTrackingMinutesLabel);
+        liveTrackingSecondsLabel = view.findViewById(R.id.liveTrackingSecondsLabel);
+        liveTrackingTotalLabel = view.findViewById(R.id.liveTrackingTotalLabel);
+
         // Selected day section
         selectedDaySection = view.findViewById(R.id.selectedDaySection);
         datePickerButton = view.findViewById(R.id.datePickerButton);
@@ -243,8 +259,10 @@ public class EditScheduleDialogFragment extends DialogFragment {
         spinnerScheduleType.setAdapter(scheduleTypeAdapter);
 
         // Interval Type Spinner (ScheduleType)
+        // Order: Periodic (0), Live Tracking (1), Specific Time (2)
         String[] intervalTypes = new String[]{
                 getString(R.string.interval_periodic),
+                getString(R.string.interval_live_tracking),
                 getString(R.string.interval_specific_hour)
         };
 
@@ -289,10 +307,22 @@ public class EditScheduleDialogFragment extends DialogFragment {
         });
 
         // Interval type spinner listener
+        // Order: Periodic (0), Live Tracking (1), Specific Time (2)
         spinnerIntervalType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                ScheduleType type = position == 0 ? ScheduleType.PERIODIC : ScheduleType.SPECIFIC_HOUR;
+                ScheduleType type;
+                switch (position) {
+                    case 1:
+                        type = ScheduleType.LIVE_TRACKING;
+                        break;
+                    case 2:
+                        type = ScheduleType.SPECIFIC_HOUR;
+                        break;
+                    default:
+                        type = ScheduleType.PERIODIC;
+                        break;
+                }
                 schedule.setIntervalType(type);
                 updateIntervalTypeVisibility(type);
             }
@@ -337,6 +367,20 @@ public class EditScheduleDialogFragment extends DialogFragment {
 
         // Time picker button
         timePickerButton.setOnClickListener(v -> showTimePicker());
+
+        // Live tracking minutes slider listener
+        liveTrackingMinutesSlider.addOnChangeListener((slider, value, fromUser) -> {
+            int minutes = (int) value;
+            schedule.setLiveTrackingMinutes(minutes);
+            updateLiveTrackingLabels();
+        });
+
+        // Live tracking seconds slider listener
+        liveTrackingSecondsSlider.addOnChangeListener((slider, value, fromUser) -> {
+            int seconds = (int) value;
+            schedule.setLiveTrackingSeconds(seconds);
+            updateLiveTrackingLabels();
+        });
 
         // Date picker button (selected day)
         datePickerButton.setOnClickListener(v -> showDatePicker(DatePickerMode.SELECTED_DAY));
@@ -396,7 +440,19 @@ public class EditScheduleDialogFragment extends DialogFragment {
         spinnerScheduleType.setSelection(scheduleTypePosition);
 
         // Set interval type spinner
-        int intervalTypePosition = schedule.getIntervalType() == ScheduleType.PERIODIC ? 0 : 1;
+        // Order: Periodic (0), Live Tracking (1), Specific Time (2)
+        int intervalTypePosition;
+        switch (schedule.getIntervalType()) {
+            case LIVE_TRACKING:
+                intervalTypePosition = 1;
+                break;
+            case SPECIFIC_HOUR:
+                intervalTypePosition = 2;
+                break;
+            default:
+                intervalTypePosition = 0;
+                break;
+        }
         spinnerIntervalType.setSelection(intervalTypePosition);
 
         // Set week parity spinner
@@ -417,6 +473,11 @@ public class EditScheduleDialogFragment extends DialogFragment {
         // Set interval slider
         intervalSlider.setValue(Math.max(15, Math.min(600, schedule.getIntervalMinutes())));
         updateIntervalLabel(schedule.getIntervalMinutes());
+
+        // Set live tracking sliders
+        liveTrackingMinutesSlider.setValue(Math.max(0, Math.min(15, schedule.getLiveTrackingMinutes())));
+        liveTrackingSecondsSlider.setValue(Math.max(1, Math.min(60, schedule.getLiveTrackingSeconds())));
+        updateLiveTrackingLabels();
 
         // Set time picker button
         updateTimePickerButton();
@@ -467,13 +528,48 @@ public class EditScheduleDialogFragment extends DialogFragment {
     }
 
     private void updateIntervalTypeVisibility(@NonNull ScheduleType type) {
-        if (type == ScheduleType.PERIODIC) {
-            periodicSection.setVisibility(View.VISIBLE);
-            specificTimeSection.setVisibility(View.GONE);
-        } else {
-            periodicSection.setVisibility(View.GONE);
-            specificTimeSection.setVisibility(View.VISIBLE);
+        // Hide all interval sections first
+        periodicSection.setVisibility(View.GONE);
+        liveTrackingSection.setVisibility(View.GONE);
+        specificTimeSection.setVisibility(View.GONE);
+
+        // Show the appropriate section
+        switch (type) {
+            case PERIODIC:
+                periodicSection.setVisibility(View.VISIBLE);
+                break;
+            case LIVE_TRACKING:
+                liveTrackingSection.setVisibility(View.VISIBLE);
+                break;
+            case SPECIFIC_HOUR:
+                specificTimeSection.setVisibility(View.VISIBLE);
+                break;
         }
+    }
+
+    private void updateLiveTrackingLabels() {
+        int minutes = schedule.getLiveTrackingMinutes();
+        int seconds = schedule.getLiveTrackingSeconds();
+
+        // Update individual labels
+        liveTrackingMinutesLabel.setText(getString(R.string.live_tracking_minutes_value, minutes));
+        liveTrackingSecondsLabel.setText(getString(R.string.live_tracking_seconds_value, seconds));
+
+        // Update total interval label
+        int totalSeconds = minutes * 60 + seconds;
+        String totalText;
+        if (totalSeconds >= 60) {
+            int totalMinutes = totalSeconds / 60;
+            int remainingSeconds = totalSeconds % 60;
+            if (remainingSeconds == 0) {
+                totalText = totalMinutes == 1 ? "1 minute" : totalMinutes + " minutes";
+            } else {
+                totalText = String.format(Locale.getDefault(), "%dm %ds", totalMinutes, remainingSeconds);
+            }
+        } else {
+            totalText = totalSeconds == 1 ? "1 second" : totalSeconds + " seconds";
+        }
+        liveTrackingTotalLabel.setText(getString(R.string.live_tracking_total_interval, totalText));
     }
 
     private void updateIntervalLabel(int minutes) {

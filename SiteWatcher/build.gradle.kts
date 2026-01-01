@@ -65,7 +65,7 @@ android {
 
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            output.outputFileName = "SiteWatcher-${versionName}-${buildType}.apk"
+            output.outputFileName = "SiteWatcher-${versionName}-${buildType}-dev.apk"
         }
     }
 

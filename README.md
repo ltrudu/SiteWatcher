@@ -48,11 +48,24 @@ Pre-configured patterns for common cookie consent frameworks:
 - **FAB Speed Dial** - Quick menu to add Standard Action, Custom Action, or Sleep
 - **Tap-to-Edit** - Tap any action to edit its properties
 
-### Smart Scheduling
-- **Periodic Checks** - Set intervals from 15 minutes to 10 hours
-- **Daily Schedule** - Check at a specific time each day
-- **Day Selection** - Choose which days to monitor (weekdays, weekends, or custom)
-- **Quick Presets** - One-tap selection for common schedules
+### Smart Scheduling (Multi-Schedule System)
+Create multiple schedules per site with flexible calendar-based rules:
+
+#### Calendar Schedule Types
+- **All The Time** - Check continuously based on interval
+- **Selected Day** - Check only on a specific date
+- **Date Range** - Check between two dates (e.g., holiday sales period)
+- **Every Weeks** - Check on selected days of the week with optional even/odd week filtering
+
+#### Interval Options
+- **Periodic** - Set intervals from 15 minutes to 10 hours
+- **Specific Hour** - Check at an exact time each day
+
+#### Schedule Management
+- **Multiple Schedules** - Combine different schedules (OR logic - any matching schedule triggers check)
+- **Drag-to-Reorder** - Arrange schedule priority
+- **Enable/Disable** - Toggle individual schedules without deleting
+- **Duplicate** - Clone schedules for quick setup
 
 ### Notifications
 - **Instant Alerts** - Get notified immediately when changes are detected
@@ -138,9 +151,21 @@ When first launching the app, you'll be asked for:
    - **Name** (optional) - Custom display name
    - **Comparison Mode** - How to detect changes
    - **Fetch Mode** - Static (fast) or JavaScript (dynamic)
-   - **Schedule** - When to check
+   - **Calendar Schedules** - Set up one or more schedules
    - **Threshold** - Minimum change percentage to notify
 4. Tap **Save**
+
+### Configure Schedules
+
+1. In the Add/Edit screen, tap **Calendar Schedules**
+2. Tap the **+** FAB to add a schedule type:
+   - **Execute All The Time** - Always active
+   - **Selected Day** - Pick a specific date
+   - **From Date To Date** - Set a date range
+   - **Every Weeks** - Choose days and week parity
+3. Configure the interval (Periodic or Specific Hour)
+4. Toggle schedules on/off as needed
+5. Drag to reorder priority
 
 ### Add Auto-Click Actions (Optional)
 
@@ -195,12 +220,29 @@ For sites with cookie consent dialogs or dynamic content:
 | **Wait** | Animations, loads | Pauses 1-60 seconds before next action |
 | **Tap at Coordinates** | iframes, shadow DOM | Taps at exact screen position via Accessibility Service |
 
-### Schedule Types
+### Calendar Schedule Types
 
 | Type | Use Case | Example |
 |------|----------|---------|
-| **Periodic** | Frequent monitoring | Check every 30 minutes |
-| **Specific Hour** | Daily updates | Check at 9:00 AM every day |
+| **All The Time** | Continuous monitoring | Check every 30 minutes, always |
+| **Selected Day** | One-time events | Check only on Dec 25, 2025 |
+| **Date Range** | Limited periods | Check during Black Friday week |
+| **Every Weeks** | Recurring patterns | Check Mon/Wed/Fri, or even weeks only |
+
+### Interval Types
+
+| Type | Use Case | Example |
+|------|----------|---------|
+| **Periodic** | Frequent checks | Every 30 minutes, 2 hours, etc. |
+| **Specific Hour** | Precise timing | At exactly 9:00 AM |
+
+### Multi-Schedule Examples
+
+| Scenario | Schedules |
+|----------|-----------|
+| **Business hours monitoring** | Every Weeks (Mon-Fri) + Specific Hour (9:00 AM) |
+| **Sale period + regular** | Date Range (Nov 25-30) + Every 15min, All The Time + Every 2h |
+| **Weekend only** | Every Weeks (Sat, Sun) + Periodic (1 hour) |
 
 ### Change Threshold
 
@@ -239,11 +281,11 @@ com.ltrudu.sitewatcher/
 ├── data/
 │   ├── dao/           # Room DAOs
 │   ├── database/      # Room Database with migrations
-│   ├── model/         # Entity classes (WatchedSite, AutoClickAction, etc.)
+│   ├── model/         # Entity classes (WatchedSite, Schedule, AutoClickAction, etc.)
 │   └── repository/    # Data access layer
 ├── ui/
 │   ├── sitelist/      # Main site list
-│   ├── addedit/       # Add/Edit forms and action management
+│   ├── addedit/       # Add/Edit forms, schedule and action management
 │   ├── selector/      # Interactive pickers (CSS, coordinates, tester)
 │   ├── browser/       # Built-in browser
 │   ├── diff/          # Diff viewer

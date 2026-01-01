@@ -25,6 +25,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.ltrudu.sitewatcher.R;
 import com.google.android.material.card.MaterialCardView;
+import com.ltrudu.sitewatcher.background.CheckScheduler;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
@@ -482,8 +483,10 @@ public class AddEditFragment extends Fragment {
         // Observe save result
         viewModel.getSaveResult().observe(getViewLifecycleOwner(), result -> {
             if (result != null && result.isSuccess()) {
-                // Set result for calling fragment if needed
+                // Reschedule the check with updated schedule configuration
                 if (result.getSite() != null) {
+                    CheckScheduler.getInstance(requireContext()).scheduleCheck(result.getSite());
+
                     Bundle bundle = new Bundle();
                     bundle.putLong("siteId", result.getSite().getId());
                     getParentFragmentManager().setFragmentResult("addEditResult", bundle);

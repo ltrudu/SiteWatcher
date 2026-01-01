@@ -27,27 +27,6 @@ public class WatchedSite {
     private String name;
 
     @NonNull
-    @ColumnInfo(name = "schedule_type")
-    private ScheduleType scheduleType;
-
-    @ColumnInfo(name = "schedule_hour")
-    private int scheduleHour;
-
-    @ColumnInfo(name = "schedule_minute")
-    private int scheduleMinute;
-
-    @ColumnInfo(name = "periodic_interval_minutes")
-    private int periodicIntervalMinutes;
-
-    /**
-     * Bitmask for enabled days of the week.
-     * Sunday = 1, Monday = 2, Tuesday = 4, Wednesday = 8,
-     * Thursday = 16, Friday = 32, Saturday = 64
-     */
-    @ColumnInfo(name = "enabled_days")
-    private int enabledDays;
-
-    @NonNull
     @ColumnInfo(name = "comparison_mode")
     private ComparisonMode comparisonMode;
 
@@ -130,11 +109,8 @@ public class WatchedSite {
      */
     public WatchedSite() {
         this.url = "";
-        this.scheduleType = ScheduleType.PERIODIC;
         this.comparisonMode = ComparisonMode.TEXT_ONLY;
         this.fetchMode = FetchMode.STATIC;
-        this.periodicIntervalMinutes = 60;
-        this.enabledDays = 127; // All days enabled by default
         this.minTextLength = 10; // Minimum 10 characters per text block
         this.minWordLength = 3; // Minimum 3 characters per word
         this.thresholdPercent = 5;
@@ -169,47 +145,6 @@ public class WatchedSite {
 
     public void setName(@Nullable String name) {
         this.name = name;
-    }
-
-    @NonNull
-    public ScheduleType getScheduleType() {
-        return scheduleType;
-    }
-
-    public void setScheduleType(@NonNull ScheduleType scheduleType) {
-        this.scheduleType = scheduleType;
-    }
-
-    public int getScheduleHour() {
-        return scheduleHour;
-    }
-
-    public void setScheduleHour(int scheduleHour) {
-        this.scheduleHour = scheduleHour;
-    }
-
-    public int getScheduleMinute() {
-        return scheduleMinute;
-    }
-
-    public void setScheduleMinute(int scheduleMinute) {
-        this.scheduleMinute = scheduleMinute;
-    }
-
-    public int getPeriodicIntervalMinutes() {
-        return periodicIntervalMinutes;
-    }
-
-    public void setPeriodicIntervalMinutes(int periodicIntervalMinutes) {
-        this.periodicIntervalMinutes = periodicIntervalMinutes;
-    }
-
-    public int getEnabledDays() {
-        return enabledDays;
-    }
-
-    public void setEnabledDays(int enabledDays) {
-        this.enabledDays = enabledDays;
     }
 
     @NonNull
@@ -294,8 +229,7 @@ public class WatchedSite {
 
     /**
      * Get schedules as a list.
-     * If no schedules are configured, creates a default schedule from legacy fields
-     * for backward compatibility.
+     * If no schedules are configured, creates a default ALL_THE_TIME schedule.
      *
      * @return List of schedules (never empty)
      */
@@ -303,15 +237,8 @@ public class WatchedSite {
     public List<Schedule> getSchedules() {
         List<Schedule> schedules = Schedule.fromJsonString(schedulesJson);
         if (schedules.isEmpty()) {
-            // Create default schedule from legacy fields for backward compatibility
-            Schedule defaultSchedule = new Schedule();
-            defaultSchedule.setCalendarType(CalendarScheduleType.ALL_THE_TIME);
-            defaultSchedule.setIntervalType(scheduleType);
-            defaultSchedule.setIntervalMinutes(periodicIntervalMinutes);
-            defaultSchedule.setScheduleHour(scheduleHour);
-            defaultSchedule.setScheduleMinute(scheduleMinute);
-            defaultSchedule.setEnabledDays(enabledDays);
-            schedules.add(defaultSchedule);
+            // Create default schedule
+            schedules = Schedule.createDefaultList();
         }
         return schedules;
     }
@@ -388,42 +315,6 @@ public class WatchedSite {
 
     public void setUpdatedAt(long updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    // Day of week helper constants
-    public static final int SUNDAY = 1;
-    public static final int MONDAY = 2;
-    public static final int TUESDAY = 4;
-    public static final int WEDNESDAY = 8;
-    public static final int THURSDAY = 16;
-    public static final int FRIDAY = 32;
-    public static final int SATURDAY = 64;
-    public static final int ALL_DAYS = 127;
-    public static final int WEEKDAYS = MONDAY | TUESDAY | WEDNESDAY | THURSDAY | FRIDAY;
-    public static final int WEEKENDS = SATURDAY | SUNDAY;
-
-    /**
-     * Check if a specific day is enabled.
-     *
-     * @param dayBitmask The day bitmask (use SUNDAY, MONDAY, etc. constants)
-     * @return true if the day is enabled
-     */
-    public boolean isDayEnabled(int dayBitmask) {
-        return (enabledDays & dayBitmask) != 0;
-    }
-
-    /**
-     * Enable or disable a specific day.
-     *
-     * @param dayBitmask The day bitmask (use SUNDAY, MONDAY, etc. constants)
-     * @param enabled    Whether to enable or disable the day
-     */
-    public void setDayEnabled(int dayBitmask, boolean enabled) {
-        if (enabled) {
-            enabledDays |= dayBitmask;
-        } else {
-            enabledDays &= ~dayBitmask;
-        }
     }
 
     /**

@@ -27,7 +27,7 @@ import com.ltrudu.sitewatcher.data.model.WatchedSite;
         SiteHistory.class,
         CheckResult.class
     },
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters({Converters.class})
@@ -88,6 +88,55 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
     };
 
     /**
+     * Migration from version 6 to 7: Remove legacy schedule columns.
+     * Recreates the table without schedule_type, schedule_hour, schedule_minute,
+     * periodic_interval_minutes, and enabled_days columns.
+     */
+    private static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // Create new table without legacy schedule columns
+            database.execSQL("CREATE TABLE IF NOT EXISTS watched_sites_new (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "url TEXT NOT NULL, " +
+                    "name TEXT, " +
+                    "comparison_mode TEXT NOT NULL, " +
+                    "css_selector TEXT, " +
+                    "min_text_length INTEGER NOT NULL DEFAULT 10, " +
+                    "min_word_length INTEGER NOT NULL DEFAULT 3, " +
+                    "fetch_mode TEXT NOT NULL DEFAULT 'STATIC', " +
+                    "auto_click_actions TEXT, " +
+                    "schedules_json TEXT, " +
+                    "threshold_percent INTEGER NOT NULL, " +
+                    "is_enabled INTEGER NOT NULL, " +
+                    "last_check_time INTEGER NOT NULL, " +
+                    "last_change_percent REAL NOT NULL, " +
+                    "last_error TEXT, " +
+                    "consecutive_failures INTEGER NOT NULL, " +
+                    "created_at INTEGER NOT NULL, " +
+                    "updated_at INTEGER NOT NULL)");
+
+            // Copy data from old table to new table
+            database.execSQL("INSERT INTO watched_sites_new (" +
+                    "id, url, name, comparison_mode, css_selector, " +
+                    "min_text_length, min_word_length, fetch_mode, auto_click_actions, schedules_json, " +
+                    "threshold_percent, is_enabled, last_check_time, last_change_percent, " +
+                    "last_error, consecutive_failures, created_at, updated_at) " +
+                    "SELECT id, url, name, comparison_mode, css_selector, " +
+                    "min_text_length, min_word_length, fetch_mode, auto_click_actions, schedules_json, " +
+                    "threshold_percent, is_enabled, last_check_time, last_change_percent, " +
+                    "last_error, consecutive_failures, created_at, updated_at " +
+                    "FROM watched_sites");
+
+            // Drop old table
+            database.execSQL("DROP TABLE watched_sites");
+
+            // Rename new table to original name
+            database.execSQL("ALTER TABLE watched_sites_new RENAME TO watched_sites");
+        }
+    };
+
+    /**
      * Get the WatchedSite DAO.
      *
      * @return WatchedSiteDao instance
@@ -124,7 +173,7 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
                             SiteWatcherDatabase.class,
                             DATABASE_NAME
                     )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .fallbackToDestructiveMigration()
                     .build();
                 }

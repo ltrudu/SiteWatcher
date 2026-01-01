@@ -10,14 +10,11 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.ltrudu.sitewatcher.background.CheckScheduler;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
-import com.ltrudu.sitewatcher.data.model.CalendarScheduleType;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.Schedule;
-import com.ltrudu.sitewatcher.data.model.ScheduleType;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.data.repository.SiteRepository;
-import com.ltrudu.sitewatcher.network.BuiltInClickPatterns;
 import com.ltrudu.sitewatcher.network.SiteChecker;
 import com.ltrudu.sitewatcher.util.Logger;
 
@@ -52,11 +49,6 @@ public class AddEditViewModel extends AndroidViewModel {
 
     // Form state
     private final MutableLiveData<String> url = new MutableLiveData<>("");
-    private final MutableLiveData<Integer> enabledDays = new MutableLiveData<>(WatchedSite.ALL_DAYS);
-    private final MutableLiveData<ScheduleType> scheduleType = new MutableLiveData<>(ScheduleType.PERIODIC);
-    private final MutableLiveData<Integer> intervalMinutes = new MutableLiveData<>(60);
-    private final MutableLiveData<Integer> scheduleHour = new MutableLiveData<>(9);
-    private final MutableLiveData<Integer> scheduleMinute = new MutableLiveData<>(0);
     private final MutableLiveData<Integer> thresholdPercent = new MutableLiveData<>(25);
     private final MutableLiveData<FetchMode> fetchMode = new MutableLiveData<>(FetchMode.STATIC);
     private final MutableLiveData<ComparisonMode> comparisonMode = new MutableLiveData<>(ComparisonMode.TEXT_ONLY);
@@ -65,7 +57,7 @@ public class AddEditViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> minWordLength = new MutableLiveData<>(3);
     private final MutableLiveData<List<AutoClickAction>> autoClickActions = new MutableLiveData<>(new ArrayList<>());
 
-    // New schedules system (JSON format)
+    // Schedules system (JSON format)
     private String schedulesJson;
 
     // Validation state
@@ -106,11 +98,6 @@ public class AddEditViewModel extends AndroidViewModel {
      */
     private void setDefaults() {
         url.setValue("");
-        enabledDays.setValue(WatchedSite.ALL_DAYS);
-        scheduleType.setValue(ScheduleType.PERIODIC);
-        intervalMinutes.setValue(60);
-        scheduleHour.setValue(9);
-        scheduleMinute.setValue(0);
         thresholdPercent.setValue(25);
         fetchMode.setValue(FetchMode.STATIC);
         comparisonMode.setValue(ComparisonMode.TEXT_ONLY);
@@ -159,11 +146,6 @@ public class AddEditViewModel extends AndroidViewModel {
         currentSite.postValue(site);
 
         url.postValue(site.getUrl());
-        enabledDays.postValue(site.getEnabledDays());
-        scheduleType.postValue(site.getScheduleType());
-        intervalMinutes.postValue(site.getPeriodicIntervalMinutes());
-        scheduleHour.postValue(site.getScheduleHour());
-        scheduleMinute.postValue(site.getScheduleMinute());
         thresholdPercent.postValue(site.getThresholdPercent());
         fetchMode.postValue(site.getFetchMode());
         comparisonMode.postValue(site.getComparisonMode());
@@ -233,21 +215,6 @@ public class AddEditViewModel extends AndroidViewModel {
             }
             site.setUrl(trimmedUrl);
         }
-
-        Integer days = enabledDays.getValue();
-        site.setEnabledDays(days != null ? days : WatchedSite.ALL_DAYS);
-
-        ScheduleType type = scheduleType.getValue();
-        site.setScheduleType(type != null ? type : ScheduleType.PERIODIC);
-
-        Integer interval = intervalMinutes.getValue();
-        site.setPeriodicIntervalMinutes(interval != null ? interval : 60);
-
-        Integer hour = scheduleHour.getValue();
-        site.setScheduleHour(hour != null ? hour : 9);
-
-        Integer minute = scheduleMinute.getValue();
-        site.setScheduleMinute(minute != null ? minute : 0);
 
         Integer threshold = thresholdPercent.getValue();
         site.setThresholdPercent(threshold != null ? threshold : 25);
@@ -360,26 +327,6 @@ public class AddEditViewModel extends AndroidViewModel {
         return url;
     }
 
-    public MutableLiveData<Integer> getEnabledDays() {
-        return enabledDays;
-    }
-
-    public MutableLiveData<ScheduleType> getScheduleType() {
-        return scheduleType;
-    }
-
-    public MutableLiveData<Integer> getIntervalMinutes() {
-        return intervalMinutes;
-    }
-
-    public MutableLiveData<Integer> getScheduleHour() {
-        return scheduleHour;
-    }
-
-    public MutableLiveData<Integer> getScheduleMinute() {
-        return scheduleMinute;
-    }
-
     public MutableLiveData<Integer> getThresholdPercent() {
         return thresholdPercent;
     }
@@ -437,36 +384,6 @@ public class AddEditViewModel extends AndroidViewModel {
 
     public void setUrl(String url) {
         this.url.setValue(url);
-    }
-
-    public void setEnabledDays(int days) {
-        this.enabledDays.setValue(days);
-    }
-
-    public void setDayEnabled(int dayBitmask, boolean enabled) {
-        Integer currentDays = enabledDays.getValue();
-        if (currentDays == null) {
-            currentDays = WatchedSite.ALL_DAYS;
-        }
-
-        if (enabled) {
-            enabledDays.setValue(currentDays | dayBitmask);
-        } else {
-            enabledDays.setValue(currentDays & ~dayBitmask);
-        }
-    }
-
-    public void setScheduleType(ScheduleType type) {
-        this.scheduleType.setValue(type);
-    }
-
-    public void setIntervalMinutes(int minutes) {
-        this.intervalMinutes.setValue(minutes);
-    }
-
-    public void setScheduleTime(int hour, int minute) {
-        this.scheduleHour.setValue(hour);
-        this.scheduleMinute.setValue(minute);
     }
 
     public void setThresholdPercent(int percent) {

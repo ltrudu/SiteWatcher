@@ -5,7 +5,7 @@ import androidx.annotation.Nullable;
 
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
-import com.ltrudu.sitewatcher.data.model.ScheduleType;
+import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 
 import org.json.JSONArray;
@@ -33,24 +33,18 @@ public class SiteExporter {
     // Site field keys
     private static final String KEY_URL = "url";
     private static final String KEY_NAME = "name";
-    private static final String KEY_SCHEDULE_TYPE = "scheduleType";
-    private static final String KEY_SCHEDULE_HOUR = "scheduleHour";
-    private static final String KEY_SCHEDULE_MINUTE = "scheduleMinute";
-    private static final String KEY_PERIODIC_INTERVAL_MINUTES = "periodicIntervalMinutes";
-    private static final String KEY_ENABLED_DAYS = "enabledDays";
     private static final String KEY_COMPARISON_MODE = "comparisonMode";
     private static final String KEY_CSS_SELECTOR = "cssSelector";
     private static final String KEY_THRESHOLD_PERCENT = "thresholdPercent";
     private static final String KEY_IS_ENABLED = "isEnabled";
-
-    // v2 fields
     private static final String KEY_MIN_TEXT_LENGTH = "minTextLength";
     private static final String KEY_MIN_WORD_LENGTH = "minWordLength";
     private static final String KEY_FETCH_MODE = "fetchMode";
     private static final String KEY_AUTO_CLICK_ACTIONS = "autoClickActions";
+    private static final String KEY_SCHEDULES = "schedules";
 
     // Current export format version
-    private static final int CURRENT_VERSION = 2;
+    private static final int CURRENT_VERSION = 3;
 
     /**
      * Generates a filename with the format: SiteWatcher_YY-MM-DD_HH-MM-SS.json
@@ -126,30 +120,29 @@ public class SiteExporter {
         if (site.getName() != null) {
             json.put(KEY_NAME, site.getName());
         }
-        json.put(KEY_SCHEDULE_TYPE, site.getScheduleType().name());
-        json.put(KEY_SCHEDULE_HOUR, site.getScheduleHour());
-        json.put(KEY_SCHEDULE_MINUTE, site.getScheduleMinute());
-        json.put(KEY_PERIODIC_INTERVAL_MINUTES, site.getPeriodicIntervalMinutes());
-        json.put(KEY_ENABLED_DAYS, site.getEnabledDays());
         json.put(KEY_COMPARISON_MODE, site.getComparisonMode().name());
         if (site.getCssSelector() != null) {
             json.put(KEY_CSS_SELECTOR, site.getCssSelector());
         }
         json.put(KEY_THRESHOLD_PERCENT, site.getThresholdPercent());
         json.put(KEY_IS_ENABLED, site.isEnabled());
-
-        // v2 fields
         json.put(KEY_MIN_TEXT_LENGTH, site.getMinTextLength());
         json.put(KEY_MIN_WORD_LENGTH, site.getMinWordLength());
         json.put(KEY_FETCH_MODE, site.getFetchMode().name());
 
         // Export auto-click actions as JSON array
         String actionsJson = site.getAutoClickActionsJson();
-        Logger.d(TAG, "Exporting site: " + site.getUrl() +
-                ", fetchMode=" + site.getFetchMode().name() +
-                ", actionsJson=" + (actionsJson != null ? actionsJson.length() + " chars" : "null"));
         if (actionsJson != null && !actionsJson.isEmpty()) {
             json.put(KEY_AUTO_CLICK_ACTIONS, new JSONArray(actionsJson));
+        }
+
+        // Export schedules as JSON array
+        String schedulesJson = site.getSchedulesJson();
+        Logger.d(TAG, "Exporting site: " + site.getUrl() +
+                ", fetchMode=" + site.getFetchMode().name() +
+                ", schedulesJson=" + (schedulesJson != null ? schedulesJson.length() + " chars" : "null"));
+        if (schedulesJson != null && !schedulesJson.isEmpty()) {
+            json.put(KEY_SCHEDULES, new JSONArray(schedulesJson));
         }
 
         return json;
@@ -175,19 +168,6 @@ public class SiteExporter {
             site.setUrl(url);
             site.setName(json.optString(KEY_NAME, null));
 
-            // Parse schedule type
-            String scheduleTypeStr = json.optString(KEY_SCHEDULE_TYPE, ScheduleType.PERIODIC.name());
-            try {
-                site.setScheduleType(ScheduleType.valueOf(scheduleTypeStr));
-            } catch (IllegalArgumentException e) {
-                site.setScheduleType(ScheduleType.PERIODIC);
-            }
-
-            site.setScheduleHour(json.optInt(KEY_SCHEDULE_HOUR, 9));
-            site.setScheduleMinute(json.optInt(KEY_SCHEDULE_MINUTE, 0));
-            site.setPeriodicIntervalMinutes(json.optInt(KEY_PERIODIC_INTERVAL_MINUTES, 60));
-            site.setEnabledDays(json.optInt(KEY_ENABLED_DAYS, WatchedSite.ALL_DAYS));
-
             // Parse comparison mode
             String comparisonModeStr = json.optString(KEY_COMPARISON_MODE, ComparisonMode.TEXT_ONLY.name());
             try {
@@ -199,8 +179,6 @@ public class SiteExporter {
             site.setCssSelector(json.optString(KEY_CSS_SELECTOR, null));
             site.setThresholdPercent(json.optInt(KEY_THRESHOLD_PERCENT, 5));
             site.setEnabled(json.optBoolean(KEY_IS_ENABLED, true));
-
-            // v2 fields (with defaults for v1 imports)
             site.setMinTextLength(json.optInt(KEY_MIN_TEXT_LENGTH, 10));
             site.setMinWordLength(json.optInt(KEY_MIN_WORD_LENGTH, 3));
 
@@ -220,10 +198,21 @@ public class SiteExporter {
                 }
             }
 
+            // Parse schedules (v3+) or create default schedule for older versions
+            if (json.has(KEY_SCHEDULES)) {
+                JSONArray schedulesArray = json.optJSONArray(KEY_SCHEDULES);
+                if (schedulesArray != null) {
+                    site.setSchedulesJson(schedulesArray.toString());
+                }
+            } else {
+                // Create default schedule for older export versions
+                site.setSchedulesJson(Schedule.toJsonString(Schedule.createDefaultList()));
+            }
+
             Logger.d(TAG, "Imported site: " + url +
                     ", fetchMode=" + site.getFetchMode().name() +
-                    ", actionsJson=" + (site.getAutoClickActionsJson() != null ?
-                            site.getAutoClickActionsJson().length() + " chars" : "null"));
+                    ", schedulesJson=" + (site.getSchedulesJson() != null ?
+                            site.getSchedulesJson().length() + " chars" : "null"));
 
             // Reset runtime state for imported sites
             site.setId(0); // Will be auto-generated

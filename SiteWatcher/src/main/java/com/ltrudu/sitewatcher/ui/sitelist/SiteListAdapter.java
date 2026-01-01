@@ -12,14 +12,13 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ltrudu.sitewatcher.R;
-import com.ltrudu.sitewatcher.data.model.ScheduleType;
+import com.ltrudu.sitewatcher.background.CheckScheduler;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.util.SearchQueryParser;
 
 import android.widget.ProgressBar;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -236,137 +235,17 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
     }
 
     /**
-     * Calculate the next check time for a site.
+     * Calculate the next check time for a site using the new multi-schedule system.
+     * Delegates to CheckScheduler which evaluates all enabled schedules.
+     * @param context The context for accessing CheckScheduler
      * @param site The site to calculate for
      * @return The next check time in milliseconds, or -1 if unable to calculate
      */
-    private long calculateNextCheckTime(@NonNull WatchedSite site) {
+    private long calculateNextCheckTime(@NonNull Context context, @NonNull WatchedSite site) {
         if (!site.isEnabled()) {
             return -1;
         }
-
-        Calendar now = Calendar.getInstance();
-
-        if (site.getScheduleType() == ScheduleType.PERIODIC) {
-            return calculatePeriodicNextCheck(site, now);
-        } else {
-            return calculateSpecificHourNextCheck(site, now);
-        }
-    }
-
-    /**
-     * Calculate next check time for periodic schedule.
-     */
-    private long calculatePeriodicNextCheck(@NonNull WatchedSite site, @NonNull Calendar now) {
-        int intervalMinutes = site.getPeriodicIntervalMinutes();
-        if (intervalMinutes <= 0) {
-            intervalMinutes = 60;
-        }
-
-        Calendar nextCheck = (Calendar) now.clone();
-
-        if (site.getLastCheckTime() > 0) {
-            nextCheck.setTimeInMillis(site.getLastCheckTime());
-            nextCheck.add(Calendar.MINUTE, intervalMinutes);
-
-            // If next check is in the past, calculate from now
-            if (nextCheck.before(now)) {
-                nextCheck = (Calendar) now.clone();
-                nextCheck.add(Calendar.MINUTE, intervalMinutes);
-            }
-        } else {
-            // Never checked, next check is interval from now
-            nextCheck.add(Calendar.MINUTE, intervalMinutes);
-        }
-
-        return adjustForEnabledDays(site, nextCheck, intervalMinutes);
-    }
-
-    /**
-     * Calculate next check time for specific hour schedule.
-     */
-    private long calculateSpecificHourNextCheck(@NonNull WatchedSite site, @NonNull Calendar now) {
-        Calendar nextCheck = (Calendar) now.clone();
-        nextCheck.set(Calendar.HOUR_OF_DAY, site.getScheduleHour());
-        nextCheck.set(Calendar.MINUTE, site.getScheduleMinute());
-        nextCheck.set(Calendar.SECOND, 0);
-        nextCheck.set(Calendar.MILLISECOND, 0);
-
-        if (nextCheck.before(now)) {
-            nextCheck.add(Calendar.DAY_OF_YEAR, 1);
-        }
-
-        return findNextEnabledDay(site, nextCheck);
-    }
-
-    /**
-     * Adjust for enabled days (periodic schedule).
-     */
-    private long adjustForEnabledDays(@NonNull WatchedSite site, @NonNull Calendar check, int intervalMinutes) {
-        int enabledDays = site.getEnabledDays();
-        if (enabledDays == WatchedSite.ALL_DAYS) {
-            return check.getTimeInMillis();
-        }
-
-        int attempts = 0;
-        while (attempts < 7) {
-            int dayOfWeek = check.get(Calendar.DAY_OF_WEEK);
-            int dayBitmask = getDayBitmask(dayOfWeek);
-
-            if ((enabledDays & dayBitmask) != 0) {
-                return check.getTimeInMillis();
-            }
-
-            check.add(Calendar.DAY_OF_YEAR, 1);
-            check.set(Calendar.HOUR_OF_DAY, 0);
-            check.set(Calendar.MINUTE, 0);
-            check.set(Calendar.SECOND, 0);
-            check.add(Calendar.MINUTE, intervalMinutes);
-            attempts++;
-        }
-
-        return check.getTimeInMillis();
-    }
-
-    /**
-     * Find next enabled day (specific hour schedule).
-     */
-    private long findNextEnabledDay(@NonNull WatchedSite site, @NonNull Calendar check) {
-        int enabledDays = site.getEnabledDays();
-        if (enabledDays == WatchedSite.ALL_DAYS) {
-            return check.getTimeInMillis();
-        }
-
-        int attempts = 0;
-        while (attempts < 7) {
-            int dayOfWeek = check.get(Calendar.DAY_OF_WEEK);
-            int dayBitmask = getDayBitmask(dayOfWeek);
-
-            if ((enabledDays & dayBitmask) != 0) {
-                return check.getTimeInMillis();
-            }
-
-            check.add(Calendar.DAY_OF_YEAR, 1);
-            attempts++;
-        }
-
-        return check.getTimeInMillis();
-    }
-
-    /**
-     * Convert Calendar day of week to WatchedSite day bitmask.
-     */
-    private int getDayBitmask(int calendarDay) {
-        switch (calendarDay) {
-            case Calendar.SUNDAY: return WatchedSite.SUNDAY;
-            case Calendar.MONDAY: return WatchedSite.MONDAY;
-            case Calendar.TUESDAY: return WatchedSite.TUESDAY;
-            case Calendar.WEDNESDAY: return WatchedSite.WEDNESDAY;
-            case Calendar.THURSDAY: return WatchedSite.THURSDAY;
-            case Calendar.FRIDAY: return WatchedSite.FRIDAY;
-            case Calendar.SATURDAY: return WatchedSite.SATURDAY;
-            default: return 0;
-        }
+        return CheckScheduler.getInstance(context).calculateNextAlarmTime(site);
     }
 
     /**
@@ -430,11 +309,13 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
 
             // Set next check time
             if (site.isEnabled()) {
-                long nextCheckTime = calculateNextCheckTime(site);
+                long nextCheckTime = calculateNextCheckTime(context, site);
                 if (nextCheckTime > 0) {
                     long now = System.currentTimeMillis();
                     long diffMs = nextCheckTime - now;
                     long diffMinutes = diffMs / (1000 * 60);
+                    long diffHours = diffMinutes / 60;
+                    long diffDays = diffHours / 24;
 
                     if (diffMinutes < 0) {
                         // Overdue
@@ -445,11 +326,20 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
                     } else if (diffMinutes < 60) {
                         // Less than an hour, show minutes
                         textNextCheck.setText(context.getString(R.string.next_check_in, (int) diffMinutes));
-                    } else {
-                        // More than an hour, show hours and minutes
-                        int hours = (int) (diffMinutes / 60);
+                    } else if (diffHours < 24) {
+                        // Less than a day, show hours and minutes
+                        int hours = (int) diffHours;
                         int mins = (int) (diffMinutes % 60);
                         textNextCheck.setText(context.getString(R.string.next_check_in_hours, hours, mins));
+                    } else if (diffDays <= 3) {
+                        // 1-3 days, show days
+                        textNextCheck.setText(context.getString(R.string.next_check_in_days, (int) diffDays));
+                    } else {
+                        // More than 3 days, show date with time
+                        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat(
+                                "MMM d 'at' HH:mm", java.util.Locale.getDefault());
+                        String dateStr = dateFormat.format(new java.util.Date(nextCheckTime));
+                        textNextCheck.setText(context.getString(R.string.next_check_on, dateStr));
                     }
                     textNextCheck.setVisibility(View.VISIBLE);
                 } else {

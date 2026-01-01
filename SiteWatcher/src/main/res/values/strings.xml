@@ -32,6 +32,8 @@
     <string name="last_check_just_now">Last check: just now</string>
     <string name="next_check_in">Next check in: %1$d min</string>
     <string name="next_check_in_hours">Next check in: %1$dh %2$dm</string>
+    <string name="next_check_in_days">Next check in: %1$d day(s)</string>
+    <string name="next_check_on">Next check: %1$s</string>
     <string name="next_check_soon">Next check in: &lt;1 min</string>
     <string name="next_check_overdue">Check overdue</string>
     <string name="never_checked">Never checked</string>

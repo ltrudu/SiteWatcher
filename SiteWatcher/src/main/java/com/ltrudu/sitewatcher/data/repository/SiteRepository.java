@@ -233,20 +233,15 @@ public class SiteRepository {
                 WatchedSite duplicate = new WatchedSite();
                 duplicate.setUrl(site.getUrl());
                 duplicate.setName(site.getName() != null ? site.getName() + " (Copy)" : null);
-                duplicate.setScheduleType(site.getScheduleType());
-                duplicate.setScheduleHour(site.getScheduleHour());
-                duplicate.setScheduleMinute(site.getScheduleMinute());
-                duplicate.setPeriodicIntervalMinutes(site.getPeriodicIntervalMinutes());
-                duplicate.setEnabledDays(site.getEnabledDays());
                 duplicate.setComparisonMode(site.getComparisonMode());
                 duplicate.setCssSelector(site.getCssSelector());
                 duplicate.setThresholdPercent(site.getThresholdPercent());
                 duplicate.setEnabled(site.isEnabled());
-                // v2 fields
                 duplicate.setMinTextLength(site.getMinTextLength());
                 duplicate.setMinWordLength(site.getMinWordLength());
                 duplicate.setFetchMode(site.getFetchMode());
                 duplicate.setAutoClickActionsJson(site.getAutoClickActionsJson());
+                duplicate.setSchedulesJson(site.getSchedulesJson());
                 duplicate.setCreatedAt(System.currentTimeMillis());
                 duplicate.setUpdatedAt(System.currentTimeMillis());
 

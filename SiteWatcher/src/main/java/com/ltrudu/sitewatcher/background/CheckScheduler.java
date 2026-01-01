@@ -180,10 +180,11 @@ public final class CheckScheduler {
     /**
      * Calculate the next alarm time for a site based on its schedule configuration.
      * Evaluates all enabled schedules and returns the earliest next alarm time.
+     * This method is public so the UI can display the correct "Next Check In" time.
      * @param site The WatchedSite
      * @return The next alarm time in milliseconds, or -1 if unable to calculate
      */
-    private long calculateNextAlarmTime(@NonNull WatchedSite site) {
+    public long calculateNextAlarmTime(@NonNull WatchedSite site) {
         Calendar now = Calendar.getInstance();
         List<Schedule> schedules = site.getSchedules();
         long earliestAlarm = Long.MAX_VALUE;
@@ -202,13 +203,8 @@ public final class CheckScheduler {
         }
 
         if (earliestAlarm == Long.MAX_VALUE) {
-            // Fallback to legacy calculation for backward compatibility
-            Logger.d(TAG, "Using legacy calculation for site " + site.getId());
-            if (site.getScheduleType() == ScheduleType.PERIODIC) {
-                return calculatePeriodicAlarmTime(site, now);
-            } else {
-                return calculateSpecificHourAlarmTime(site, now);
-            }
+            Logger.d(TAG, "No valid schedule found for site " + site.getId());
+            return -1;
         }
 
         return earliestAlarm;
@@ -449,151 +445,27 @@ public final class CheckScheduler {
         }
     }
 
-    // ============================================================================
-    // Legacy Methods (for backward compatibility)
-    // ============================================================================
-
     /**
-     * Calculate next alarm time for periodic schedule.
-     * @param site The WatchedSite
-     * @param now Current time
-     * @return Next alarm time in milliseconds
-     */
-    private long calculatePeriodicAlarmTime(@NonNull WatchedSite site, @NonNull Calendar now) {
-        int intervalMinutes = site.getPeriodicIntervalMinutes();
-        if (intervalMinutes <= 0) {
-            intervalMinutes = 60; // Default to 1 hour
-        }
-
-        Calendar nextAlarm = (Calendar) now.clone();
-
-        // If we have a last check time, calculate from there
-        if (site.getLastCheckTime() > 0) {
-            nextAlarm.setTimeInMillis(site.getLastCheckTime());
-            nextAlarm.add(Calendar.MINUTE, intervalMinutes);
-
-            // If the calculated time is in the past, calculate from now
-            if (nextAlarm.before(now)) {
-                nextAlarm = (Calendar) now.clone();
-                nextAlarm.add(Calendar.MINUTE, intervalMinutes);
-            }
-        } else {
-            // No previous check, schedule for interval from now
-            nextAlarm.add(Calendar.MINUTE, intervalMinutes);
-        }
-
-        // Check if the day is enabled
-        return adjustForEnabledDays(site, nextAlarm, intervalMinutes);
-    }
-
-    /**
-     * Calculate next alarm time for specific hour schedule.
-     * @param site The WatchedSite
-     * @param now Current time
-     * @return Next alarm time in milliseconds
-     */
-    private long calculateSpecificHourAlarmTime(@NonNull WatchedSite site, @NonNull Calendar now) {
-        Calendar nextAlarm = (Calendar) now.clone();
-        nextAlarm.set(Calendar.HOUR_OF_DAY, site.getScheduleHour());
-        nextAlarm.set(Calendar.MINUTE, site.getScheduleMinute());
-        nextAlarm.set(Calendar.SECOND, 0);
-        nextAlarm.set(Calendar.MILLISECOND, 0);
-
-        // If the time has already passed today, move to tomorrow
-        if (nextAlarm.before(now)) {
-            nextAlarm.add(Calendar.DAY_OF_YEAR, 1);
-        }
-
-        // Find the next enabled day
-        return findNextEnabledDay(site, nextAlarm);
-    }
-
-    /**
-     * Adjust alarm time for enabled days (periodic schedule).
-     * @param site The WatchedSite
-     * @param alarm The proposed alarm time
-     * @param intervalMinutes The interval in minutes
-     * @return Adjusted alarm time in milliseconds
-     */
-    private long adjustForEnabledDays(@NonNull WatchedSite site, @NonNull Calendar alarm,
-            int intervalMinutes) {
-        int enabledDays = site.getEnabledDays();
-        if (enabledDays == WatchedSite.ALL_DAYS) {
-            return alarm.getTimeInMillis();
-        }
-
-        int attempts = 0;
-        while (attempts < 7) {
-            int dayOfWeek = alarm.get(Calendar.DAY_OF_WEEK);
-            int dayBitmask = getDayBitmask(dayOfWeek);
-
-            if ((enabledDays & dayBitmask) != 0) {
-                return alarm.getTimeInMillis();
-            }
-
-            // Move to start of next day
-            alarm.add(Calendar.DAY_OF_YEAR, 1);
-            alarm.set(Calendar.HOUR_OF_DAY, 0);
-            alarm.set(Calendar.MINUTE, 0);
-            alarm.set(Calendar.SECOND, 0);
-            alarm.add(Calendar.MINUTE, intervalMinutes);
-            attempts++;
-        }
-
-        // Fallback: no enabled days, return original time
-        return alarm.getTimeInMillis();
-    }
-
-    /**
-     * Find the next enabled day (specific hour schedule).
-     * @param site The WatchedSite
-     * @param alarm The proposed alarm time
-     * @return Adjusted alarm time in milliseconds
-     */
-    private long findNextEnabledDay(@NonNull WatchedSite site, @NonNull Calendar alarm) {
-        int enabledDays = site.getEnabledDays();
-        if (enabledDays == WatchedSite.ALL_DAYS) {
-            return alarm.getTimeInMillis();
-        }
-
-        int attempts = 0;
-        while (attempts < 7) {
-            int dayOfWeek = alarm.get(Calendar.DAY_OF_WEEK);
-            int dayBitmask = getDayBitmask(dayOfWeek);
-
-            if ((enabledDays & dayBitmask) != 0) {
-                return alarm.getTimeInMillis();
-            }
-
-            alarm.add(Calendar.DAY_OF_YEAR, 1);
-            attempts++;
-        }
-
-        // Fallback: no enabled days, return original time
-        return alarm.getTimeInMillis();
-    }
-
-    /**
-     * Convert Calendar day of week to WatchedSite day bitmask.
+     * Convert Calendar day of week to Schedule day bitmask.
      * @param calendarDay Calendar.DAY_OF_WEEK value
      * @return Corresponding bitmask value
      */
     private int getDayBitmask(int calendarDay) {
         switch (calendarDay) {
             case Calendar.SUNDAY:
-                return WatchedSite.SUNDAY;
+                return Schedule.SUNDAY;
             case Calendar.MONDAY:
-                return WatchedSite.MONDAY;
+                return Schedule.MONDAY;
             case Calendar.TUESDAY:
-                return WatchedSite.TUESDAY;
+                return Schedule.TUESDAY;
             case Calendar.WEDNESDAY:
-                return WatchedSite.WEDNESDAY;
+                return Schedule.WEDNESDAY;
             case Calendar.THURSDAY:
-                return WatchedSite.THURSDAY;
+                return Schedule.THURSDAY;
             case Calendar.FRIDAY:
-                return WatchedSite.FRIDAY;
+                return Schedule.FRIDAY;
             case Calendar.SATURDAY:
-                return WatchedSite.SATURDAY;
+                return Schedule.SATURDAY;
             default:
                 return 0;
         }

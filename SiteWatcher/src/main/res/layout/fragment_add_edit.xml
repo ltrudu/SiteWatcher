@@ -124,6 +124,62 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Calendar Schedules Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/schedulesSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="16dp"
+                app:cardElevation="0dp"
+                app:cardCornerRadius="12dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutline">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/calendar_schedules"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/calendar_schedules_hint"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <TextView
+                        android:id="@+id/schedulesCountLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="?attr/colorPrimary"
+                        tools:text="1 schedule(s) defined" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonEditSchedules"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/edit_schedules"
+                        app:icon="@drawable/ic_edit" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Comparison Mode Section -->
             <TextView
                 android:layout_width="wrap_content"
@@ -261,214 +317,6 @@
                     android:text="@string/min_word_length_hint"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="?attr/colorOnSurfaceVariant" />
-
-            </LinearLayout>
-
-            <!-- Days of Week Section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/days_to_check"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:textColor="?attr/colorOnSurface" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <ToggleButton
-                    android:id="@+id/toggleSunday"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="2dp"
-                    android:textOn="@string/day_sun"
-                    android:textOff="@string/day_sun"
-                    android:checked="true"
-                    android:background="@drawable/toggle_day_background"
-                    android:textColor="@drawable/toggle_day_text_color"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:padding="0dp" />
-
-                <ToggleButton
-                    android:id="@+id/toggleMonday"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="2dp"
-                    android:textOn="@string/day_mon"
-                    android:textOff="@string/day_mon"
-                    android:checked="true"
-                    android:background="@drawable/toggle_day_background"
-                    android:textColor="@drawable/toggle_day_text_color"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:padding="0dp" />
-
-                <ToggleButton
-                    android:id="@+id/toggleTuesday"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="2dp"
-                    android:textOn="@string/day_tue"
-                    android:textOff="@string/day_tue"
-                    android:checked="true"
-                    android:background="@drawable/toggle_day_background"
-                    android:textColor="@drawable/toggle_day_text_color"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:padding="0dp" />
-
-                <ToggleButton
-                    android:id="@+id/toggleWednesday"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="2dp"
-                    android:textOn="@string/day_wed"
-                    android:textOff="@string/day_wed"
-                    android:checked="true"
-                    android:background="@drawable/toggle_day_background"
-                    android:textColor="@drawable/toggle_day_text_color"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:padding="0dp" />
-
-                <ToggleButton
-                    android:id="@+id/toggleThursday"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="2dp"
-                    android:textOn="@string/day_thu"
-                    android:textOff="@string/day_thu"
-                    android:checked="true"
-                    android:background="@drawable/toggle_day_background"
-                    android:textColor="@drawable/toggle_day_text_color"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:padding="0dp" />
-
-                <ToggleButton
-                    android:id="@+id/toggleFriday"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="2dp"
-                    android:textOn="@string/day_fri"
-                    android:textOff="@string/day_fri"
-                    android:checked="true"
-                    android:background="@drawable/toggle_day_background"
-                    android:textColor="@drawable/toggle_day_text_color"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:padding="0dp" />
-
-                <ToggleButton
-                    android:id="@+id/toggleSaturday"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:textOn="@string/day_sat"
-                    android:textOff="@string/day_sat"
-                    android:checked="true"
-                    android:background="@drawable/toggle_day_background"
-                    android:textColor="@drawable/toggle_day_text_color"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:padding="0dp" />
-
-            </LinearLayout>
-
-            <!-- Schedule Type Section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/schedule_type"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:textColor="?attr/colorOnSurface" />
-
-            <Spinner
-                android:id="@+id/scheduleTypeSpinner"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/spinner_background"
-                android:padding="8dp" />
-
-            <!-- Periodic Interval Section (visible when periodic schedule selected) -->
-            <LinearLayout
-                android:id="@+id/intervalSection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/check_interval"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurface" />
-
-                    <TextView
-                        android:id="@+id/intervalValueLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorPrimary"
-                        tools:text="60 minutes" />
-
-                </LinearLayout>
-
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/intervalSlider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:valueFrom="15"
-                    android:valueTo="600"
-                    android:stepSize="15"
-                    android:value="60" />
-
-            </LinearLayout>
-
-            <!-- Specific Time Section (visible when specific hour schedule selected) -->
-            <LinearLayout
-                android:id="@+id/specificTimeSection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/specific_time"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorOnSurface" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/timePickerButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    tools:text="09:00" />
 
             </LinearLayout>
 

@@ -1,6 +1,5 @@
 package com.ltrudu.sitewatcher.ui.addedit;
 
-import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -10,10 +9,11 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
-import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
@@ -24,14 +24,14 @@ import com.google.android.material.slider.Slider;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.ltrudu.sitewatcher.R;
+import com.google.android.material.card.MaterialCardView;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
-import com.ltrudu.sitewatcher.data.model.ScheduleType;
+import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Fragment for adding or editing a watched site.
@@ -55,22 +55,9 @@ public class AddEditFragment extends Fragment {
     private Spinner comparisonModeSpinner;
     private TextInputLayout cssSelectorInputLayout;
     private TextInputEditText cssSelectorEditText;
-    private ToggleButton toggleSunday;
-    private ToggleButton toggleMonday;
-    private ToggleButton toggleTuesday;
-    private ToggleButton toggleWednesday;
-    private ToggleButton toggleThursday;
-    private ToggleButton toggleFriday;
-    private ToggleButton toggleSaturday;
-    private Spinner scheduleTypeSpinner;
-    private View intervalSection;
-    private Slider intervalSlider;
-    private View specificTimeSection;
-    private MaterialButton timePickerButton;
     private Slider thresholdSlider;
     private MaterialButton cancelButton;
     private MaterialButton saveButton;
-    private android.widget.TextView intervalValueLabel;
     private android.widget.TextView thresholdValueLabel;
     private View minTextLengthSection;
     private Slider minTextLengthSlider;
@@ -84,10 +71,14 @@ public class AddEditFragment extends Fragment {
     private android.widget.TextView actionsCountLabel;
     private MaterialButton buttonEditActions;
 
+    // Calendar schedules views
+    private MaterialCardView schedulesSection;
+    private android.widget.TextView schedulesCountLabel;
+    private MaterialButton buttonEditSchedules;
+
     // Adapters
     private ArrayAdapter<String> fetchModeAdapter;
     private ArrayAdapter<String> comparisonModeAdapter;
-    private ArrayAdapter<String> scheduleTypeAdapter;
 
     // Flag to prevent listener callbacks during initialization
     private boolean isInitializing = true;
@@ -124,6 +115,7 @@ public class AddEditFragment extends Fragment {
         initializeViews(view);
         setupSpinners();
         setupAutoClickSection();
+        setupSchedulesSection();
         setupListeners();
         observeViewModel();
 
@@ -136,6 +128,9 @@ public class AddEditFragment extends Fragment {
         // Listen for result from EditActionsFragment
         listenForEditActionsResult();
 
+        // Listen for result from EditSchedulesFragment
+        listenForEditSchedulesResult();
+
         isInitializing = false;
     }
 
@@ -147,22 +142,9 @@ public class AddEditFragment extends Fragment {
         comparisonModeSpinner = view.findViewById(R.id.comparisonModeSpinner);
         cssSelectorInputLayout = view.findViewById(R.id.cssSelectorInputLayout);
         cssSelectorEditText = view.findViewById(R.id.cssSelectorEditText);
-        toggleSunday = view.findViewById(R.id.toggleSunday);
-        toggleMonday = view.findViewById(R.id.toggleMonday);
-        toggleTuesday = view.findViewById(R.id.toggleTuesday);
-        toggleWednesday = view.findViewById(R.id.toggleWednesday);
-        toggleThursday = view.findViewById(R.id.toggleThursday);
-        toggleFriday = view.findViewById(R.id.toggleFriday);
-        toggleSaturday = view.findViewById(R.id.toggleSaturday);
-        scheduleTypeSpinner = view.findViewById(R.id.scheduleTypeSpinner);
-        intervalSection = view.findViewById(R.id.intervalSection);
-        intervalSlider = view.findViewById(R.id.intervalSlider);
-        specificTimeSection = view.findViewById(R.id.specificTimeSection);
-        timePickerButton = view.findViewById(R.id.timePickerButton);
         thresholdSlider = view.findViewById(R.id.thresholdSlider);
         cancelButton = view.findViewById(R.id.cancelButton);
         saveButton = view.findViewById(R.id.saveButton);
-        intervalValueLabel = view.findViewById(R.id.intervalValueLabel);
         thresholdValueLabel = view.findViewById(R.id.thresholdValueLabel);
         minTextLengthSection = view.findViewById(R.id.minTextLengthSection);
         minTextLengthSlider = view.findViewById(R.id.minTextLengthSlider);
@@ -176,13 +158,23 @@ public class AddEditFragment extends Fragment {
         actionsCountLabel = view.findViewById(R.id.actionsCountLabel);
         buttonEditActions = view.findViewById(R.id.buttonEditActions);
 
+        // Calendar schedules views
+        schedulesSection = view.findViewById(R.id.schedulesSection);
+        schedulesCountLabel = view.findViewById(R.id.schedulesCountLabel);
+        buttonEditSchedules = view.findViewById(R.id.buttonEditSchedules);
+
         // Set button text and title based on mode
+        ActionBar actionBar = ((AppCompatActivity) requireActivity()).getSupportActionBar();
         if (viewModel.isEditMode()) {
             saveButton.setText(R.string.save);
-            requireActivity().setTitle(R.string.edit_site);
+            if (actionBar != null) {
+                actionBar.setTitle(R.string.edit_site);
+            }
         } else {
             saveButton.setText(R.string.add);
-            requireActivity().setTitle(R.string.add_site);
+            if (actionBar != null) {
+                actionBar.setTitle(R.string.add_site);
+            }
         }
     }
 
@@ -213,19 +205,6 @@ public class AddEditFragment extends Fragment {
         );
         comparisonModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         comparisonModeSpinner.setAdapter(comparisonModeAdapter);
-
-        // Schedule type spinner
-        String[] scheduleTypes = new String[]{
-                getString(R.string.schedule_periodic),
-                getString(R.string.schedule_specific_hour)
-        };
-        scheduleTypeAdapter = new ArrayAdapter<>(
-                requireContext(),
-                android.R.layout.simple_spinner_item,
-                scheduleTypes
-        );
-        scheduleTypeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        scheduleTypeSpinner.setAdapter(scheduleTypeAdapter);
     }
 
     private void setupAutoClickSection() {
@@ -277,6 +256,42 @@ public class AddEditFragment extends Fragment {
     private void updateAutoClickSectionVisibility(FetchMode mode) {
         boolean visible = mode == FetchMode.JAVASCRIPT;
         autoClickSection.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private void setupSchedulesSection() {
+        buttonEditSchedules.setOnClickListener(v -> navigateToEditSchedules());
+        // Initialize with default schedule count
+        updateSchedulesCount(viewModel.getSchedulesJson());
+    }
+
+    private void navigateToEditSchedules() {
+        String schedulesJson = viewModel.getSchedulesJson();
+
+        Bundle args = new Bundle();
+        args.putString("schedules_json", schedulesJson);
+
+        NavController navController = Navigation.findNavController(requireView());
+        navController.navigate(R.id.action_addEdit_to_editSchedules, args);
+    }
+
+    private void listenForEditSchedulesResult() {
+        getParentFragmentManager().setFragmentResultListener(
+                EditSchedulesFragment.RESULT_KEY,
+                getViewLifecycleOwner(),
+                (requestKey, result) -> {
+                    String schedulesJson = result.getString(EditSchedulesFragment.RESULT_SCHEDULES_JSON);
+                    if (schedulesJson != null) {
+                        viewModel.setSchedulesJson(schedulesJson);
+                        updateSchedulesCount(schedulesJson);
+                    }
+                }
+        );
+    }
+
+    private void updateSchedulesCount(String schedulesJson) {
+        List<Schedule> schedules = Schedule.fromJsonString(schedulesJson);
+        int count = schedules.size();
+        schedulesCountLabel.setText(getString(R.string.schedules_count, count));
     }
 
     private void setupListeners() {
@@ -356,42 +371,6 @@ public class AddEditFragment extends Fragment {
         // CSS Selector picker button (touch icon)
         cssSelectorInputLayout.setEndIconOnClickListener(v -> navigateToSelectorBrowser());
 
-        // Day toggle buttons
-        setupDayToggle(toggleSunday, WatchedSite.SUNDAY);
-        setupDayToggle(toggleMonday, WatchedSite.MONDAY);
-        setupDayToggle(toggleTuesday, WatchedSite.TUESDAY);
-        setupDayToggle(toggleWednesday, WatchedSite.WEDNESDAY);
-        setupDayToggle(toggleThursday, WatchedSite.THURSDAY);
-        setupDayToggle(toggleFriday, WatchedSite.FRIDAY);
-        setupDayToggle(toggleSaturday, WatchedSite.SATURDAY);
-
-        // Schedule type spinner
-        scheduleTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!isInitializing) {
-                    ScheduleType type = position == 0 ? ScheduleType.PERIODIC : ScheduleType.SPECIFIC_HOUR;
-                    viewModel.setScheduleType(type);
-                    updateScheduleSectionVisibility(type);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-
-        // Interval slider
-        intervalSlider.addOnChangeListener((slider, value, fromUser) -> {
-            if (fromUser && !isInitializing) {
-                viewModel.setIntervalMinutes((int) value);
-            }
-            updateIntervalLabel((int) value);
-        });
-
-        // Time picker button
-        timePickerButton.setOnClickListener(v -> showTimePicker());
-
         // Threshold slider
         thresholdSlider.addOnChangeListener((slider, value, fromUser) -> {
             if (fromUser && !isInitializing) {
@@ -423,14 +402,6 @@ public class AddEditFragment extends Fragment {
         saveButton.setOnClickListener(v -> viewModel.save());
     }
 
-    private void setupDayToggle(ToggleButton toggle, int dayBitmask) {
-        toggle.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (!isInitializing) {
-                viewModel.setDayEnabled(dayBitmask, isChecked);
-            }
-        });
-    }
-
     private void observeViewModel() {
         // Observe URL
         viewModel.getUrl().observe(getViewLifecycleOwner(), url -> {
@@ -447,13 +418,6 @@ public class AddEditFragment extends Fragment {
 
         viewModel.getUrlError().observe(getViewLifecycleOwner(), error -> {
             urlInputLayout.setError(error);
-        });
-
-        // Observe enabled days
-        viewModel.getEnabledDays().observe(getViewLifecycleOwner(), days -> {
-            if (days != null) {
-                updateDayToggles(days);
-            }
         });
 
         // Observe fetch mode
@@ -485,29 +449,6 @@ public class AddEditFragment extends Fragment {
                 cssSelectorEditText.setText(selector);
             }
         });
-
-        // Observe schedule type
-        viewModel.getScheduleType().observe(getViewLifecycleOwner(), type -> {
-            if (type != null) {
-                int position = type == ScheduleType.PERIODIC ? 0 : 1;
-                if (scheduleTypeSpinner.getSelectedItemPosition() != position) {
-                    scheduleTypeSpinner.setSelection(position);
-                }
-                updateScheduleSectionVisibility(type);
-            }
-        });
-
-        // Observe interval
-        viewModel.getIntervalMinutes().observe(getViewLifecycleOwner(), interval -> {
-            if (interval != null) {
-                intervalSlider.setValue(interval);
-                updateIntervalLabel(interval);
-            }
-        });
-
-        // Observe schedule time
-        viewModel.getScheduleHour().observe(getViewLifecycleOwner(), hour -> updateTimePickerButton());
-        viewModel.getScheduleMinute().observe(getViewLifecycleOwner(), minute -> updateTimePickerButton());
 
         // Observe threshold
         viewModel.getThresholdPercent().observe(getViewLifecycleOwner(), threshold -> {
@@ -581,16 +522,6 @@ public class AddEditFragment extends Fragment {
         );
     }
 
-    private void updateDayToggles(int enabledDays) {
-        toggleSunday.setChecked((enabledDays & WatchedSite.SUNDAY) != 0);
-        toggleMonday.setChecked((enabledDays & WatchedSite.MONDAY) != 0);
-        toggleTuesday.setChecked((enabledDays & WatchedSite.TUESDAY) != 0);
-        toggleWednesday.setChecked((enabledDays & WatchedSite.WEDNESDAY) != 0);
-        toggleThursday.setChecked((enabledDays & WatchedSite.THURSDAY) != 0);
-        toggleFriday.setChecked((enabledDays & WatchedSite.FRIDAY) != 0);
-        toggleSaturday.setChecked((enabledDays & WatchedSite.SATURDAY) != 0);
-    }
-
     private void updateFetchModeHint(int position) {
         if (position == 0) {
             fetchModeHint.setText(R.string.fetch_mode_static_desc);
@@ -611,20 +542,6 @@ public class AddEditFragment extends Fragment {
         );
     }
 
-    private void updateScheduleSectionVisibility(ScheduleType type) {
-        if (type == ScheduleType.PERIODIC) {
-            intervalSection.setVisibility(View.VISIBLE);
-            specificTimeSection.setVisibility(View.GONE);
-        } else {
-            intervalSection.setVisibility(View.GONE);
-            specificTimeSection.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void updateIntervalLabel(int minutes) {
-        intervalValueLabel.setText(getString(R.string.check_interval_value, minutes));
-    }
-
     private void updateThresholdLabel(int percent) {
         thresholdValueLabel.setText(getString(R.string.threshold_value, percent));
     }
@@ -635,30 +552,6 @@ public class AddEditFragment extends Fragment {
 
     private void updateMinWordLengthLabel(int length) {
         minWordLengthValueLabel.setText(getString(R.string.min_word_length_value, length));
-    }
-
-    private void updateTimePickerButton() {
-        Integer hour = viewModel.getScheduleHour().getValue();
-        Integer minute = viewModel.getScheduleMinute().getValue();
-        if (hour != null && minute != null) {
-            timePickerButton.setText(String.format(Locale.getDefault(), "%02d:%02d", hour, minute));
-        }
-    }
-
-    private void showTimePicker() {
-        Integer hour = viewModel.getScheduleHour().getValue();
-        Integer minute = viewModel.getScheduleMinute().getValue();
-
-        TimePickerDialog dialog = new TimePickerDialog(
-                requireContext(),
-                (view, selectedHour, selectedMinute) -> {
-                    viewModel.setScheduleTime(selectedHour, selectedMinute);
-                },
-                hour != null ? hour : 9,
-                minute != null ? minute : 0,
-                true
-        );
-        dialog.show();
     }
 
     private ComparisonMode getComparisonModeFromPosition(int position) {

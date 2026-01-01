@@ -27,7 +27,7 @@ import com.ltrudu.sitewatcher.data.model.WatchedSite;
         SiteHistory.class,
         CheckResult.class
     },
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters({Converters.class})
@@ -78,6 +78,16 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
     };
 
     /**
+     * Migration from version 5 to 6: Add schedules_json column.
+     */
+    private static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN schedules_json TEXT");
+        }
+    };
+
+    /**
      * Get the WatchedSite DAO.
      *
      * @return WatchedSiteDao instance
@@ -114,7 +124,7 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
                             SiteWatcherDatabase.class,
                             DATABASE_NAME
                     )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .fallbackToDestructiveMigration()
                     .build();
                 }

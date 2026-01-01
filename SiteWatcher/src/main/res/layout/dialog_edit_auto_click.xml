@@ -1,145 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_margin="16dp"
+    android:clipToOutline="true"
+    android:clipChildren="true"
+    app:cardBackgroundColor="?attr/colorSurface"
+    app:cardElevation="0dp"
+    app:cardCornerRadius="12dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutline">
 
-    <!-- Action Type Spinner -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/action_type"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        android:textColor="?attr/colorOnSurface" />
-
-    <Spinner
-        android:id="@+id/spinnerActionType"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/spinner_background"
-        android:padding="8dp" />
-
-    <!-- Label Input -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/labelInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="@string/action_label"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="text"
-            android:maxLines="1"
-            android:imeOptions="actionNext"
-            tools:text="Close Cookie Banner" />
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- CSS Selector Input (for CLICK action) -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/selectorInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="@string/action_selector"
-        app:helperText="@string/action_selector_hint"
-        app:helperTextEnabled="true"
-        app:endIconMode="custom"
-        app:endIconDrawable="@drawable/ic_touch_app"
-        app:endIconContentDescription="@string/pick_click_element"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editSelector"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="text"
-            android:maxLines="1"
-            android:imeOptions="actionDone"
-            tools:text="#accept-cookies, .close-btn" />
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Wait Duration Input (for WAIT action) -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/waitInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="@string/wait_seconds"
-        android:visibility="gone"
-        app:helperText="@string/wait_seconds_hint"
-        app:helperTextEnabled="true"
-        app:suffixText="s"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        tools:visibility="visible">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editWaitSeconds"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:maxLines="1"
-            android:imeOptions="actionDone"
-            tools:text="2" />
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Tap Coordinates Input (for TAP_COORDINATES action) -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/coordinatesInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="@string/coordinates_selected"
-        android:visibility="gone"
-        app:endIconMode="custom"
-        app:endIconDrawable="@drawable/ic_touch_app"
-        app:endIconContentDescription="@string/tap_to_select_location"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        tools:visibility="visible">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editCoordinates"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="none"
-            android:focusable="false"
-            android:clickable="false"
-            tools:text="Position: 50%, 30%" />
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:orientation="horizontal"
-        android:gravity="end">
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonCancel"
+        <!-- Action Type Spinner -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:text="@string/cancel"
-            style="@style/Widget.MaterialComponents.Button.TextButton" />
+            android:text="@string/action_type"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurface" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonSave"
-            android:layout_width="wrap_content"
+        <Spinner
+            android:id="@+id/spinnerActionType"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/spinner_background"
+            android:padding="8dp" />
+
+        <!-- Label Input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/labelInputLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/save" />
+            android:layout_marginTop="16dp"
+            android:hint="@string/action_label"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1"
+                android:imeOptions="actionNext"
+                tools:text="Close Cookie Banner" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- CSS Selector Input (for CLICK action) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/selectorInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/action_selector"
+            app:helperText="@string/action_selector_hint"
+            app:helperTextEnabled="true"
+            app:endIconMode="custom"
+            app:endIconDrawable="@drawable/ic_touch_app"
+            app:endIconContentDescription="@string/pick_click_element"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editSelector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1"
+                android:imeOptions="actionDone"
+                tools:text="#accept-cookies, .close-btn" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Wait Duration Input (for WAIT action) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/waitInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/wait_seconds"
+            android:visibility="gone"
+            app:helperText="@string/wait_seconds_hint"
+            app:helperTextEnabled="true"
+            app:suffixText="s"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            tools:visibility="visible">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editWaitSeconds"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:maxLines="1"
+                android:imeOptions="actionDone"
+                tools:text="2" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Tap Coordinates Input (for TAP_COORDINATES action) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/coordinatesInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/coordinates_selected"
+            android:visibility="gone"
+            app:endIconMode="custom"
+            app:endIconDrawable="@drawable/ic_touch_app"
+            app:endIconContentDescription="@string/tap_to_select_location"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            tools:visibility="visible">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editCoordinates"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="false"
+                tools:text="Position: 50%, 30%" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonCancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/cancel"
+                style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonSave"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/save" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

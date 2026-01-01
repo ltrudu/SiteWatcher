@@ -64,7 +64,7 @@ public class ThemeManager {
                     return theme;
                 }
             }
-            return ORANGE_FIRE; // Default
+            return COASTAL_SUNSET; // Default
         }
     }
 
@@ -80,7 +80,7 @@ public class ThemeManager {
      */
     @NonNull
     public Theme getCurrentTheme() {
-        int themeId = preferences.getInt(KEY_THEME, Theme.ORANGE_FIRE.getId());
+        int themeId = preferences.getInt(KEY_THEME, Theme.COASTAL_SUNSET.getId());
         return Theme.fromId(themeId);
     }
 

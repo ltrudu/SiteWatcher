@@ -6,6 +6,8 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+import java.util.List;
+
 /**
  * Represents a website being monitored for changes.
  */
@@ -85,6 +87,15 @@ public class WatchedSite {
     @Nullable
     @ColumnInfo(name = "auto_click_actions")
     private String autoClickActionsJson;
+
+    /**
+     * JSON array of schedules for multi-schedule support.
+     * Each schedule defines when checks should occur (calendar type + interval).
+     * Replaces legacy single schedule fields for more flexibility.
+     */
+    @Nullable
+    @ColumnInfo(name = "schedules_json")
+    private String schedulesJson;
 
     /**
      * Minimum change percentage (1-99) to trigger notification.
@@ -270,6 +281,48 @@ public class WatchedSite {
      */
     public void setAutoClickActions(@Nullable java.util.List<AutoClickAction> actions) {
         this.autoClickActionsJson = AutoClickAction.toJsonString(actions);
+    }
+
+    @Nullable
+    public String getSchedulesJson() {
+        return schedulesJson;
+    }
+
+    public void setSchedulesJson(@Nullable String schedulesJson) {
+        this.schedulesJson = schedulesJson;
+    }
+
+    /**
+     * Get schedules as a list.
+     * If no schedules are configured, creates a default schedule from legacy fields
+     * for backward compatibility.
+     *
+     * @return List of schedules (never empty)
+     */
+    @NonNull
+    public List<Schedule> getSchedules() {
+        List<Schedule> schedules = Schedule.fromJsonString(schedulesJson);
+        if (schedules.isEmpty()) {
+            // Create default schedule from legacy fields for backward compatibility
+            Schedule defaultSchedule = new Schedule();
+            defaultSchedule.setCalendarType(CalendarScheduleType.ALL_THE_TIME);
+            defaultSchedule.setIntervalType(scheduleType);
+            defaultSchedule.setIntervalMinutes(periodicIntervalMinutes);
+            defaultSchedule.setScheduleHour(scheduleHour);
+            defaultSchedule.setScheduleMinute(scheduleMinute);
+            defaultSchedule.setEnabledDays(enabledDays);
+            schedules.add(defaultSchedule);
+        }
+        return schedules;
+    }
+
+    /**
+     * Set schedules from a list.
+     *
+     * @param schedules List of schedules (null or empty to clear)
+     */
+    public void setSchedules(@Nullable List<Schedule> schedules) {
+        this.schedulesJson = Schedule.toJsonString(schedules);
     }
 
     public int getThresholdPercent() {

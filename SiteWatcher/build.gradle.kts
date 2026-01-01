@@ -31,6 +31,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".dev"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -54,6 +57,20 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    applicationVariants.all {
+        val variant = this
+        val buildType = variant.buildType.name
+        val versionName = variant.versionName
+
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "SiteWatcher-${versionName}-${buildType}.apk"
+        }
+    }
+
+    // Configure base archive name for bundles
+    base.archivesName.set("SiteWatcher-${defaultConfig.versionName}")
 }
 
 dependencies {

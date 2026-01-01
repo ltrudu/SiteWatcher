@@ -160,6 +160,45 @@
     <string name="day_fri">F</string>
     <string name="day_sat">S</string>
 
+    <!-- Schedule Management -->
+    <string name="calendar_schedules">Calendar Schedules</string>
+    <string name="calendar_schedules_hint">Define when site checks should occur. Multiple schedules use OR logic.</string>
+    <string name="schedules_count">%d schedule(s) defined</string>
+    <string name="edit_schedules">Edit Schedules</string>
+    <string name="add_schedule">Add schedule</string>
+    <string name="no_schedules">No schedules defined</string>
+    <string name="add_schedule_hint">Tap + to add a schedule</string>
+    <string name="schedule_type_label">Schedule Type</string>
+    <string name="interval">Interval</string>
+    <string name="time">Time</string>
+    <string name="date">Date</string>
+    <string name="from_date">From</string>
+    <string name="to_date">To</string>
+    <string name="week_parity">Week Filter</string>
+
+    <!-- Schedule Types (Calendar) -->
+    <string name="schedule_all_the_time">All The Time</string>
+    <string name="schedule_selected_day">Selected Day</string>
+    <string name="schedule_date_range">From Date To Date</string>
+    <string name="schedule_every_weeks">Every Weeks</string>
+
+    <!-- Interval Types -->
+    <string name="interval_periodic">Periodic</string>
+    <string name="interval_specific_hour">Specific Time</string>
+
+    <!-- Week Parity -->
+    <string name="week_parity_both">Every Week</string>
+    <string name="week_parity_even">Even Weeks Only</string>
+    <string name="week_parity_odd">Odd Weeks Only</string>
+
+    <!-- Schedule Messages -->
+    <string name="schedule_already_exists">This schedule type already exists</string>
+    <string name="cannot_delete_last_schedule">Cannot delete the last schedule</string>
+    <string name="delete_schedule_confirm">Delete this schedule?</string>
+    <string name="edit_schedule">Edit Schedule</string>
+    <string name="add_new_schedule">Add Schedule</string>
+    <string name="update">Update</string>
+
     <!-- Browser Discovery -->
     <string name="watch">Watch</string>
     <string name="current_url">Current URL</string>

@@ -33,7 +33,7 @@
     <fragment
         android:id="@+id/addEditFragment"
         android:name="com.ltrudu.sitewatcher.ui.addedit.AddEditFragment"
-        android:label="@string/add_site"
+        android:label=""
         tools:layout="@layout/fragment_add_edit">
         <argument
             android:name="siteId"
@@ -54,6 +54,9 @@
         <action
             android:id="@+id/action_addEdit_to_editActions"
             app:destination="@id/editActionsFragment" />
+        <action
+            android:id="@+id/action_addEdit_to_editSchedules"
+            app:destination="@id/editSchedulesFragment" />
     </fragment>
 
     <fragment
@@ -79,6 +82,18 @@
         <action
             android:id="@+id/action_editActions_to_coordinatePicker"
             app:destination="@id/coordinatePickerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/editSchedulesFragment"
+        android:name="com.ltrudu.sitewatcher.ui.addedit.EditSchedulesFragment"
+        android:label="@string/edit_schedules"
+        tools:layout="@layout/fragment_edit_schedules">
+        <argument
+            android:name="schedules_json"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
     </fragment>
 
     <fragment

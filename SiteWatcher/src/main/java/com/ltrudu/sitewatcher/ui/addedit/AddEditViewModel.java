@@ -10,14 +10,18 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.ltrudu.sitewatcher.background.CheckScheduler;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
+import com.ltrudu.sitewatcher.data.model.CalendarScheduleType;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
+import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.ScheduleType;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.data.repository.SiteRepository;
 import com.ltrudu.sitewatcher.network.BuiltInClickPatterns;
 import com.ltrudu.sitewatcher.network.SiteChecker;
 import com.ltrudu.sitewatcher.util.Logger;
+
+import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +64,9 @@ public class AddEditViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> minTextLength = new MutableLiveData<>(10);
     private final MutableLiveData<Integer> minWordLength = new MutableLiveData<>(3);
     private final MutableLiveData<List<AutoClickAction>> autoClickActions = new MutableLiveData<>(new ArrayList<>());
+
+    // New schedules system (JSON format)
+    private String schedulesJson;
 
     // Validation state
     private final MutableLiveData<Boolean> isUrlValid = new MutableLiveData<>(false);
@@ -111,6 +118,7 @@ public class AddEditViewModel extends AndroidViewModel {
         minTextLength.setValue(10);
         minWordLength.setValue(3);
         autoClickActions.setValue(new ArrayList<>());
+        schedulesJson = Schedule.toJsonString(Schedule.createDefaultList());
         isUrlValid.setValue(false);
     }
 
@@ -166,6 +174,9 @@ public class AddEditViewModel extends AndroidViewModel {
         // Load auto-click actions
         List<AutoClickAction> actions = site.getAutoClickActions();
         autoClickActions.postValue(actions);
+
+        // Load schedules JSON
+        schedulesJson = site.getSchedulesJson();
 
         // Validate URL - use postValue version
         isUrlValid.postValue(true);
@@ -262,6 +273,9 @@ public class AddEditViewModel extends AndroidViewModel {
 
         List<AutoClickAction> actions = autoClickActions.getValue();
         site.setAutoClickActions(actions);
+
+        // Set schedules JSON
+        site.setSchedulesJson(schedulesJson);
 
         return site;
     }
@@ -396,6 +410,15 @@ public class AddEditViewModel extends AndroidViewModel {
 
     public void setAutoClickActions(List<AutoClickAction> actions) {
         this.autoClickActions.setValue(actions);
+    }
+
+    @Nullable
+    public String getSchedulesJson() {
+        return schedulesJson;
+    }
+
+    public void setSchedulesJson(@Nullable String schedulesJson) {
+        this.schedulesJson = schedulesJson;
     }
 
     public LiveData<Boolean> getIsUrlValid() {

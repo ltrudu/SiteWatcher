@@ -35,6 +35,22 @@ public class WatchedSite {
     private String cssSelector;
 
     /**
+     * CSS selectors for elements to include in CSS_SELECTOR mode.
+     * If empty, all elements are included (subject to exclude filter).
+     */
+    @Nullable
+    @ColumnInfo(name = "css_include_selector")
+    private String cssIncludeSelector;
+
+    /**
+     * CSS selectors for elements to exclude in CSS_SELECTOR mode.
+     * Matched elements are filtered out from the comparison.
+     */
+    @Nullable
+    @ColumnInfo(name = "css_exclude_selector")
+    private String cssExcludeSelector;
+
+    /**
      * Minimum text block length (3-150 characters) for TEXT_ONLY mode.
      * Text blocks shorter than this are ignored to reduce false positives
      * from dynamic content like timestamps, counters, etc.
@@ -174,6 +190,24 @@ public class WatchedSite {
 
     public void setCssSelector(@Nullable String cssSelector) {
         this.cssSelector = cssSelector;
+    }
+
+    @Nullable
+    public String getCssIncludeSelector() {
+        return cssIncludeSelector;
+    }
+
+    public void setCssIncludeSelector(@Nullable String cssIncludeSelector) {
+        this.cssIncludeSelector = cssIncludeSelector;
+    }
+
+    @Nullable
+    public String getCssExcludeSelector() {
+        return cssExcludeSelector;
+    }
+
+    public void setCssExcludeSelector(@Nullable String cssExcludeSelector) {
+        this.cssExcludeSelector = cssExcludeSelector;
     }
 
     public int getMinTextLength() {

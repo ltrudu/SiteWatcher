@@ -47,6 +47,12 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
          * @param view The view that was clicked (for positioning popup menu)
          */
         void onLongClick(@NonNull WatchedSite site, @NonNull View view);
+
+        /**
+         * Called when the percentage badge is clicked.
+         * @param site The site whose percentage badge was clicked
+         */
+        void onPercentageClick(@NonNull WatchedSite site);
     }
 
     private final List<WatchedSite> allSites = new ArrayList<>();
@@ -451,6 +457,9 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
                 listener.onLongClick(site, v);
                 return true;
             });
+
+            // Set percentage badge click listener
+            textChangePercent.setOnClickListener(v -> listener.onPercentageClick(site));
         }
     }
 

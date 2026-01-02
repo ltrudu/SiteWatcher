@@ -351,6 +351,12 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         showContextMenu(site, view);
     }
 
+    @Override
+    public void onPercentageClick(@NonNull WatchedSite site) {
+        Logger.d(TAG, "Percentage badge clicked for site: " + site.getId());
+        navigateToDiffViewer(site.getId());
+    }
+
     /**
      * Show the context menu for a site.
      * @param site The site to show menu for

@@ -1,8 +1,12 @@
 package com.ltrudu.sitewatcher.ui.selector;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
@@ -50,6 +54,8 @@ public class ActionTesterFragment extends Fragment {
     private static final String ARG_URL = "url";
     private static final String ARG_ACTIONS_JSON = "actions_json";
     private static final String ARG_EXECUTE_ACTIONS = "execute_actions";
+    private static final int STATUS_CARD_FADE_DELAY_MS = 5000;
+    private static final int STATUS_CARD_FADE_DURATION_MS = 500;
 
     private WebView webView;
     private TapCrosshairView tapCrosshair;
@@ -73,6 +79,9 @@ public class ActionTesterFragment extends Fragment {
     private int currentActionIndex = 0;
     private boolean pageLoaded = false;
     private boolean hasExecutedActions = false;
+    private CountDownTimer waitCountdownTimer;
+    private Runnable fadeOutRunnable;
+    private ObjectAnimator fadeOutAnimator;
 
     public ActionTesterFragment() {
         // Required empty public constructor
@@ -98,6 +107,97 @@ public class ActionTesterFragment extends Fragment {
         return preferencesManager.getPageLoadDelay() * 1000;
     }
 
+    /**
+     * Start a countdown timer that updates the UI every 100ms with format "Waiting: X.X s".
+     * After the countdown completes, action execution begins.
+     *
+     * @param durationMs The total duration in milliseconds
+     */
+    private void startWaitCountdown(int durationMs) {
+        // Cancel any existing timer
+        cancelWaitCountdown();
+
+        // Update UI every 100ms for smooth decisecond display
+        waitCountdownTimer = new CountDownTimer(durationMs, 100) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                if (!isAdded() || textStepProgress == null) return;
+
+                // Calculate seconds and deciseconds (tenths of seconds)
+                int seconds = (int) (millisUntilFinished / 1000);
+                int deciseconds = (int) ((millisUntilFinished % 1000) / 100);
+
+                // Update UI with countdown format: "Waiting: X.X s"
+                String countdownText = getString(R.string.waiting_countdown, seconds, deciseconds);
+                textStepProgress.setText(countdownText);
+            }
+
+            @Override
+            public void onFinish() {
+                if (!isAdded() || webView == null) return;
+
+                Logger.d(TAG, "Countdown complete, starting action execution");
+                startActionExecution();
+            }
+        };
+
+        waitCountdownTimer.start();
+    }
+
+    /**
+     * Cancel the wait countdown timer if running.
+     */
+    private void cancelWaitCountdown() {
+        if (waitCountdownTimer != null) {
+            waitCountdownTimer.cancel();
+            waitCountdownTimer = null;
+        }
+    }
+
+    /**
+     * Schedule the status card to fade out after 5 seconds.
+     */
+    private void scheduleStatusCardFadeOut() {
+        cancelStatusCardFadeOut();
+
+        fadeOutRunnable = () -> {
+            if (!isAdded() || statusCard == null) return;
+
+            fadeOutAnimator = ObjectAnimator.ofFloat(statusCard, "alpha", 1f, 0f);
+            fadeOutAnimator.setDuration(STATUS_CARD_FADE_DURATION_MS);
+            fadeOutAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    if (statusCard != null) {
+                        statusCard.setVisibility(View.GONE);
+                        statusCard.setAlpha(1f); // Reset alpha for next use
+                    }
+                }
+            });
+            fadeOutAnimator.start();
+        };
+
+        mainHandler.postDelayed(fadeOutRunnable, STATUS_CARD_FADE_DELAY_MS);
+    }
+
+    /**
+     * Cancel any pending status card fade out.
+     */
+    private void cancelStatusCardFadeOut() {
+        if (fadeOutRunnable != null) {
+            mainHandler.removeCallbacks(fadeOutRunnable);
+            fadeOutRunnable = null;
+        }
+        if (fadeOutAnimator != null) {
+            fadeOutAnimator.cancel();
+            fadeOutAnimator = null;
+        }
+        // Reset alpha in case animation was interrupted
+        if (statusCard != null) {
+            statusCard.setAlpha(1f);
+        }
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -114,6 +214,15 @@ public class ActionTesterFragment extends Fragment {
         setupWebView();
         setupListeners();
         loadTargetPage();
+
+        // Set title based on mode (Test Actions vs WebView Rendering)
+        if (getActivity() != null) {
+            if (executeActions) {
+                requireActivity().setTitle(R.string.test_actions);
+            } else {
+                requireActivity().setTitle(R.string.webview_rendering);
+            }
+        }
     }
 
     private void initializeViews(@NonNull View view) {
@@ -210,14 +319,8 @@ public class ActionTesterFragment extends Fragment {
                     int pageLoadDelay = getPageLoadDelayMs();
                     // Delay action execution to allow JS-loaded content (cookie dialogs) to appear
                     Logger.d(TAG, "Waiting " + pageLoadDelay + "ms for JS content to load...");
-                    textStepProgress.setText(R.string.waiting_for_content);
                     statusCard.setVisibility(View.VISIBLE);
-                    mainHandler.postDelayed(() -> {
-                        if (isAdded() && webView != null) {
-                            Logger.d(TAG, "Delay complete, starting action execution");
-                            startActionExecution();
-                        }
-                    }, pageLoadDelay);
+                    startWaitCountdown(pageLoadDelay);
                 } else if (!executeActions) {
                     showViewOnlyState();
                 }
@@ -357,6 +460,9 @@ public class ActionTesterFragment extends Fragment {
         floatingButtonBar.setVisibility(View.VISIBLE);
         buttonRestart.setVisibility(View.VISIBLE);
 
+        // Schedule status card to fade out after 5 seconds
+        scheduleStatusCardFadeOut();
+
         Logger.d(TAG, "Action execution complete: " + successCount + " success, " + failCount + " failed");
     }
 
@@ -383,11 +489,18 @@ public class ActionTesterFragment extends Fragment {
         statusCard.setVisibility(View.VISIBLE);
         floatingButtonBar.setVisibility(View.VISIBLE);
 
+        // Schedule status card to fade out after 5 seconds
+        scheduleStatusCardFadeOut();
+
         Logger.d(TAG, "View only mode - page loaded");
     }
 
     private void restartTest() {
         Logger.d(TAG, "Restarting test - clearing WebView data");
+
+        // Cancel any running countdown and fade out
+        cancelWaitCountdown();
+        cancelStatusCardFadeOut();
 
         // Reset execution state
         hasExecutedActions = false;
@@ -445,6 +558,10 @@ public class ActionTesterFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        // Cancel countdown timer and fade out if still running
+        cancelWaitCountdown();
+        cancelStatusCardFadeOut();
+
         // Exit fullscreen mode if still active
         if (executor != null) {
             executor.exitFullscreenMode();

@@ -22,12 +22,12 @@ public class ThemeManager {
      * Available app themes.
      */
     public enum Theme {
-        ORANGE_FIRE(0, R.style.Theme_SiteWatcher_OrangeFire, "Orange Fire"),
-        BLUE_LIGHT(1, R.style.Theme_SiteWatcher_BlueLight, "Blue Light"),
-        FOREST_GREEN(2, R.style.Theme_SiteWatcher_ForestGreen, "Forest Green"),
-        OCEAN_BLUE(3, R.style.Theme_SiteWatcher_OceanBlue, "Ocean Blue"),
-        SYNTHWAVE(4, R.style.Theme_SiteWatcher_Synthwave, "Synthwave"),
-        COASTAL_SUNSET(5, R.style.Theme_SiteWatcher_CoastalSunset, "Coastal Sunset"),
+        COASTAL_SUNSET(0, R.style.Theme_SiteWatcher_CoastalSunset, "Coastal Sunset"),
+        ORANGE_FIRE(1, R.style.Theme_SiteWatcher_OrangeFire, "Orange Fire"),
+        BLUE_LIGHT(2, R.style.Theme_SiteWatcher_BlueLight, "Blue Light"),
+        FOREST_GREEN(3, R.style.Theme_SiteWatcher_ForestGreen, "Forest Green"),
+        OCEAN_BLUE(4, R.style.Theme_SiteWatcher_OceanBlue, "Ocean Blue"),
+        SYNTHWAVE(5, R.style.Theme_SiteWatcher_Synthwave, "Synthwave"),
         NORDIC_RED(6, R.style.Theme_SiteWatcher_NordicRed, "Nordic Red"),
         NEON_CARNIVAL(7, R.style.Theme_SiteWatcher_NeonCarnival, "Neon Carnival");
 

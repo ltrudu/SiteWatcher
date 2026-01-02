@@ -90,7 +90,9 @@
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="6dp"
                 android:textAppearance="?attr/textAppearanceBody2"
-                android:textColor="?attr/colorOnPrimary" />
+                android:textColor="?attr/colorOnPrimary"
+                android:clickable="true"
+                android:focusable="true" />
 
         </LinearLayout>
 

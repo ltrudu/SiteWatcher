@@ -27,7 +27,7 @@ import com.ltrudu.sitewatcher.data.model.WatchedSite;
         SiteHistory.class,
         CheckResult.class
     },
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters({Converters.class})
@@ -148,6 +148,18 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
     };
 
     /**
+     * Migration from version 8 to 9: Add CSS include and exclude selector columns.
+     * Allows users to specify CSS selectors for content to include or exclude from comparison.
+     */
+    private static final Migration MIGRATION_8_9 = new Migration(8, 9) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN css_include_selector TEXT DEFAULT NULL");
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN css_exclude_selector TEXT DEFAULT NULL");
+        }
+    };
+
+    /**
      * Get the WatchedSite DAO.
      *
      * @return WatchedSiteDao instance
@@ -184,7 +196,7 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
                             SiteWatcherDatabase.class,
                             DATABASE_NAME
                     )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .fallbackToDestructiveMigration()
                     .build();
                 }

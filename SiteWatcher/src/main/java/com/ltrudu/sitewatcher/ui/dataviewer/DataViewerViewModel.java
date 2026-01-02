@@ -18,6 +18,7 @@ import com.ltrudu.sitewatcher.util.Logger;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.File;
@@ -181,8 +182,10 @@ public class DataViewerViewModel extends AndroidViewModel {
 
                 // Process content based on comparison mode
                 ComparisonMode mode = site.getComparisonMode();
-                String processedContent = processContent(rawContent, mode, site.getCssSelector());
-                String modeDescription = getModeDescription(mode, site.getCssSelector());
+                String processedContent = processContent(rawContent, mode, site.getCssSelector(),
+                        site.getCssIncludeSelector(), site.getCssExcludeSelector());
+                String modeDescription = getModeDescription(mode, site.getCssSelector(),
+                        site.getCssIncludeSelector(), site.getCssExcludeSelector());
 
                 DataContent result = new DataContent(
                         processedContent,
@@ -246,14 +249,17 @@ public class DataViewerViewModel extends AndroidViewModel {
     /**
      * Process content based on the comparison mode.
      *
-     * @param rawContent  The raw HTML content
-     * @param mode        The comparison mode
-     * @param cssSelector The CSS selector (used for CSS_SELECTOR mode)
+     * @param rawContent         The raw HTML content
+     * @param mode               The comparison mode
+     * @param cssSelector        The CSS selector (legacy, used for CSS_SELECTOR mode)
+     * @param cssIncludeSelector CSS selectors for elements to include
+     * @param cssExcludeSelector CSS selectors for elements to exclude
      * @return Processed content according to the mode
      */
     @NonNull
     private String processContent(@NonNull String rawContent, @NonNull ComparisonMode mode,
-                                  @Nullable String cssSelector) {
+                                  @Nullable String cssSelector, @Nullable String cssIncludeSelector,
+                                  @Nullable String cssExcludeSelector) {
         switch (mode) {
             case FULL_HTML:
                 // Return raw HTML content as-is
@@ -264,8 +270,9 @@ public class DataViewerViewModel extends AndroidViewModel {
                 return extractTextContent(rawContent);
 
             case CSS_SELECTOR:
-                // Extract elements matching the CSS selector
-                return extractCssSelectorContent(rawContent, cssSelector);
+                // Extract elements with include/exclude filtering
+                return extractCssSelectorContent(rawContent, cssSelector, cssIncludeSelector,
+                        cssExcludeSelector);
 
             default:
                 return rawContent;
@@ -294,30 +301,80 @@ public class DataViewerViewModel extends AndroidViewModel {
     }
 
     /**
-     * Extract content matching a CSS selector.
+     * Extract content with include/exclude CSS selector filtering.
      *
-     * @param html        The raw HTML content
-     * @param cssSelector The CSS selector to match
+     * The filtering logic:
+     * 1. If cssIncludeSelector is empty/null: start with ALL elements from the body
+     * 2. If cssIncludeSelector has value: select only elements matching those selectors
+     * 3. If cssExcludeSelector has value: remove elements matching those selectors
+     *
+     * @param html               The raw HTML content
+     * @param cssSelector        Legacy CSS selector (for backward compatibility)
+     * @param cssIncludeSelector CSS selectors for elements to include (null = all body content)
+     * @param cssExcludeSelector CSS selectors for elements to exclude (null = no exclusion)
      * @return Content from matching elements
      */
     @NonNull
-    private String extractCssSelectorContent(@NonNull String html, @Nullable String cssSelector) {
-        if (cssSelector == null || cssSelector.isEmpty()) {
-            Logger.w(TAG, "CSS selector is null or empty, returning raw content");
-            return html;
-        }
-
+    private String extractCssSelectorContent(@NonNull String html, @Nullable String cssSelector,
+                                             @Nullable String cssIncludeSelector,
+                                             @Nullable String cssExcludeSelector) {
         try {
             Document doc = Jsoup.parse(html);
-            Elements elements = doc.select(cssSelector);
-            if (elements.isEmpty()) {
-                Logger.w(TAG, "No elements found for selector: " + cssSelector);
-                return "";
+
+            // Remove script, style, and noscript elements first
+            doc.select("script, style, noscript").remove();
+
+            // Determine effective include selector
+            // Priority: cssIncludeSelector > cssSelector (legacy)
+            String effectiveIncludeSelector = cssIncludeSelector;
+            if ((effectiveIncludeSelector == null || effectiveIncludeSelector.trim().isEmpty())
+                    && cssSelector != null && !cssSelector.trim().isEmpty()) {
+                effectiveIncludeSelector = cssSelector;
             }
+
+            Elements elements;
+
+            // Step 1: Get base elements (include filter)
+            if (effectiveIncludeSelector == null || effectiveIncludeSelector.trim().isEmpty()) {
+                // No include selector: select all content from body
+                elements = doc.select("body *");
+                if (elements.isEmpty()) {
+                    elements = doc.getAllElements();
+                }
+            } else {
+                // Include selector specified: select matching elements
+                elements = doc.select(effectiveIncludeSelector.trim());
+                if (elements.isEmpty()) {
+                    Logger.w(TAG, "No elements found for include selector: " + effectiveIncludeSelector);
+                    return "";
+                }
+            }
+
+            // Step 2: Apply exclude filter
+            if (cssExcludeSelector != null && !cssExcludeSelector.trim().isEmpty()) {
+                // Remove excluded elements from the selection
+                Elements toRemove = new Elements();
+                for (Element element : elements) {
+                    // Check if this element matches any exclude selector
+                    if (element.is(cssExcludeSelector.trim())) {
+                        toRemove.add(element);
+                    }
+                    // Also remove child elements that match exclude selector
+                    Elements excludedChildren = element.select(cssExcludeSelector.trim());
+                    excludedChildren.remove();
+                }
+                elements.removeAll(toRemove);
+
+                if (elements.isEmpty()) {
+                    Logger.w(TAG, "All elements were excluded, no content remaining");
+                    return "";
+                }
+            }
+
             // Return the outer HTML of all matching elements
             return elements.outerHtml();
         } catch (Exception e) {
-            Logger.e(TAG, "Error extracting CSS selector content: " + cssSelector, e);
+            Logger.e(TAG, "Error extracting CSS selector content", e);
             return html; // Fallback to raw content
         }
     }
@@ -325,25 +382,56 @@ public class DataViewerViewModel extends AndroidViewModel {
     /**
      * Get a human-readable description of the comparison mode.
      *
-     * @param mode        The comparison mode
-     * @param cssSelector The CSS selector (used for CSS_SELECTOR mode)
+     * @param mode               The comparison mode
+     * @param cssSelector        Legacy CSS selector (for CSS_SELECTOR mode)
+     * @param cssIncludeSelector CSS selectors for elements to include
+     * @param cssExcludeSelector CSS selectors for elements to exclude
      * @return Description string
      */
     @NonNull
-    private String getModeDescription(@NonNull ComparisonMode mode, @Nullable String cssSelector) {
+    private String getModeDescription(@NonNull ComparisonMode mode, @Nullable String cssSelector,
+                                      @Nullable String cssIncludeSelector,
+                                      @Nullable String cssExcludeSelector) {
         switch (mode) {
             case FULL_HTML:
                 return "Full HTML";
             case TEXT_ONLY:
                 return "Text Only";
             case CSS_SELECTOR:
-                if (cssSelector != null && !cssSelector.isEmpty()) {
-                    return "CSS Selector: " + cssSelector;
-                }
-                return "CSS Selector";
+                return buildCssSelectorDescription(cssSelector, cssIncludeSelector, cssExcludeSelector);
             default:
                 return mode.name();
         }
+    }
+
+    /**
+     * Build a description for CSS Selector mode with include/exclude info.
+     */
+    @NonNull
+    private String buildCssSelectorDescription(@Nullable String cssSelector,
+                                               @Nullable String cssIncludeSelector,
+                                               @Nullable String cssExcludeSelector) {
+        StringBuilder desc = new StringBuilder("CSS Selector");
+
+        // Determine effective include selector
+        String effectiveInclude = cssIncludeSelector;
+        if ((effectiveInclude == null || effectiveInclude.trim().isEmpty())
+                && cssSelector != null && !cssSelector.trim().isEmpty()) {
+            effectiveInclude = cssSelector;
+        }
+
+        if (effectiveInclude != null && !effectiveInclude.trim().isEmpty()) {
+            desc.append(" (include: ").append(effectiveInclude);
+        } else {
+            desc.append(" (all elements");
+        }
+
+        if (cssExcludeSelector != null && !cssExcludeSelector.trim().isEmpty()) {
+            desc.append(", exclude: ").append(cssExcludeSelector);
+        }
+
+        desc.append(")");
+        return desc.toString();
     }
 
     /**

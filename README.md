@@ -11,17 +11,18 @@
 ### Core Monitoring
 - **Website Tracking** - Monitor unlimited websites for content changes
 - **Change Detection** - Configurable percentage threshold (1-99%) to filter noise
+- **Quick View Changes** - Tap the percentage badge to instantly view changes
 - **Multiple Comparison Modes**:
   - **Full HTML** - Compare complete page source
   - **Text Only** - Compare visible text content (ignores HTML tags)
-  - **CSS Selector** - Monitor specific page elements only
+  - **CSS Selector** - Monitor specific page elements with include/exclude filtering
 
 ### Fetch Modes
 - **Static (Fast)** - Quick HTML fetching without JavaScript execution
 - **JavaScript (Dynamic)** - WebView-based fetching with full JavaScript support
   - Required for Single Page Applications (SPAs), AJAX content, and dynamic pages
-  - Configurable page load delay (0-10 seconds)
-  - Configurable post-action delay (0-10 seconds)
+  - Configurable page load delay (0-10 seconds, default: 5s)
+  - Configurable post-action delay (0-10 seconds, default: 5s)
 
 ### Auto-Click Actions
 Automate page interactions before content capture - perfect for dismissing cookie consent dialogs, closing popups, or navigating to specific content.
@@ -39,8 +40,11 @@ Pre-configured patterns for common cookie consent frameworks:
 
 #### Interactive Element Pickers
 - **CSS Selector Picker** - Tap elements visually to generate selectors
+  - Context-aware instructions: shows "monitor" for include mode, "exclude" for exclude mode
 - **Coordinate Picker** - Tap anywhere to set exact tap positions with crosshair preview
 - **Action Tester** - Test and preview complete action sequences before saving
+- **Action Execution in Pickers** - Auto-click actions are executed before element selection to ensure accurate page state
+- **Real-Time Countdown** - Visual countdown (X.X seconds) while waiting for page load or after actions
 
 #### Actions Management
 - **Drag-to-Reorder** - Arrange action execution order by dragging
@@ -90,10 +94,17 @@ Create multiple schedules per site with flexible calendar-based rules:
 - **Open in WebView** - Test sites with JavaScript fetch mode
 
 ### Content Comparison
-- **Diff Viewer** - Visual side-by-side comparison of changes
+- **Diff Viewer** - Visual comparison of changes with mode-aware viewing options
+- **Quick Access** - Tap the percentage badge to instantly open the diff viewer
+- **Mode-Aware Views** - Available views depend on comparison mode:
+  - **Full HTML mode**: Changes Only, Rendered View, and Full Text Diff
+  - **Text Only mode**: Text Diff only (no rendering needed)
+  - **CSS Selector mode**: Text Diff only (partial HTML not renderable)
+- **Changes Only (Default for Full HTML)** - Rendered page with changed elements highlighted in red
+- **Rendered View** - Side-by-side comparison of before/after pages
+- **Full Text Diff** - Complete line-by-line diff with context
 - **Color Coding** - Green for additions, red for removals
 - **Statistics** - See exactly how many lines changed
-- **Rendered View** - See changes highlighted on the actual page
 
 ### View Data
 - **View Comparison Data** - See raw content used for comparison
@@ -162,6 +173,7 @@ When first launching the app, you'll be asked for:
    - **Name** (optional) - Custom display name
    - **Comparison Mode** - How to detect changes
    - **Fetch Mode** - Static (fast) or JavaScript (dynamic)
+   - **CSS Include/Exclude** - Filter which elements to compare (for CSS Selector mode)
    - **Calendar Schedules** - Set up one or more schedules
    - **Threshold** - Minimum change percentage to notify
 4. Tap **Save**
@@ -199,6 +211,7 @@ For sites with cookie consent dialogs or dynamic content:
 
 - Sites are checked automatically based on your schedule
 - Pull down to see the latest status
+- **Tap the percentage badge** to quickly view changes
 - Long-press a site for quick actions:
   - Open in Browser
   - Open in WebView
@@ -218,7 +231,23 @@ For sites with cookie consent dialogs or dynamic content:
 |------|----------|-------------|
 | **Full HTML** | Technical changes | Detects any change including invisible elements |
 | **Text Only** | Content updates | Ignores styling, focuses on readable text |
-| **CSS Selector** | Specific elements | Monitor only matching elements (e.g., `.price`, `#stock-status`) |
+| **CSS Selector** | Specific elements | Monitor only matching elements with include/exclude filtering |
+
+### CSS Selector Include/Exclude Filtering
+
+The CSS Selector mode supports advanced filtering with two clearly labeled fields:
+
+| Field | Default Placeholder | Behavior | Example |
+|-------|---------------------|----------|---------|
+| **Include CSS** | "All CSS Included" | Elements to monitor (empty = all elements) | `.product-price, #stock-status` |
+| **Select CSS to exclude** | "No elements to exclude" | Elements to filter out from comparison | `.ad-banner, .timestamp, .counter` |
+
+Each field has a visual picker button - tap to open the interactive element picker where you can select elements by tapping on them directly. The picker shows context-aware instructions based on whether you're selecting elements to include or exclude.
+
+**Use cases:**
+- Include only product prices: Include = `.price`
+- Monitor everything except ads: Include = (empty), Exclude = `.advertisement`
+- Watch specific section without timestamps: Include = `#main-content`, Exclude = `.last-updated`
 
 ### Fetch Modes
 

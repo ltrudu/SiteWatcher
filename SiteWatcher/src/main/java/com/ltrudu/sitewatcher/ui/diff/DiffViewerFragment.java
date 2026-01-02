@@ -24,6 +24,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
 import com.ltrudu.sitewatcher.R;
+import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.util.Logger;
 
 import org.jsoup.Jsoup;
@@ -70,10 +71,11 @@ public class DiffViewerFragment extends Fragment {
     private LinearLayout changesOnlyContainer;
     private WebView webViewChangesOnly;
 
-    private enum ViewMode { TEXT_DIFF, RENDERED, CHANGES_ONLY }
-    private ViewMode currentViewMode = ViewMode.TEXT_DIFF;
+    private enum ViewMode { CHANGES_ONLY, RENDERED, TEXT_DIFF }
+    private ViewMode currentViewMode = ViewMode.CHANGES_ONLY;
     private String oldHtmlContent;
     private String newHtmlContent;
+    private ComparisonMode siteComparisonMode;
 
     private int colorAdded;
     private int colorRemoved;
@@ -227,6 +229,9 @@ public class DiffViewerFragment extends Fragment {
         oldHtmlContent = result.getOldContent();
         newHtmlContent = result.getNewContent();
 
+        // Store comparison mode
+        siteComparisonMode = result.getComparisonMode();
+
         // Set timestamps
         textOldTimestamp.setText(formatTimestamp(result.getOldTimestamp()));
         textNewTimestamp.setText(formatTimestamp(result.getNewTimestamp()));
@@ -235,8 +240,23 @@ public class DiffViewerFragment extends Fragment {
         textAddedCount.setText(getString(R.string.diff_added_lines, result.getAddedLines()));
         textRemovedCount.setText(getString(R.string.diff_removed_lines, result.getRemovedLines()));
 
-        // Display formatted diff content
+        // Display formatted diff content (for TEXT_DIFF mode)
         displayFormattedDiff(result.getDiffText());
+
+        // Set view mode based on comparison mode
+        // FULL_HTML: Show all modes with CHANGES_ONLY as default
+        // TEXT_ONLY/CSS_SELECTOR: Only TEXT_DIFF mode available
+        if (siteComparisonMode == ComparisonMode.FULL_HTML) {
+            currentViewMode = ViewMode.CHANGES_ONLY;
+            btnToggleView.setVisibility(View.VISIBLE);
+        } else {
+            // TEXT_ONLY and CSS_SELECTOR only support TEXT_DIFF
+            currentViewMode = ViewMode.TEXT_DIFF;
+            btnToggleView.setVisibility(View.GONE);
+        }
+
+        // Update the view
+        updateViewMode();
     }
 
     /**
@@ -302,18 +322,24 @@ public class DiffViewerFragment extends Fragment {
     }
 
     /**
-     * Cycle through view modes: TEXT_DIFF -> RENDERED -> CHANGES_ONLY -> TEXT_DIFF
+     * Cycle through view modes: CHANGES_ONLY -> RENDERED -> TEXT_DIFF -> CHANGES_ONLY
+     * Only available for FULL_HTML comparison mode.
      */
     private void toggleViewMode() {
+        // Only allow toggling for FULL_HTML mode
+        if (siteComparisonMode != ComparisonMode.FULL_HTML) {
+            return;
+        }
+
         switch (currentViewMode) {
-            case TEXT_DIFF:
+            case CHANGES_ONLY:
                 currentViewMode = ViewMode.RENDERED;
                 break;
             case RENDERED:
-                currentViewMode = ViewMode.CHANGES_ONLY;
-                break;
-            case CHANGES_ONLY:
                 currentViewMode = ViewMode.TEXT_DIFF;
+                break;
+            case TEXT_DIFF:
+                currentViewMode = ViewMode.CHANGES_ONLY;
                 break;
         }
         updateViewMode();
@@ -329,14 +355,17 @@ public class DiffViewerFragment extends Fragment {
         changesOnlyContainer.setVisibility(View.GONE);
 
         switch (currentViewMode) {
-            case TEXT_DIFF:
-                textDiffContainer.setVisibility(View.VISIBLE);
+            case CHANGES_ONLY:
+                changesOnlyContainer.setVisibility(View.VISIBLE);
                 btnToggleView.setText(R.string.show_rendered);
+                // Generate and load changes-only HTML
+                String changesHtml = generateChangesOnlyHtml();
+                webViewChangesOnly.loadDataWithBaseURL(null, changesHtml, "text/html", "UTF-8", null);
                 break;
 
             case RENDERED:
                 webViewContainer.setVisibility(View.VISIBLE);
-                btnToggleView.setText(R.string.show_changes_only);
+                btnToggleView.setText(R.string.show_text_diff);
                 // Load HTML content into WebViews
                 if (oldHtmlContent != null) {
                     webViewBefore.loadDataWithBaseURL(null, oldHtmlContent, "text/html", "UTF-8", null);
@@ -346,12 +375,9 @@ public class DiffViewerFragment extends Fragment {
                 }
                 break;
 
-            case CHANGES_ONLY:
-                changesOnlyContainer.setVisibility(View.VISIBLE);
-                btnToggleView.setText(R.string.show_text_diff);
-                // Generate and load changes-only HTML
-                String changesHtml = generateChangesOnlyHtml();
-                webViewChangesOnly.loadDataWithBaseURL(null, changesHtml, "text/html", "UTF-8", null);
+            case TEXT_DIFF:
+                textDiffContainer.setVisibility(View.VISIBLE);
+                btnToggleView.setText(R.string.show_changes_only);
                 break;
         }
     }

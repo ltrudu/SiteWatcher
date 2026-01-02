@@ -73,6 +73,12 @@
     <string name="threshold_value">%1$d%%</string>
     <string name="css_selector">CSS Selector</string>
     <string name="css_selector_hint">e.g., #content, .main-text</string>
+    <string name="css_include_selector">Include Elements</string>
+    <string name="css_include_title">Include CSS</string>
+    <string name="css_include_hint">All CSS Included</string>
+    <string name="css_exclude_selector">Exclude Elements</string>
+    <string name="css_exclude_title">Select CSS to exclude</string>
+    <string name="css_exclude_hint">No elements to exclude</string>
     <string name="min_text_length">Minimum Text Length</string>
     <string name="min_text_length_value">%1$d chars</string>
     <string name="min_text_length_hint">Ignores text blocks shorter than this to reduce false positives from timestamps, counters, etc.</string>
@@ -157,8 +163,11 @@
     <string name="no_actions_to_test">No actions to test</string>
     <string name="page_loaded">Page loaded</string>
     <string name="waiting_for_content">Waiting for content…</string>
+    <string name="waiting_countdown">Waiting: %1$d.%2$d s</string>
+    <string name="waiting_after_actions">Waiting after actions…</string>
     <string name="waiting_for_page_settle">Waiting for page to settle…</string>
     <string name="open_in_webview">Open in WebView</string>
+    <string name="webview_rendering">WebView Rendering</string>
 
     <!-- Schedule Types -->
     <string name="schedule_periodic">Periodic Interval</string>
@@ -231,6 +240,7 @@
     <!-- Element Selector -->
     <string name="pick_element">Pick Element</string>
     <string name="selector_instructions">Tap on elements you want to monitor. Tap again to deselect.</string>
+    <string name="selector_instructions_exclude">Tap on elements you want to exclude. Tap again to deselect.</string>
     <string name="no_elements_selected">No elements selected</string>
     <string name="clear_selection">Clear</string>
     <string name="confirm">Confirm</string>
@@ -324,6 +334,7 @@
     <string name="after_version">After (Current)</string>
     <string name="show_changes_only">Show Changes Only</string>
     <string name="changes_highlighted">Rendered Page - Changed Elements Highlighted in Red</string>
+    <string name="no_changes_detected">No changes detected</string>
 
     <!-- Navigation Errors -->
     <string name="error_navigation">Navigation error</string>

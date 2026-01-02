@@ -11,6 +11,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.ltrudu.sitewatcher.data.database.SiteWatcherDatabase;
 import com.ltrudu.sitewatcher.data.dao.SiteHistoryDao;
 import com.ltrudu.sitewatcher.data.dao.WatchedSiteDao;
+import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.SiteHistory;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.util.Logger;
@@ -55,10 +56,11 @@ public class DiffViewerViewModel extends AndroidViewModel {
         private final int addedLines;
         private final int removedLines;
         private final String diffText;
+        private final ComparisonMode comparisonMode;
 
         public DiffResult(String siteUrl, String oldContent, String newContent,
                           long oldTimestamp, long newTimestamp, int addedLines,
-                          int removedLines, String diffText) {
+                          int removedLines, String diffText, ComparisonMode comparisonMode) {
             this.siteUrl = siteUrl;
             this.oldContent = oldContent;
             this.newContent = newContent;
@@ -67,6 +69,7 @@ public class DiffViewerViewModel extends AndroidViewModel {
             this.addedLines = addedLines;
             this.removedLines = removedLines;
             this.diffText = diffText;
+            this.comparisonMode = comparisonMode;
         }
 
         public String getSiteUrl() {
@@ -99,6 +102,10 @@ public class DiffViewerViewModel extends AndroidViewModel {
 
         public String getDiffText() {
             return diffText;
+        }
+
+        public ComparisonMode getComparisonMode() {
+            return comparisonMode;
         }
     }
 
@@ -216,7 +223,8 @@ public class DiffViewerViewModel extends AndroidViewModel {
                         oldContent,
                         newContent,
                         oldHistory.getCheckTime(),
-                        newHistory.getCheckTime()
+                        newHistory.getCheckTime(),
+                        site.getComparisonMode()
                 );
 
                 diffResult.postValue(result);
@@ -276,7 +284,7 @@ public class DiffViewerViewModel extends AndroidViewModel {
      */
     @NonNull
     private DiffResult computeDiff(String siteUrl, String oldContent, String newContent,
-                                    long oldTimestamp, long newTimestamp) {
+                                    long oldTimestamp, long newTimestamp, ComparisonMode comparisonMode) {
         String[] oldLines = oldContent.split("\n", -1);
         String[] newLines = newContent.split("\n", -1);
 
@@ -311,7 +319,8 @@ public class DiffViewerViewModel extends AndroidViewModel {
                 newTimestamp,
                 addedCount,
                 removedCount,
-                diffText.toString()
+                diffText.toString(),
+                comparisonMode
         );
     }
 

@@ -188,6 +188,8 @@ public class SiteChecker {
                     newContent,
                     site.getComparisonMode(),
                     site.getCssSelector(),
+                    site.getCssIncludeSelector(),
+                    site.getCssExcludeSelector(),
                     site.getMinTextLength(),
                     site.getMinWordLength(),
                     site.getDiffAlgorithm()

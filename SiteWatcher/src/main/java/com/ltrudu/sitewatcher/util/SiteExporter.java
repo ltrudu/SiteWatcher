@@ -36,6 +36,8 @@ public class SiteExporter {
     private static final String KEY_NAME = "name";
     private static final String KEY_COMPARISON_MODE = "comparisonMode";
     private static final String KEY_CSS_SELECTOR = "cssSelector";
+    private static final String KEY_CSS_INCLUDE_SELECTOR = "cssIncludeSelector";
+    private static final String KEY_CSS_EXCLUDE_SELECTOR = "cssExcludeSelector";
     private static final String KEY_THRESHOLD_PERCENT = "thresholdPercent";
     private static final String KEY_IS_ENABLED = "isEnabled";
     private static final String KEY_MIN_TEXT_LENGTH = "minTextLength";
@@ -126,6 +128,12 @@ public class SiteExporter {
         if (site.getCssSelector() != null) {
             json.put(KEY_CSS_SELECTOR, site.getCssSelector());
         }
+        if (site.getCssIncludeSelector() != null) {
+            json.put(KEY_CSS_INCLUDE_SELECTOR, site.getCssIncludeSelector());
+        }
+        if (site.getCssExcludeSelector() != null) {
+            json.put(KEY_CSS_EXCLUDE_SELECTOR, site.getCssExcludeSelector());
+        }
         json.put(KEY_THRESHOLD_PERCENT, site.getThresholdPercent());
         json.put(KEY_IS_ENABLED, site.isEnabled());
         json.put(KEY_MIN_TEXT_LENGTH, site.getMinTextLength());
@@ -180,6 +188,8 @@ public class SiteExporter {
             }
 
             site.setCssSelector(json.optString(KEY_CSS_SELECTOR, null));
+            site.setCssIncludeSelector(json.optString(KEY_CSS_INCLUDE_SELECTOR, null));
+            site.setCssExcludeSelector(json.optString(KEY_CSS_EXCLUDE_SELECTOR, null));
             site.setThresholdPercent(json.optInt(KEY_THRESHOLD_PERCENT, 5));
             site.setEnabled(json.optBoolean(KEY_IS_ENABLED, true));
             site.setMinTextLength(json.optInt(KEY_MIN_TEXT_LENGTH, 10));

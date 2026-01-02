@@ -104,6 +104,11 @@
         <argument
             android:name="url"
             app:argType="string" />
+        <argument
+            android:name="actions_json"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
     </fragment>
 
     <fragment

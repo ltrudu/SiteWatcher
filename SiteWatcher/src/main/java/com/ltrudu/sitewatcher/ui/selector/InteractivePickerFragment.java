@@ -3,6 +3,7 @@ package com.ltrudu.sitewatcher.ui.selector;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
@@ -83,6 +84,7 @@ public class InteractivePickerFragment extends Fragment {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private AutoClickExecutor autoClickExecutor;
     private PreferencesManager preferencesManager;
+    private CountDownTimer countDownTimer;
 
     public InteractivePickerFragment() {
         // Required empty public constructor
@@ -260,10 +262,9 @@ public class InteractivePickerFragment extends Fragment {
         int pageLoadDelay = getPageLoadDelayMs();
         // Wait for JS-loaded content (cookie dialogs) to appear before proceeding
         Logger.d(TAG, "Waiting " + pageLoadDelay + "ms for JS content to load...");
-        textProgress.setText(R.string.waiting_for_content);
         statusCard.setVisibility(View.VISIBLE);
 
-        mainHandler.postDelayed(() -> {
+        startCountdownTimer(pageLoadDelay, () -> {
             if (!isAdded() || webView == null) return;
 
             if (hasActionsToExecute()) {
@@ -273,7 +274,7 @@ public class InteractivePickerFragment extends Fragment {
                 // No actions, go directly to selection mode
                 enableSelectionMode();
             }
-        }, pageLoadDelay);
+        });
     }
 
     private boolean hasActionsToExecute() {
@@ -317,8 +318,8 @@ public class InteractivePickerFragment extends Fragment {
                     // Exit fullscreen mode if executor entered it
                     autoClickExecutor.exitFullscreenMode();
 
-                    // Wait for page to settle before enabling selection
-                    mainHandler.postDelayed(() -> enableSelectionMode(), getPostActionDelayMs());
+                    // Wait for page to settle before enabling selection with countdown
+                    startCountdownTimer(getPostActionDelayMs(), () -> enableSelectionMode());
                 });
             }
         });
@@ -650,6 +651,9 @@ public class InteractivePickerFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        // Cancel any running countdown timer
+        cancelCountdownTimer();
+
         // Exit fullscreen mode if still active
         if (autoClickExecutor != null) {
             autoClickExecutor.exitFullscreenMode();
@@ -661,5 +665,44 @@ public class InteractivePickerFragment extends Fragment {
             webView = null;
         }
         super.onDestroyView();
+    }
+
+    /**
+     * Starts a countdown timer that updates the UI every 100ms with remaining time.
+     *
+     * @param durationMs  Total duration in milliseconds
+     * @param onComplete  Runnable to execute when countdown completes
+     */
+    private void startCountdownTimer(int durationMs, Runnable onComplete) {
+        cancelCountdownTimer();
+
+        countDownTimer = new CountDownTimer(durationMs, 100) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                if (!isAdded() || textProgress == null) return;
+                int seconds = (int) (millisUntilFinished / 1000);
+                int deciseconds = (int) ((millisUntilFinished % 1000) / 100);
+                textProgress.setText(getString(R.string.waiting_countdown, seconds, deciseconds));
+            }
+
+            @Override
+            public void onFinish() {
+                if (!isAdded()) return;
+                if (onComplete != null) {
+                    onComplete.run();
+                }
+            }
+        };
+        countDownTimer.start();
+    }
+
+    /**
+     * Safely cancels the countdown timer if it's running.
+     */
+    private void cancelCountdownTimer() {
+        if (countDownTimer != null) {
+            countDownTimer.cancel();
+            countDownTimer = null;
+        }
     }
 }

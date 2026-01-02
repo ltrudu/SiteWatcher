@@ -197,28 +197,77 @@
                 android:background="@drawable/spinner_background"
                 android:padding="8dp" />
 
-            <!-- CSS Selector (visible only when CSS_SELECTOR mode selected) -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/cssSelectorInputLayout"
+            <!-- CSS Selector Section (visible only when CSS_SELECTOR mode selected) -->
+            <LinearLayout
+                android:id="@+id/cssSelectorSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:hint="@string/css_selector"
-                android:visibility="gone"
-                app:endIconMode="custom"
-                app:endIconDrawable="@drawable/ic_touch_app"
-                app:endIconContentDescription="@string/pick_element"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:orientation="vertical"
+                android:visibility="gone">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/cssSelectorEditText"
+                <!-- Include CSS Title -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/css_include_title"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <!-- Include CSS Selector -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/cssIncludeInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:imeOptions="actionNext" />
+                    android:layout_marginTop="4dp"
+                    android:hint="@string/css_include_hint"
+                    app:endIconMode="custom"
+                    app:endIconDrawable="@drawable/ic_touch_app"
+                    app:endIconContentDescription="@string/pick_element"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/cssIncludeEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:imeOptions="actionNext" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Exclude CSS Title -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/css_exclude_title"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <!-- Exclude CSS Selector -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/cssExcludeInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:hint="@string/css_exclude_hint"
+                    app:endIconMode="custom"
+                    app:endIconDrawable="@drawable/ic_touch_app"
+                    app:endIconContentDescription="@string/pick_element"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/cssExcludeEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:imeOptions="actionNext" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
 
             <!-- Minimum Text Length Section (visible only when TEXT_ONLY mode selected) -->
             <LinearLayout

@@ -25,13 +25,13 @@ public class ContentComparator {
     /**
      * Compare two content strings based on the specified mode.
      *
-     * @param oldContent     The previous content
-     * @param newContent     The current content
-     * @param mode           The comparison mode to use
-     * @param cssSelector    CSS selector for CSS_SELECTOR mode (can be null for other modes)
-     * @param minTextLength  Minimum text block length for TEXT_ONLY mode (3-50, filters small elements)
-     * @param minWordLength  Minimum word length for TEXT_ONLY mode (words shorter than this are filtered out)
-     * @param diffAlgorithm  The diff algorithm to use for change detection
+     * @param oldContent         The previous content
+     * @param newContent         The current content
+     * @param mode               The comparison mode to use
+     * @param cssSelector        CSS selector for CSS_SELECTOR mode (can be null for other modes)
+     * @param minTextLength      Minimum text block length for TEXT_ONLY mode (3-50, filters small elements)
+     * @param minWordLength      Minimum word length for TEXT_ONLY mode (words shorter than this are filtered out)
+     * @param diffAlgorithm      The diff algorithm to use for change detection
      * @return ComparisonResult containing change metrics
      */
     @NonNull
@@ -39,6 +39,34 @@ public class ContentComparator {
                                            @Nullable String newContent,
                                            @NonNull ComparisonMode mode,
                                            @Nullable String cssSelector,
+                                           int minTextLength,
+                                           int minWordLength,
+                                           @NonNull DiffAlgorithmType diffAlgorithm) {
+        return compareContent(oldContent, newContent, mode, cssSelector, null, null,
+                minTextLength, minWordLength, diffAlgorithm);
+    }
+
+    /**
+     * Compare two content strings based on the specified mode with include/exclude filtering.
+     *
+     * @param oldContent         The previous content
+     * @param newContent         The current content
+     * @param mode               The comparison mode to use
+     * @param cssSelector        CSS selector for CSS_SELECTOR mode (legacy, can be null)
+     * @param cssIncludeSelector CSS selectors for elements to include (comma-separated, null = all elements)
+     * @param cssExcludeSelector CSS selectors for elements to exclude (comma-separated, null = no exclusion)
+     * @param minTextLength      Minimum text block length for TEXT_ONLY mode (3-50, filters small elements)
+     * @param minWordLength      Minimum word length for TEXT_ONLY mode (words shorter than this are filtered out)
+     * @param diffAlgorithm      The diff algorithm to use for change detection
+     * @return ComparisonResult containing change metrics
+     */
+    @NonNull
+    public ComparisonResult compareContent(@Nullable String oldContent,
+                                           @Nullable String newContent,
+                                           @NonNull ComparisonMode mode,
+                                           @Nullable String cssSelector,
+                                           @Nullable String cssIncludeSelector,
+                                           @Nullable String cssExcludeSelector,
                                            int minTextLength,
                                            int minWordLength,
                                            @NonNull DiffAlgorithmType diffAlgorithm) {
@@ -66,7 +94,8 @@ public class ContentComparator {
             case TEXT_ONLY:
                 return compareTextOnly(oldContent, newContent, minTextLength, minWordLength, diffAlgorithm);
             case CSS_SELECTOR:
-                return compareCssSelector(oldContent, newContent, cssSelector, diffAlgorithm);
+                return compareCssSelector(oldContent, newContent, cssSelector, cssIncludeSelector,
+                        cssExcludeSelector, diffAlgorithm);
             case FULL_HTML:
             default:
                 return compareFullHtml(oldContent, newContent, diffAlgorithm);
@@ -147,42 +176,56 @@ public class ContentComparator {
     }
 
     /**
-     * Compare content matched by a CSS selector.
+     * Compare content matched by CSS selectors with include/exclude filtering.
      * Uses the selected diff algorithm for accurate change detection.
      *
-     * @param oldContent    Previous HTML
-     * @param newContent    Current HTML
-     * @param cssSelector   The CSS selector to use
-     * @param algorithmType The diff algorithm to use
+     * @param oldContent         Previous HTML
+     * @param newContent         Current HTML
+     * @param cssSelector        Legacy CSS selector (for backward compatibility)
+     * @param cssIncludeSelector CSS selectors for elements to include (null = all elements)
+     * @param cssExcludeSelector CSS selectors for elements to exclude (null = no exclusion)
+     * @param algorithmType      The diff algorithm to use
      * @return Comparison result
      */
     @NonNull
     private ComparisonResult compareCssSelector(@NonNull String oldContent,
                                                 @NonNull String newContent,
                                                 @Nullable String cssSelector,
+                                                @Nullable String cssIncludeSelector,
+                                                @Nullable String cssExcludeSelector,
                                                 @NonNull DiffAlgorithmType algorithmType) {
-        if (cssSelector == null || cssSelector.trim().isEmpty()) {
-            Logger.w(TAG, "CSS selector is empty, falling back to text comparison");
-            return compareTextOnly(oldContent, newContent, 3, 1, algorithmType); // Use minimal filtering for fallback
+        // Determine which selector to use for includes
+        // Priority: cssIncludeSelector > cssSelector (legacy)
+        String effectiveIncludeSelector = cssIncludeSelector;
+        if ((effectiveIncludeSelector == null || effectiveIncludeSelector.trim().isEmpty())
+                && cssSelector != null && !cssSelector.trim().isEmpty()) {
+            effectiveIncludeSelector = cssSelector;
         }
 
+        // Log selector configuration
+        Logger.d(TAG, "CSS Selector comparison - include: " +
+                (effectiveIncludeSelector != null ? effectiveIncludeSelector : "ALL") +
+                ", exclude: " + (cssExcludeSelector != null ? cssExcludeSelector : "NONE"));
+
         try {
-            String oldSelected = extractBySelector(oldContent, cssSelector);
-            String newSelected = extractBySelector(newContent, cssSelector);
+            String oldSelected = extractBySelector(oldContent, effectiveIncludeSelector, cssExcludeSelector);
+            String newSelected = extractBySelector(newContent, effectiveIncludeSelector, cssExcludeSelector);
 
             if (oldSelected == null && newSelected == null) {
                 return ComparisonResult.noChange(0);
             }
 
+            String selectorDesc = buildSelectorDescription(effectiveIncludeSelector, cssExcludeSelector);
+
             if (oldSelected == null) {
                 return ComparisonResult.changed(100f, 0,
                         newSelected != null ? newSelected.length() : 0,
-                        "Element appeared: " + cssSelector);
+                        "Element appeared: " + selectorDesc);
             }
 
             if (newSelected == null) {
                 return ComparisonResult.changed(100f, oldSelected.length(), 0,
-                        "Element disappeared: " + cssSelector);
+                        "Element disappeared: " + selectorDesc);
             }
 
             if (oldSelected.equals(newSelected)) {
@@ -197,14 +240,32 @@ public class ContentComparator {
             DiffAlgorithm.DiffResult diffResult = algorithm.computeDiff(oldSelected, newSelected);
             float changePercent = diffResult.getChangePercent();
 
-            String description = "Element changed (" + cssSelector + "): " + diffResult.getDescription();
+            String description = "Element changed (" + selectorDesc + "): " + diffResult.getDescription();
             return ComparisonResult.changed(changePercent, oldSize, newSize, description);
 
         } catch (Exception e) {
-            Logger.e(TAG, "Error comparing CSS selector content: " + cssSelector, e);
+            Logger.e(TAG, "Error comparing CSS selector content", e);
             return ComparisonResult.changed(0f, 0, 0,
                     "Error comparing selector: " + e.getMessage());
         }
+    }
+
+    /**
+     * Build a human-readable description of the selector configuration.
+     */
+    @NonNull
+    private String buildSelectorDescription(@Nullable String includeSelector,
+                                            @Nullable String excludeSelector) {
+        StringBuilder desc = new StringBuilder();
+        if (includeSelector != null && !includeSelector.trim().isEmpty()) {
+            desc.append("include: ").append(includeSelector);
+        } else {
+            desc.append("all elements");
+        }
+        if (excludeSelector != null && !excludeSelector.trim().isEmpty()) {
+            desc.append(", exclude: ").append(excludeSelector);
+        }
+        return desc.toString();
     }
 
     /**
@@ -298,6 +359,7 @@ public class ContentComparator {
 
     /**
      * Extract content matching a CSS selector.
+     * Legacy method for backward compatibility.
      *
      * @param html        The HTML content
      * @param cssSelector The CSS selector
@@ -305,14 +367,75 @@ public class ContentComparator {
      */
     @Nullable
     private String extractBySelector(@NonNull String html, @NonNull String cssSelector) {
-        Document doc = Jsoup.parse(html);
-        Elements elements = doc.select(cssSelector);
+        return extractBySelector(html, cssSelector, null);
+    }
 
-        if (elements.isEmpty()) {
-            return null;
+    /**
+     * Extract content with include/exclude CSS selector filtering.
+     *
+     * The filtering logic:
+     * 1. If cssIncludeSelector is empty/null: start with ALL elements from the body
+     * 2. If cssIncludeSelector has value: select only elements matching those selectors
+     * 3. If cssExcludeSelector has value: remove elements matching those selectors from the result
+     *
+     * @param html               The HTML content
+     * @param cssIncludeSelector CSS selectors for elements to include (null = all body content)
+     * @param cssExcludeSelector CSS selectors for elements to exclude (null = no exclusion)
+     * @return Selected content after filtering, or null if no content
+     */
+    @Nullable
+    private String extractBySelector(@NonNull String html,
+                                     @Nullable String cssIncludeSelector,
+                                     @Nullable String cssExcludeSelector) {
+        Document doc = Jsoup.parse(html);
+
+        // Remove script, style, and noscript elements first (they're never useful for comparison)
+        doc.select("script, style, noscript").remove();
+
+        Elements elements;
+
+        // Step 1: Get base elements (include filter)
+        if (cssIncludeSelector == null || cssIncludeSelector.trim().isEmpty()) {
+            // No include selector: select all content from body
+            Logger.d(TAG, "No include selector, selecting all body content");
+            elements = doc.select("body *");
+            if (elements.isEmpty()) {
+                // Fallback to all elements if no body
+                elements = doc.getAllElements();
+            }
+        } else {
+            // Include selector specified: select matching elements
+            Logger.d(TAG, "Using include selector: " + cssIncludeSelector);
+            elements = doc.select(cssIncludeSelector.trim());
+            if (elements.isEmpty()) {
+                Logger.w(TAG, "No elements found for include selector: " + cssIncludeSelector);
+                return null;
+            }
         }
 
-        // If multiple elements match, combine their content
+        // Step 2: Apply exclude filter
+        if (cssExcludeSelector != null && !cssExcludeSelector.trim().isEmpty()) {
+            Logger.d(TAG, "Applying exclude selector: " + cssExcludeSelector);
+            // Remove excluded elements from the selection
+            Elements toRemove = new Elements();
+            for (Element element : elements) {
+                // Check if this element matches any exclude selector
+                if (element.is(cssExcludeSelector.trim())) {
+                    toRemove.add(element);
+                }
+                // Also remove child elements that match exclude selector
+                Elements excludedChildren = element.select(cssExcludeSelector.trim());
+                excludedChildren.remove();
+            }
+            elements.removeAll(toRemove);
+
+            if (elements.isEmpty()) {
+                Logger.w(TAG, "All elements were excluded, no content remaining");
+                return null;
+            }
+        }
+
+        // Build the output from remaining elements
         StringBuilder sb = new StringBuilder();
         for (Element element : elements) {
             if (sb.length() > 0) {
@@ -321,6 +444,12 @@ public class ContentComparator {
             sb.append(element.outerHtml());
         }
 
-        return sb.toString();
+        String result = sb.toString().trim();
+        if (result.isEmpty()) {
+            return null;
+        }
+
+        Logger.d(TAG, "Extracted " + result.length() + " characters from " + elements.size() + " elements");
+        return result;
     }
 }

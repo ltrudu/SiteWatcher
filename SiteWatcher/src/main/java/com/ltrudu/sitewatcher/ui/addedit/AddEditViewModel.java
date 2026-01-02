@@ -54,6 +54,8 @@ public class AddEditViewModel extends AndroidViewModel {
     private final MutableLiveData<FetchMode> fetchMode = new MutableLiveData<>(FetchMode.STATIC);
     private final MutableLiveData<ComparisonMode> comparisonMode = new MutableLiveData<>(ComparisonMode.TEXT_ONLY);
     private final MutableLiveData<String> cssSelector = new MutableLiveData<>("");
+    private final MutableLiveData<String> cssIncludeSelector = new MutableLiveData<>("");
+    private final MutableLiveData<String> cssExcludeSelector = new MutableLiveData<>("");
     private final MutableLiveData<Integer> minTextLength = new MutableLiveData<>(10);
     private final MutableLiveData<Integer> minWordLength = new MutableLiveData<>(3);
     private final MutableLiveData<DiffAlgorithmType> diffAlgorithm = new MutableLiveData<>(DiffAlgorithmType.LINE);
@@ -104,6 +106,8 @@ public class AddEditViewModel extends AndroidViewModel {
         fetchMode.setValue(FetchMode.STATIC);
         comparisonMode.setValue(ComparisonMode.TEXT_ONLY);
         cssSelector.setValue("");
+        cssIncludeSelector.setValue("");
+        cssExcludeSelector.setValue("");
         minTextLength.setValue(10);
         minWordLength.setValue(3);
         diffAlgorithm.setValue(DiffAlgorithmType.LINE);
@@ -153,6 +157,8 @@ public class AddEditViewModel extends AndroidViewModel {
         fetchMode.postValue(site.getFetchMode());
         comparisonMode.postValue(site.getComparisonMode());
         cssSelector.postValue(site.getCssSelector() != null ? site.getCssSelector() : "");
+        cssIncludeSelector.postValue(site.getCssIncludeSelector() != null ? site.getCssIncludeSelector() : "");
+        cssExcludeSelector.postValue(site.getCssExcludeSelector() != null ? site.getCssExcludeSelector() : "");
         minTextLength.postValue(site.getMinTextLength());
         minWordLength.postValue(site.getMinWordLength());
         diffAlgorithm.postValue(site.getDiffAlgorithm());
@@ -235,6 +241,13 @@ public class AddEditViewModel extends AndroidViewModel {
         } else {
             site.setCssSelector(null);
         }
+
+        // Set CSS include/exclude selectors (always saved regardless of comparison mode)
+        String includeSelector = cssIncludeSelector.getValue();
+        site.setCssIncludeSelector(includeSelector != null && !includeSelector.trim().isEmpty() ? includeSelector.trim() : null);
+
+        String excludeSelector = cssExcludeSelector.getValue();
+        site.setCssExcludeSelector(excludeSelector != null && !excludeSelector.trim().isEmpty() ? excludeSelector.trim() : null);
 
         Integer minLen = minTextLength.getValue();
         site.setMinTextLength(minLen != null ? minLen : 10);
@@ -350,6 +363,14 @@ public class AddEditViewModel extends AndroidViewModel {
         return cssSelector;
     }
 
+    public MutableLiveData<String> getCssIncludeSelector() {
+        return cssIncludeSelector;
+    }
+
+    public MutableLiveData<String> getCssExcludeSelector() {
+        return cssExcludeSelector;
+    }
+
     public MutableLiveData<Integer> getMinTextLength() {
         return minTextLength;
     }
@@ -411,6 +432,14 @@ public class AddEditViewModel extends AndroidViewModel {
 
     public void setCssSelector(String selector) {
         this.cssSelector.setValue(selector);
+    }
+
+    public void setCssIncludeSelector(String selector) {
+        this.cssIncludeSelector.setValue(selector);
+    }
+
+    public void setCssExcludeSelector(String selector) {
+        this.cssExcludeSelector.setValue(selector);
     }
 
     public void setMinTextLength(int length) {

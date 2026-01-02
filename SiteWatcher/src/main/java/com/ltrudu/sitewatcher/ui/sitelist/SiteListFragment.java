@@ -32,6 +32,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.ltrudu.sitewatcher.R;
+import android.widget.ImageButton;
 import com.ltrudu.sitewatcher.accessibility.TapAccessibilityService;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.util.Logger;
@@ -55,6 +56,7 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     private TextView emptyStateHint;
     private FloatingActionButton fab;
     private TextInputEditText editSearch;
+    private ImageButton btnSort;
 
     // Handler for search debounce
     private final Handler searchHandler = new Handler(Looper.getMainLooper());
@@ -99,6 +101,7 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         initViews(view);
         setupRecyclerView();
         setupSearch();
+        setupSort();
         setupFab();
         setupMenu();
         observeData();
@@ -134,6 +137,7 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         emptyState = view.findViewById(R.id.emptyState);
         fab = view.findViewById(R.id.fab);
         editSearch = view.findViewById(R.id.editSearch);
+        btnSort = view.findViewById(R.id.btnSort);
 
         // Find text views inside empty state
         emptyStateText = emptyState.findViewById(R.id.emptyStateText);
@@ -184,6 +188,38 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     }
 
     /**
+     * Set up the sort button functionality.
+     */
+    private void setupSort() {
+        btnSort.setOnClickListener(v -> {
+            SiteListAdapter.SortOrder newOrder = adapter.toggleSortOrder();
+            updateSortIcon(newOrder);
+            Logger.d(TAG, "Sort order changed to: " + newOrder);
+        });
+    }
+
+    /**
+     * Update the sort button icon based on current sort order.
+     * @param sortOrder The current sort order
+     */
+    private void updateSortIcon(@NonNull SiteListAdapter.SortOrder sortOrder) {
+        switch (sortOrder) {
+            case A_TO_Z:
+                btnSort.setImageResource(R.drawable.ic_sort_az);
+                btnSort.setContentDescription(getString(R.string.sort_z_to_a));
+                break;
+            case Z_TO_A:
+                btnSort.setImageResource(R.drawable.ic_sort_za);
+                btnSort.setContentDescription(getString(R.string.sort_a_to_z));
+                break;
+            default:
+                btnSort.setImageResource(R.drawable.ic_sort_az);
+                btnSort.setContentDescription(getString(R.string.sort_alphabetically));
+                break;
+        }
+    }
+
+    /**
      * Set up the FAB click listener.
      */
     private void setupFab() {
@@ -191,36 +227,25 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     }
 
     /**
-     * Set up the options menu with Check All action.
+     * Set up the toolbar menu with Check All action only.
+     * Other options (Settings, Backups, About) are in the navigation drawer.
      */
     private void setupMenu() {
         requireActivity().addMenuProvider(new MenuProvider() {
             @Override
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-                menuInflater.inflate(R.menu.menu_main, menu);
+                // Only add the Check All refresh icon
+                menu.add(Menu.NONE, R.id.action_check_all, Menu.NONE, R.string.check_all)
+                        .setIcon(R.drawable.ic_refresh)
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
             }
 
             @Override
             public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
-                int itemId = menuItem.getItemId();
-
-                if (itemId == R.id.action_check_all) {
+                if (menuItem.getItemId() == R.id.action_check_all) {
                     checkAllSites();
                     return true;
-                } else if (itemId == R.id.action_settings) {
-                    Navigation.findNavController(requireView())
-                            .navigate(R.id.action_siteList_to_settings);
-                    return true;
-                } else if (itemId == R.id.action_backups) {
-                    Navigation.findNavController(requireView())
-                            .navigate(R.id.action_siteList_to_backups);
-                    return true;
-                } else if (itemId == R.id.action_about) {
-                    Navigation.findNavController(requireView())
-                            .navigate(R.id.action_siteList_to_about);
-                    return true;
                 }
-
                 return false;
             }
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);

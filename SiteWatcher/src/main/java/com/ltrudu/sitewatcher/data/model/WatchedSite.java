@@ -71,7 +71,7 @@ public class WatchedSite {
      * Use JAVASCRIPT for dynamic sites with calendars, AJAX content, etc.
      */
     @NonNull
-    @ColumnInfo(name = "fetch_mode", defaultValue = "STATIC")
+    @ColumnInfo(name = "fetch_mode", defaultValue = "JAVASCRIPT")
     private FetchMode fetchMode;
 
     /**
@@ -135,8 +135,8 @@ public class WatchedSite {
      */
     public WatchedSite() {
         this.url = "";
-        this.comparisonMode = ComparisonMode.TEXT_ONLY;
-        this.fetchMode = FetchMode.STATIC;
+        this.comparisonMode = ComparisonMode.FULL_HTML;
+        this.fetchMode = FetchMode.JAVASCRIPT;
         this.diffAlgorithm = DiffAlgorithmType.LINE;
         this.minTextLength = 10; // Minimum 10 characters per text block
         this.minWordLength = 3; // Minimum 3 characters per word

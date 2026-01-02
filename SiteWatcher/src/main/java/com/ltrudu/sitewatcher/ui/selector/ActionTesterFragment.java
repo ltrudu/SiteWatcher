@@ -216,11 +216,15 @@ public class ActionTesterFragment extends Fragment {
         loadTargetPage();
 
         // Set title based on mode (Test Actions vs WebView Rendering)
-        if (getActivity() != null) {
-            if (executeActions) {
-                requireActivity().setTitle(R.string.test_actions);
-            } else {
-                requireActivity().setTitle(R.string.webview_rendering);
+        if (getActivity() instanceof androidx.appcompat.app.AppCompatActivity) {
+            androidx.appcompat.app.ActionBar actionBar =
+                    ((androidx.appcompat.app.AppCompatActivity) getActivity()).getSupportActionBar();
+            if (actionBar != null) {
+                if (executeActions) {
+                    actionBar.setTitle(R.string.test_actions);
+                } else {
+                    actionBar.setTitle(R.string.webview_rendering);
+                }
             }
         }
     }

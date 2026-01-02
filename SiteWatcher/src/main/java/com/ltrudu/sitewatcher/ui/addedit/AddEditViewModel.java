@@ -51,8 +51,8 @@ public class AddEditViewModel extends AndroidViewModel {
     // Form state
     private final MutableLiveData<String> url = new MutableLiveData<>("");
     private final MutableLiveData<Integer> thresholdPercent = new MutableLiveData<>(25);
-    private final MutableLiveData<FetchMode> fetchMode = new MutableLiveData<>(FetchMode.STATIC);
-    private final MutableLiveData<ComparisonMode> comparisonMode = new MutableLiveData<>(ComparisonMode.TEXT_ONLY);
+    private final MutableLiveData<FetchMode> fetchMode = new MutableLiveData<>(FetchMode.JAVASCRIPT);
+    private final MutableLiveData<ComparisonMode> comparisonMode = new MutableLiveData<>(ComparisonMode.FULL_HTML);
     private final MutableLiveData<String> cssSelector = new MutableLiveData<>("");
     private final MutableLiveData<String> cssIncludeSelector = new MutableLiveData<>("");
     private final MutableLiveData<String> cssExcludeSelector = new MutableLiveData<>("");
@@ -103,8 +103,8 @@ public class AddEditViewModel extends AndroidViewModel {
     private void setDefaults() {
         url.setValue("");
         thresholdPercent.setValue(25);
-        fetchMode.setValue(FetchMode.STATIC);
-        comparisonMode.setValue(ComparisonMode.TEXT_ONLY);
+        fetchMode.setValue(FetchMode.JAVASCRIPT);
+        comparisonMode.setValue(ComparisonMode.FULL_HTML);
         cssSelector.setValue("");
         cssIncludeSelector.setValue("");
         cssExcludeSelector.setValue("");

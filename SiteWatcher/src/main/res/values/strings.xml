@@ -22,6 +22,9 @@
     <!-- Site List -->
     <string name="search_hint">Search sites (AND, OR, NOT)</string>
     <string name="search_no_results">No sites match your search</string>
+    <string name="sort_alphabetically">Sort alphabetically</string>
+    <string name="sort_a_to_z">Sort A to Z</string>
+    <string name="sort_z_to_a">Sort Z to A</string>
     <string name="add_site">Add Site</string>
     <string name="edit_site">Edit Site</string>
     <string name="no_sites">No sites added yet</string>
@@ -328,10 +331,7 @@
     <string name="diff_current_version">Current</string>
     <string name="diff_added_lines">+%1$d lines</string>
     <string name="diff_removed_lines">-%1$d lines</string>
-    <string name="show_rendered">Show Rendered</string>
     <string name="show_text_diff">Show Text Diff</string>
-    <string name="before_version">Before (Previous)</string>
-    <string name="after_version">After (Current)</string>
     <string name="show_changes_only">Show Changes Only</string>
     <string name="changes_highlighted">Rendered Page - Changed Elements Highlighted in Red</string>
     <string name="no_changes_detected">No changes detected</string>

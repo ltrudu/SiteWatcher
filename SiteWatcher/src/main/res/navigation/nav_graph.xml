@@ -129,7 +129,7 @@
     <fragment
         android:id="@+id/actionTesterFragment"
         android:name="com.ltrudu.sitewatcher.ui.selector.ActionTesterFragment"
-        android:label="@string/test_actions"
+        android:label=""
         tools:layout="@layout/fragment_action_tester">
         <argument
             android:name="url"

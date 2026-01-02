@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Z letter -->
+    <path
+        android:fillColor="?attr/colorOnSurface"
+        android:pathData="M3,10L3,8.7L6.3,8.7L3,12.7L3,14L8,14L8,12.7L4.7,12.7L8,8.7L8,7.5L3,7.5L3,10Z"/>
+
+    <!-- A letter -->
+    <path
+        android:fillColor="?attr/colorOnSurface"
+        android:pathData="M4.5,21L3,21L5.5,14L7.5,14L10,21L8.5,21L8,19.5L5,19.5L4.5,21ZM5.4,18.2L7.6,18.2L6.5,15.2L5.4,18.2Z"/>
+
+    <!-- Sorting lines (inverted pyramid) -->
+    <path
+        android:fillColor="?attr/colorOnSurface"
+        android:pathData="M12,7L15,7L15,8.5L12,8.5Z"/>
+    <path
+        android:fillColor="?attr/colorOnSurface"
+        android:pathData="M12,11L17,11L17,12.5L12,12.5Z"/>
+    <path
+        android:fillColor="?attr/colorOnSurface"
+        android:pathData="M12,15L19,15L19,16.5L12,16.5Z"/>
+    <path
+        android:fillColor="?attr/colorOnSurface"
+        android:pathData="M12,19L21,19L21,20.5L12,20.5Z"/>
+</vector>

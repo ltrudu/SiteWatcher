@@ -57,10 +57,12 @@ public class DiffViewerViewModel extends AndroidViewModel {
         private final int removedLines;
         private final String diffText;
         private final ComparisonMode comparisonMode;
+        private final boolean cssIncludeSelectorEmpty;
 
         public DiffResult(String siteUrl, String oldContent, String newContent,
                           long oldTimestamp, long newTimestamp, int addedLines,
-                          int removedLines, String diffText, ComparisonMode comparisonMode) {
+                          int removedLines, String diffText, ComparisonMode comparisonMode,
+                          boolean cssIncludeSelectorEmpty) {
             this.siteUrl = siteUrl;
             this.oldContent = oldContent;
             this.newContent = newContent;
@@ -70,6 +72,7 @@ public class DiffViewerViewModel extends AndroidViewModel {
             this.removedLines = removedLines;
             this.diffText = diffText;
             this.comparisonMode = comparisonMode;
+            this.cssIncludeSelectorEmpty = cssIncludeSelectorEmpty;
         }
 
         public String getSiteUrl() {
@@ -106,6 +109,15 @@ public class DiffViewerViewModel extends AndroidViewModel {
 
         public ComparisonMode getComparisonMode() {
             return comparisonMode;
+        }
+
+        /**
+         * Returns true if the CSS include selector is empty.
+         * When CSS_SELECTOR mode has empty include, full HTML is stored (minus excluded elements),
+         * allowing Changes Only view mode.
+         */
+        public boolean isCssIncludeSelectorEmpty() {
+            return cssIncludeSelectorEmpty;
         }
     }
 
@@ -217,6 +229,10 @@ public class DiffViewerViewModel extends AndroidViewModel {
                     return;
                 }
 
+                // Check if CSS include selector is empty
+                String cssInclude = site.getCssIncludeSelector();
+                boolean cssIncludeEmpty = (cssInclude == null || cssInclude.trim().isEmpty());
+
                 // Compute the diff
                 DiffResult result = computeDiff(
                         site.getUrl(),
@@ -224,7 +240,8 @@ public class DiffViewerViewModel extends AndroidViewModel {
                         newContent,
                         oldHistory.getCheckTime(),
                         newHistory.getCheckTime(),
-                        site.getComparisonMode()
+                        site.getComparisonMode(),
+                        cssIncludeEmpty
                 );
 
                 diffResult.postValue(result);
@@ -284,7 +301,8 @@ public class DiffViewerViewModel extends AndroidViewModel {
      */
     @NonNull
     private DiffResult computeDiff(String siteUrl, String oldContent, String newContent,
-                                    long oldTimestamp, long newTimestamp, ComparisonMode comparisonMode) {
+                                    long oldTimestamp, long newTimestamp, ComparisonMode comparisonMode,
+                                    boolean cssIncludeSelectorEmpty) {
         String[] oldLines = oldContent.split("\n", -1);
         String[] newLines = newContent.split("\n", -1);
 
@@ -320,7 +338,8 @@ public class DiffViewerViewModel extends AndroidViewModel {
                 addedCount,
                 removedCount,
                 diffText.toString(),
-                comparisonMode
+                comparisonMode,
+                cssIncludeSelectorEmpty
         );
     }
 

@@ -21,6 +21,8 @@ import com.ltrudu.sitewatcher.util.SearchQueryParser;
 import android.widget.ProgressBar;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -55,11 +57,21 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
         void onPercentageClick(@NonNull WatchedSite site);
     }
 
+    /**
+     * Sort order enum for alphabetical sorting.
+     */
+    public enum SortOrder {
+        NONE,       // No sorting (default order from database)
+        A_TO_Z,     // Ascending alphabetical
+        Z_TO_A      // Descending alphabetical
+    }
+
     private final List<WatchedSite> allSites = new ArrayList<>();
     private final List<WatchedSite> sites = new ArrayList<>();
     private final OnSiteClickListener listener;
     private final Set<Long> checkingSites = new HashSet<>();
     private String currentFilter = "";
+    private SortOrder currentSortOrder = SortOrder.NONE;
 
     /**
      * Constructor for SiteListAdapter.
@@ -115,11 +127,71 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
     }
 
     /**
-     * Apply the current filter to the sites list.
+     * Apply the current filter and sort to the sites list.
      */
     private void applyFilter() {
         List<WatchedSite> filteredSites = SearchQueryParser.filter(allSites, currentFilter);
+        applySorting(filteredSites);
         updateDisplayList(filteredSites);
+    }
+
+    /**
+     * Set the sort order and refresh the list.
+     * @param sortOrder The new sort order
+     */
+    public void setSortOrder(@NonNull SortOrder sortOrder) {
+        currentSortOrder = sortOrder;
+        applyFilter();
+    }
+
+    /**
+     * Get the current sort order.
+     * @return The current sort order
+     */
+    @NonNull
+    public SortOrder getSortOrder() {
+        return currentSortOrder;
+    }
+
+    /**
+     * Toggle through sort orders: NONE -> A_TO_Z -> Z_TO_A -> A_TO_Z ...
+     * @return The new sort order after toggling
+     */
+    @NonNull
+    public SortOrder toggleSortOrder() {
+        switch (currentSortOrder) {
+            case NONE:
+            case Z_TO_A:
+                currentSortOrder = SortOrder.A_TO_Z;
+                break;
+            case A_TO_Z:
+                currentSortOrder = SortOrder.Z_TO_A;
+                break;
+        }
+        applyFilter();
+        return currentSortOrder;
+    }
+
+    /**
+     * Apply sorting to a list of sites based on current sort order.
+     * @param siteList The list to sort (modified in place)
+     */
+    private void applySorting(@NonNull List<WatchedSite> siteList) {
+        if (currentSortOrder == SortOrder.NONE) {
+            return; // Keep default order
+        }
+
+        Comparator<WatchedSite> comparator = (s1, s2) -> {
+            String name1 = s1.getDisplayName().toLowerCase();
+            String name2 = s2.getDisplayName().toLowerCase();
+            return name1.compareTo(name2);
+        };
+
+        if (currentSortOrder == SortOrder.Z_TO_A) {
+            comparator = comparator.reversed();
+        }
+
+        Collections.sort(siteList, comparator);
     }
 
     /**

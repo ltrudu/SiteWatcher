@@ -1,6 +1,8 @@
 package com.ltrudu.sitewatcher.ui.sitelist;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,9 +20,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
@@ -37,6 +42,9 @@ import com.ltrudu.sitewatcher.accessibility.TapAccessibilityService;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.util.Logger;
 import com.ltrudu.sitewatcher.util.SearchQueryParser;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Fragment displaying the list of watched sites.
@@ -65,6 +73,12 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     // Flag to avoid showing accessibility dialog multiple times per session
     private boolean accessibilityDialogShown = false;
 
+    // Flag to avoid showing feedback permissions dialog multiple times per session
+    private boolean feedbackPermissionsDialogShown = false;
+
+    // Permission launcher for SMS
+    private ActivityResultLauncher<String[]> feedbackPermissionsLauncher;
+
     // Handler for periodic UI refresh
     private final Handler refreshHandler = new Handler(Looper.getMainLooper());
     private final Runnable refreshRunnable = new Runnable() {
@@ -85,6 +99,25 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         super.onCreate(savedInstanceState);
         // Use Activity-scoped ViewModel so it's shared with MainActivity for check all
         viewModel = new ViewModelProvider(requireActivity()).get(SiteListViewModel.class);
+
+        // Register permission launcher for feedback actions
+        feedbackPermissionsLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                results -> {
+                    boolean allGranted = true;
+                    for (Boolean granted : results.values()) {
+                        if (!granted) {
+                            allGranted = false;
+                            break;
+                        }
+                    }
+                    if (allGranted) {
+                        Logger.d(TAG, "Feedback permissions granted");
+                    } else {
+                        Logger.d(TAG, "Some feedback permissions denied");
+                    }
+                }
+        );
     }
 
     @Nullable
@@ -271,6 +304,9 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
 
             // Check if accessibility service is needed for TAP_COORDINATES actions
             checkAccessibilityServiceNeeded();
+
+            // Check if feedback actions require permissions (SMS, Camera)
+            checkFeedbackPermissionsNeeded();
         });
 
         // Observe checking events to update the progress indicator
@@ -391,6 +427,13 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         PopupMenu popupMenu = new PopupMenu(requireContext(), anchorView);
         popupMenu.inflate(R.menu.menu_site_context);
 
+        // Hide "Test Actions" menu item if no auto-click actions are defined
+        MenuItem testActionsItem = popupMenu.getMenu().findItem(R.id.action_test_actions);
+        if (testActionsItem != null) {
+            boolean hasActions = site.getAutoClickActions() != null && !site.getAutoClickActions().isEmpty();
+            testActionsItem.setVisible(hasActions);
+        }
+
         popupMenu.setOnMenuItemClickListener(item -> handleContextMenuClick(site, item));
         popupMenu.show();
     }
@@ -456,7 +499,9 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     private void openTestActions(@NonNull WatchedSite site) {
         Bundle args = new Bundle();
         args.putString("url", site.getUrl());
-        args.putString("actions_json", com.ltrudu.sitewatcher.data.model.AutoClickAction.toJsonString(site.getAutoClickActions()));
+        // Ensure we pass "[]" instead of null when no actions configured
+        String actionsJson = com.ltrudu.sitewatcher.data.model.AutoClickAction.toJsonString(site.getAutoClickActions());
+        args.putString("actions_json", actionsJson != null ? actionsJson : "[]");
         args.putBoolean("execute_actions", true);
         Navigation.findNavController(requireView())
                 .navigate(R.id.actionTesterFragment, args);
@@ -519,6 +564,74 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
                         Logger.e(TAG, "Failed to open accessibility settings", e);
                         Toast.makeText(requireContext(), R.string.error_navigation, Toast.LENGTH_SHORT).show();
                     }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    /**
+     * Check if feedback actions require permissions that are not granted.
+     * Shows a prompt dialog if SMS or Camera permissions are needed but not granted.
+     */
+    private void checkFeedbackPermissionsNeeded() {
+        // Only show once per session
+        if (feedbackPermissionsDialogShown) {
+            return;
+        }
+
+        // Collect required permissions
+        List<String> requiredPermissions = new ArrayList<>();
+
+        // Check for SMS permission
+        if (viewModel.hasSmsFeedbackActions()) {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.SEND_SMS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requiredPermissions.add(Manifest.permission.SEND_SMS);
+            }
+        }
+
+        // Check for Camera permission (for flash)
+        if (viewModel.hasCameraFlashFeedbackActions()) {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requiredPermissions.add(Manifest.permission.CAMERA);
+            }
+        }
+
+        // If no permissions needed, return
+        if (requiredPermissions.isEmpty()) {
+            return;
+        }
+
+        // Show the permissions dialog
+        feedbackPermissionsDialogShown = true;
+        Logger.d(TAG, "Feedback actions require permissions: " + requiredPermissions);
+        showFeedbackPermissionsDialog(requiredPermissions);
+    }
+
+    /**
+     * Show dialog prompting user to grant feedback action permissions.
+     *
+     * @param permissions List of permissions to request
+     */
+    private void showFeedbackPermissionsDialog(@NonNull List<String> permissions) {
+        // Build message based on required permissions
+        StringBuilder message = new StringBuilder();
+        message.append(getString(R.string.feedback_permissions_message_intro));
+
+        if (permissions.contains(Manifest.permission.SEND_SMS)) {
+            message.append("\n\n• ").append(getString(R.string.feedback_permission_sms));
+        }
+        if (permissions.contains(Manifest.permission.CAMERA)) {
+            message.append("\n\n• ").append(getString(R.string.feedback_permission_camera));
+        }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.feedback_permissions_required)
+                .setMessage(message.toString())
+                .setPositiveButton(R.string.grant, (dialog, which) -> {
+                    // Request permissions
+                    feedbackPermissionsLauncher.launch(permissions.toArray(new String[0]));
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();

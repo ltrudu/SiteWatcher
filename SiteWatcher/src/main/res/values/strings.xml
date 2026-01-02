@@ -72,7 +72,7 @@
     <string name="check_interval">Check Interval</string>
     <string name="check_interval_value">%1$d minutes</string>
     <string name="specific_time">Specific Time</string>
-    <string name="threshold">Notification Threshold</string>
+    <string name="threshold">Feedback Threshold</string>
     <string name="threshold_value">%1$d%%</string>
     <string name="css_selector">CSS Selector</string>
     <string name="css_selector_hint">e.g., #content, .main-text</string>
@@ -390,4 +390,102 @@
     <string name="accessibility_service_description">Allows SiteWatcher to perform tap gestures at specific screen coordinates for clicking elements in cookie consent dialogs and iframes.</string>
     <string name="enable">Enable</string>
     <string name="tap_label_hint">e.g., Cookie Dialog Button</string>
+
+    <!-- Feedback Actions -->
+    <string name="feedback_actions">Feedback Actions</string>
+    <string name="feedback_actions_hint">Configure how you want to be notified when this site changes.</string>
+    <string name="edit_feedback">Edit Feedback</string>
+    <string name="feedback_threshold">Feedback Threshold</string>
+
+    <!-- Feedback Action Types -->
+    <string name="feedback_notification">Notification</string>
+    <string name="feedback_send_sms">Send SMS</string>
+    <string name="feedback_trigger_alarm">Trigger Alarm</string>
+    <string name="feedback_play_sound">Play Sound</string>
+    <string name="feedback_camera_flash">Camera Flash</string>
+    <string name="feedback_vibrate">Vibrate</string>
+
+    <!-- Feedback Action Descriptions -->
+    <string name="feedback_notification_desc">Show a notification (default behavior)</string>
+    <string name="feedback_sms_desc">Send SMS to: %1$s</string>
+    <string name="feedback_alarm_desc">Play alarm until dismissed</string>
+    <string name="feedback_sound_desc">Play: %1$s</string>
+    <string name="feedback_flash_desc">Flash camera %1$d times</string>
+    <string name="flash_speed">Flash Speed</string>
+    <string name="flash_speed_hint">Lower = faster blink</string>
+    <string name="flash_speed_format">%d ms</string>
+    <string name="flash_speed_fast">fast</string>
+    <string name="flash_speed_medium">medium</string>
+    <string name="flash_speed_slow">slow</string>
+    <string name="feedback_vibrate_desc">Vibrate: %1$s</string>
+
+    <!-- Feedback Play Mode -->
+    <string name="feedback_play_mode">Play Mode</string>
+    <string name="feedback_play_mode_sequential_desc">Execute actions one after another</string>
+    <string name="feedback_play_mode_parallel_desc">Execute all actions simultaneously</string>
+    <string-array name="feedback_play_modes">
+        <item>Sequentially</item>
+        <item>All At Once</item>
+    </string-array>
+
+    <!-- Feedback Dialog -->
+    <string name="feedback_type">Feedback Type</string>
+    <string name="add_feedback_action">Add Feedback Action</string>
+    <string name="edit_feedback_action">Edit Feedback Action</string>
+    <string name="email_address">Email Address</string>
+    <string name="email_address_hint">e.g., john@example.com</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="phone_number_hint">e.g., +1234567890</string>
+    <string name="select_alarm_sound">Select Alarm Sound</string>
+    <string name="select_notification_sound">Select Notification Sound</string>
+    <string name="sound_selected">Sound: %1$s</string>
+    <string name="vibration_pattern">Vibration Pattern</string>
+    <string name="flash_duration">Flash Duration</string>
+    <string name="pick_contact">Pick Contact</string>
+    <string name="select_sound">Select Sound</string>
+    <string name="notification_sound">Notification Sound</string>
+    <string name="default_sound">Default</string>
+    <string name="feedback_label">Label</string>
+    <string name="seconds">seconds</string>
+
+    <!-- Alarm Duration -->
+    <string name="alarm_duration">Duration</string>
+    <string name="alarm_minutes">Minutes</string>
+    <string name="alarm_seconds">Seconds</string>
+    <string name="alarm_indefinite_warning">Duration is 0. Alarm will play indefinitely until you dismiss the alarm notification.</string>
+    <string name="alarm_duration_format">%d min %d sec</string>
+    <string name="alarm_notification_title">Alarm Playing</string>
+    <string name="alarm_notification_text">Tap to stop the alarm</string>
+    <string name="alarm_notification_channel_name">Alarm Notifications</string>
+    <string name="alarm_notification_channel_desc">Notifications for stopping alarms</string>
+
+    <!-- Vibration Patterns -->
+    <string name="vibration_short">Short pulse</string>
+    <string name="vibration_long">Long pulse</string>
+    <string name="vibration_double">Double pulse</string>
+    <string name="vibration_sos">SOS pattern</string>
+
+    <!-- Empty State -->
+    <string name="no_feedback_actions">No feedback actions configured</string>
+    <string name="add_feedback_hint">Tap + to add a feedback action</string>
+    <string name="feedback_default_notification">Default: Notification</string>
+
+    <!-- Plurals -->
+    <plurals name="feedback_actions_count">
+        <item quantity="zero">No feedback configured</item>
+        <item quantity="one">%d action configured</item>
+        <item quantity="other">%d actions configured</item>
+    </plurals>
+
+    <!-- Permissions -->
+    <string name="sms_permission_required">SMS permission required to send text messages</string>
+    <string name="contacts_permission_required">Contacts permission required to pick contacts</string>
+    <string name="camera_permission_required">Camera permission required for flash</string>
+
+    <!-- Feedback Permissions Dialog -->
+    <string name="feedback_permissions_required">Permissions Required</string>
+    <string name="feedback_permissions_message_intro">Some of your feedback actions require permissions to work properly:</string>
+    <string name="feedback_permission_sms">SMS: Required to automatically send text messages when site changes are detected.</string>
+    <string name="feedback_permission_camera">Camera: Required to use the camera flash for visual alerts.</string>
+    <string name="grant">Grant</string>
 </resources>

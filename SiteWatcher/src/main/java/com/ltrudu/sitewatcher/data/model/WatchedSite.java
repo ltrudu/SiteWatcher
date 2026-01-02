@@ -93,6 +93,23 @@ public class WatchedSite {
     private String schedulesJson;
 
     /**
+     * JSON array of feedback actions to execute when significant change detected.
+     * Each action defines how to notify/alert the user (notification, email, SMS, etc.).
+     * If null or empty, defaults to single NOTIFICATION action.
+     */
+    @Nullable
+    @ColumnInfo(name = "feedback_actions_json")
+    private String feedbackActionsJson;
+
+    /**
+     * How feedback actions are executed: SEQUENTIAL (one after another) or ALL_AT_ONCE (parallel).
+     * Default is SEQUENTIAL.
+     */
+    @NonNull
+    @ColumnInfo(name = "feedback_play_mode", defaultValue = "SEQUENTIAL")
+    private FeedbackPlayMode feedbackPlayMode;
+
+    /**
      * Diff algorithm to use for content comparison.
      * LINE (default) = line-based LCS like Git
      * WORD = word-based for prose/articles
@@ -138,6 +155,7 @@ public class WatchedSite {
         this.comparisonMode = ComparisonMode.FULL_HTML;
         this.fetchMode = FetchMode.JAVASCRIPT;
         this.diffAlgorithm = DiffAlgorithmType.LINE;
+        this.feedbackPlayMode = FeedbackPlayMode.SEQUENTIAL;
         this.minTextLength = 10; // Minimum 10 characters per text block
         this.minWordLength = 3; // Minimum 3 characters per word
         this.thresholdPercent = 5;
@@ -304,6 +322,40 @@ public class WatchedSite {
      */
     public void setSchedules(@Nullable List<Schedule> schedules) {
         this.schedulesJson = Schedule.toJsonString(schedules);
+    }
+
+    @Nullable
+    public String getFeedbackActionsJson() {
+        return feedbackActionsJson;
+    }
+
+    public void setFeedbackActionsJson(@Nullable String feedbackActionsJson) {
+        this.feedbackActionsJson = feedbackActionsJson;
+    }
+
+    /**
+     * Get feedback actions as a list.
+     * Returns empty list if none configured.
+     */
+    @NonNull
+    public List<FeedbackAction> getFeedbackActions() {
+        return FeedbackAction.fromJsonString(feedbackActionsJson);
+    }
+
+    /**
+     * Set feedback actions from a list.
+     */
+    public void setFeedbackActions(@Nullable List<FeedbackAction> actions) {
+        this.feedbackActionsJson = FeedbackAction.toJsonString(actions);
+    }
+
+    @NonNull
+    public FeedbackPlayMode getFeedbackPlayMode() {
+        return feedbackPlayMode != null ? feedbackPlayMode : FeedbackPlayMode.SEQUENTIAL;
+    }
+
+    public void setFeedbackPlayMode(@NonNull FeedbackPlayMode feedbackPlayMode) {
+        this.feedbackPlayMode = feedbackPlayMode;
     }
 
     public int getThresholdPercent() {

@@ -57,6 +57,9 @@
         <action
             android:id="@+id/action_addEdit_to_editSchedules"
             app:destination="@id/editSchedulesFragment" />
+        <action
+            android:id="@+id/action_addEdit_to_editFeedback"
+            app:destination="@id/editFeedbackFragment" />
     </fragment>
 
     <fragment
@@ -218,5 +221,16 @@
         android:name="com.ltrudu.sitewatcher.ui.about.AboutFragment"
         android:label="@string/about"
         tools:layout="@layout/fragment_about" />
+
+    <fragment
+        android:id="@+id/editFeedbackFragment"
+        android:name="com.ltrudu.sitewatcher.ui.addedit.EditFeedbackFragment"
+        android:label="@string/edit_feedback">
+        <argument
+            android:name="feedback_json"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
 
 </navigation>

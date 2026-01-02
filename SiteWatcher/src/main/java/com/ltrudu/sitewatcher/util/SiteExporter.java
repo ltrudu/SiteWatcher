@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.DiffAlgorithmType;
+import com.ltrudu.sitewatcher.data.model.FeedbackPlayMode;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
@@ -44,11 +45,13 @@ public class SiteExporter {
     private static final String KEY_MIN_WORD_LENGTH = "minWordLength";
     private static final String KEY_FETCH_MODE = "fetchMode";
     private static final String KEY_AUTO_CLICK_ACTIONS = "autoClickActions";
+    private static final String KEY_FEEDBACK_ACTIONS = "feedbackActions";
+    private static final String KEY_FEEDBACK_PLAY_MODE = "feedbackPlayMode";
     private static final String KEY_SCHEDULES = "schedules";
     private static final String KEY_DIFF_ALGORITHM = "diffAlgorithm";
 
     // Current export format version
-    private static final int CURRENT_VERSION = 4;
+    private static final int CURRENT_VERSION = 5;
 
     /**
      * Generates a filename with the format: SiteWatcher_YY-MM-DD_HH-MM-SS.json
@@ -147,6 +150,13 @@ public class SiteExporter {
             json.put(KEY_AUTO_CLICK_ACTIONS, new JSONArray(actionsJson));
         }
 
+        // Export feedback actions as JSON array
+        String feedbackActionsJson = site.getFeedbackActionsJson();
+        if (feedbackActionsJson != null && !feedbackActionsJson.isEmpty()) {
+            json.put(KEY_FEEDBACK_ACTIONS, new JSONArray(feedbackActionsJson));
+        }
+        json.put(KEY_FEEDBACK_PLAY_MODE, site.getFeedbackPlayMode().name());
+
         // Export schedules as JSON array
         String schedulesJson = site.getSchedulesJson();
         Logger.d(TAG, "Exporting site: " + site.getUrl() +
@@ -216,6 +226,23 @@ public class SiteExporter {
                 JSONArray actionsArray = json.optJSONArray(KEY_AUTO_CLICK_ACTIONS);
                 if (actionsArray != null) {
                     site.setAutoClickActionsJson(actionsArray.toString());
+                }
+            }
+
+            // Parse feedback actions
+            if (json.has(KEY_FEEDBACK_ACTIONS)) {
+                JSONArray feedbackActionsArray = json.optJSONArray(KEY_FEEDBACK_ACTIONS);
+                if (feedbackActionsArray != null) {
+                    site.setFeedbackActionsJson(feedbackActionsArray.toString());
+                }
+            }
+
+            // Parse feedback play mode
+            if (json.has(KEY_FEEDBACK_PLAY_MODE)) {
+                try {
+                    site.setFeedbackPlayMode(FeedbackPlayMode.valueOf(json.getString(KEY_FEEDBACK_PLAY_MODE)));
+                } catch (IllegalArgumentException e) {
+                    site.setFeedbackPlayMode(FeedbackPlayMode.SEQUENTIAL);
                 }
             }
 

@@ -11,6 +11,7 @@ import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.SiteHistory;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.data.repository.SiteRepository;
+import com.ltrudu.sitewatcher.network.FeedbackActionExecutor;
 import com.ltrudu.sitewatcher.notification.NotificationHelper;
 import com.ltrudu.sitewatcher.util.Logger;
 
@@ -44,6 +45,7 @@ public class SiteChecker {
     private final WebViewContentFetcher jsFetcher;
     private final ContentComparator comparator;
     private final ExecutorService executorService;
+    private final FeedbackActionExecutor feedbackExecutor;
 
     /**
      * Callback interface for site check results.
@@ -77,6 +79,7 @@ public class SiteChecker {
         this.jsFetcher = new WebViewContentFetcher(this.context);
         this.comparator = new ContentComparator();
         this.executorService = Executors.newFixedThreadPool(3);
+        this.feedbackExecutor = new FeedbackActionExecutor(context);
 
         // Ensure history directory exists
         File historyDir = new File(context.getFilesDir(), HISTORY_DIR);
@@ -210,7 +213,8 @@ public class SiteChecker {
             // This prevents minor dynamic content from polluting history
             if (isSignificant) {
                 saveHistory(site.getId(), newContent, checkTime);
-                NotificationHelper.showSiteChangedNotification(context, site, changePercent);
+                // Execute configured feedback actions (notification is default if none configured)
+                feedbackExecutor.executeFeedbackActions(site, changePercent, null);
             }
 
             callback.onCheckComplete(site.getId(), changePercent, hasChanged);

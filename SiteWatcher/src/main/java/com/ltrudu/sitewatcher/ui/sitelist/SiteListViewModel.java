@@ -10,6 +10,8 @@ import androidx.lifecycle.MutableLiveData;
 import com.ltrudu.sitewatcher.background.CheckScheduler;
 import com.ltrudu.sitewatcher.data.model.ActionType;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
+import com.ltrudu.sitewatcher.data.model.FeedbackAction;
+import com.ltrudu.sitewatcher.data.model.FeedbackActionType;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.data.repository.SiteRepository;
 import com.ltrudu.sitewatcher.network.SiteChecker;
@@ -242,6 +244,52 @@ public class SiteListViewModel extends AndroidViewModel {
             List<AutoClickAction> actions = site.getAutoClickActions();
             for (AutoClickAction action : actions) {
                 if (action.getType() == ActionType.TAP_COORDINATES && action.isEnabled()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if any site has feedback actions that require SMS permission.
+     * Used to determine if SMS permission prompt is needed at startup.
+     *
+     * @return true if any site has SEND_SMS feedback actions enabled
+     */
+    public boolean hasSmsFeedbackActions() {
+        List<WatchedSite> sites = allSites.getValue();
+        if (sites == null || sites.isEmpty()) {
+            return false;
+        }
+
+        for (WatchedSite site : sites) {
+            List<FeedbackAction> actions = site.getFeedbackActions();
+            for (FeedbackAction action : actions) {
+                if (action.getType() == FeedbackActionType.SEND_SMS && action.isEnabled()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if any site has feedback actions that require camera permission.
+     * Used to determine if camera permission prompt is needed at startup.
+     *
+     * @return true if any site has CAMERA_FLASH feedback actions enabled
+     */
+    public boolean hasCameraFlashFeedbackActions() {
+        List<WatchedSite> sites = allSites.getValue();
+        if (sites == null || sites.isEmpty()) {
+            return false;
+        }
+
+        for (WatchedSite site : sites) {
+            List<FeedbackAction> actions = site.getFeedbackActions();
+            for (FeedbackAction action : actions) {
+                if (action.getType() == FeedbackActionType.CAMERA_FLASH && action.isEnabled()) {
                     return true;
                 }
             }

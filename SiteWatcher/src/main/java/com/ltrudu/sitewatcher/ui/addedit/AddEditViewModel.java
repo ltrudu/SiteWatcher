@@ -12,6 +12,8 @@ import com.ltrudu.sitewatcher.background.CheckScheduler;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.DiffAlgorithmType;
+import com.ltrudu.sitewatcher.data.model.FeedbackAction;
+import com.ltrudu.sitewatcher.data.model.FeedbackPlayMode;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
@@ -64,6 +66,12 @@ public class AddEditViewModel extends AndroidViewModel {
     // Schedules system (JSON format)
     private String schedulesJson;
 
+    // Feedback actions (JSON format)
+    private String feedbackActionsJson;
+
+    // Feedback play mode
+    private FeedbackPlayMode feedbackPlayMode = FeedbackPlayMode.SEQUENTIAL;
+
     // Validation state
     private final MutableLiveData<Boolean> isUrlValid = new MutableLiveData<>(false);
     private final MutableLiveData<String> urlError = new MutableLiveData<>(null);
@@ -113,6 +121,12 @@ public class AddEditViewModel extends AndroidViewModel {
         diffAlgorithm.setValue(DiffAlgorithmType.LINE);
         autoClickActions.setValue(new ArrayList<>());
         schedulesJson = Schedule.toJsonString(Schedule.createDefaultList());
+
+        // Create default Notification feedback action for new sites
+        List<FeedbackAction> defaultFeedbackActions = new ArrayList<>();
+        defaultFeedbackActions.add(FeedbackAction.createNotification("Notification"));
+        feedbackActionsJson = FeedbackAction.toJsonString(defaultFeedbackActions);
+
         isUrlValid.setValue(false);
     }
 
@@ -169,6 +183,12 @@ public class AddEditViewModel extends AndroidViewModel {
 
         // Load schedules JSON
         schedulesJson = site.getSchedulesJson();
+
+        // Load feedback actions JSON
+        feedbackActionsJson = site.getFeedbackActionsJson();
+
+        // Load feedback play mode
+        feedbackPlayMode = site.getFeedbackPlayMode();
 
         // Validate URL - use postValue version
         isUrlValid.postValue(true);
@@ -263,6 +283,12 @@ public class AddEditViewModel extends AndroidViewModel {
 
         // Set schedules JSON
         site.setSchedulesJson(schedulesJson);
+
+        // Set feedback actions JSON
+        site.setFeedbackActionsJson(feedbackActionsJson);
+
+        // Set feedback play mode
+        site.setFeedbackPlayMode(feedbackPlayMode);
 
         return site;
     }
@@ -398,6 +424,23 @@ public class AddEditViewModel extends AndroidViewModel {
 
     public void setSchedulesJson(@Nullable String schedulesJson) {
         this.schedulesJson = schedulesJson;
+    }
+
+    @Nullable
+    public String getFeedbackActionsJson() {
+        return feedbackActionsJson;
+    }
+
+    public void setFeedbackActionsJson(@Nullable String feedbackActionsJson) {
+        this.feedbackActionsJson = feedbackActionsJson;
+    }
+
+    public FeedbackPlayMode getFeedbackPlayMode() {
+        return feedbackPlayMode;
+    }
+
+    public void setFeedbackPlayMode(FeedbackPlayMode mode) {
+        this.feedbackPlayMode = mode;
     }
 
     public LiveData<Boolean> getIsUrlValid() {

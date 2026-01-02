@@ -30,6 +30,8 @@ import com.ltrudu.sitewatcher.background.CheckScheduler;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.DiffAlgorithmType;
+import com.ltrudu.sitewatcher.data.model.FeedbackAction;
+import com.ltrudu.sitewatcher.data.model.FeedbackPlayMode;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
@@ -86,10 +88,17 @@ public class AddEditFragment extends Fragment {
     private android.widget.TextView schedulesCountLabel;
     private MaterialButton buttonEditSchedules;
 
+    // Feedback actions views
+    private MaterialCardView feedbackSection;
+    private android.widget.TextView feedbackCountLabel;
+    private MaterialButton buttonEditFeedback;
+    private Spinner spinnerFeedbackPlayMode;
+
     // Adapters
     private ArrayAdapter<String> fetchModeAdapter;
     private ArrayAdapter<String> comparisonModeAdapter;
     private ArrayAdapter<String> diffAlgorithmAdapter;
+    private ArrayAdapter<CharSequence> feedbackPlayModeAdapter;
 
     // Flag to prevent listener callbacks during initialization
     private boolean isInitializing = true;
@@ -127,6 +136,7 @@ public class AddEditFragment extends Fragment {
         setupSpinners();
         setupAutoClickSection();
         setupSchedulesSection();
+        setupFeedbackSection();
         setupListeners();
         observeViewModel();
 
@@ -145,6 +155,9 @@ public class AddEditFragment extends Fragment {
 
         // Listen for result from EditSchedulesFragment
         listenForEditSchedulesResult();
+
+        // Listen for result from EditFeedbackFragment
+        listenForEditFeedbackResult();
 
         isInitializing = false;
     }
@@ -182,6 +195,12 @@ public class AddEditFragment extends Fragment {
         schedulesSection = view.findViewById(R.id.schedulesSection);
         schedulesCountLabel = view.findViewById(R.id.schedulesCountLabel);
         buttonEditSchedules = view.findViewById(R.id.buttonEditSchedules);
+
+        // Feedback actions views
+        feedbackSection = view.findViewById(R.id.feedbackSection);
+        feedbackCountLabel = view.findViewById(R.id.feedbackCountLabel);
+        buttonEditFeedback = view.findViewById(R.id.buttonEditFeedback);
+        spinnerFeedbackPlayMode = view.findViewById(R.id.spinnerFeedbackPlayMode);
 
         // Set button text and title based on mode
         ActionBar actionBar = ((AppCompatActivity) requireActivity()).getSupportActionBar();
@@ -239,6 +258,15 @@ public class AddEditFragment extends Fragment {
         );
         diffAlgorithmAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         diffAlgorithmSpinner.setAdapter(diffAlgorithmAdapter);
+
+        // Feedback play mode spinner
+        feedbackPlayModeAdapter = ArrayAdapter.createFromResource(
+                requireContext(),
+                R.array.feedback_play_modes,
+                android.R.layout.simple_spinner_item
+        );
+        feedbackPlayModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerFeedbackPlayMode.setAdapter(feedbackPlayModeAdapter);
     }
 
     private void setupAutoClickSection() {
@@ -326,6 +354,56 @@ public class AddEditFragment extends Fragment {
         List<Schedule> schedules = Schedule.fromJsonString(schedulesJson);
         int count = schedules.size();
         schedulesCountLabel.setText(getString(R.string.schedules_count, count));
+    }
+
+    private void setupFeedbackSection() {
+        buttonEditFeedback.setOnClickListener(v -> navigateToEditFeedback());
+        // Initialize with current feedback count
+        updateFeedbackCount(viewModel.getFeedbackActionsJson());
+        // Initialize feedback play mode spinner selection
+        updateFeedbackPlayModeSpinner(viewModel.getFeedbackPlayMode());
+    }
+
+    private void navigateToEditFeedback() {
+        String feedbackJson = viewModel.getFeedbackActionsJson();
+
+        Bundle args = new Bundle();
+        args.putString(EditFeedbackFragment.ARG_FEEDBACK_JSON, feedbackJson);
+
+        NavController navController = Navigation.findNavController(requireView());
+        navController.navigate(R.id.action_addEdit_to_editFeedback, args);
+    }
+
+    private void listenForEditFeedbackResult() {
+        getParentFragmentManager().setFragmentResultListener(
+                EditFeedbackFragment.RESULT_KEY,
+                getViewLifecycleOwner(),
+                (requestKey, result) -> {
+                    String feedbackJson = result.getString(EditFeedbackFragment.RESULT_FEEDBACK_JSON);
+                    viewModel.setFeedbackActionsJson(feedbackJson);
+                    updateFeedbackCount(feedbackJson);
+                }
+        );
+    }
+
+    private void updateFeedbackCount(String feedbackJson) {
+        List<FeedbackAction> actions = FeedbackAction.fromJsonString(feedbackJson);
+        int count = actions.size();
+        if (count == 0) {
+            feedbackCountLabel.setText(R.string.feedback_default_notification);
+        } else {
+            feedbackCountLabel.setText(getResources().getQuantityString(
+                    R.plurals.feedback_actions_count, count, count));
+        }
+    }
+
+    private void updateFeedbackPlayModeSpinner(FeedbackPlayMode mode) {
+        if (mode != null) {
+            int position = mode.ordinal();
+            if (spinnerFeedbackPlayMode.getSelectedItemPosition() != position) {
+                spinnerFeedbackPlayMode.setSelection(position);
+            }
+        }
     }
 
     private void setupListeners() {
@@ -466,6 +544,20 @@ public class AddEditFragment extends Fragment {
             }
         });
 
+        // Feedback play mode spinner
+        spinnerFeedbackPlayMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!isInitializing) {
+                    viewModel.setFeedbackPlayMode(FeedbackPlayMode.values()[position]);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
         // Cancel button
         cancelButton.setOnClickListener(v -> navigateBack());
 
@@ -566,6 +658,18 @@ public class AddEditFragment extends Fragment {
         // Observe auto-click actions
         viewModel.getAutoClickActions().observe(getViewLifecycleOwner(), actions -> {
             updateActionsCountLabel(actions);
+        });
+
+        // Observe current site (for fields not exposed as LiveData)
+        viewModel.getCurrentSite().observe(getViewLifecycleOwner(), site -> {
+            if (site != null) {
+                // Update feedback play mode spinner when site is loaded
+                updateFeedbackPlayModeSpinner(site.getFeedbackPlayMode());
+                // Update feedback count when site is loaded
+                updateFeedbackCount(site.getFeedbackActionsJson());
+                // Update schedules count when site is loaded
+                updateSchedulesCount(site.getSchedulesJson());
+            }
         });
 
         // Observe save result

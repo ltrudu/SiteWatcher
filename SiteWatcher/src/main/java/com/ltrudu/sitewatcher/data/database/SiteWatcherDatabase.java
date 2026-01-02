@@ -27,7 +27,7 @@ import com.ltrudu.sitewatcher.data.model.WatchedSite;
         SiteHistory.class,
         CheckResult.class
     },
-    version = 10,
+    version = 12,
     exportSchema = true
 )
 @TypeConverters({Converters.class})
@@ -213,6 +213,28 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
     };
 
     /**
+     * Migration from version 10 to 11: Add feedback_actions_json column.
+     * Allows users to configure multiple feedback actions when site changes are detected.
+     */
+    private static final Migration MIGRATION_10_11 = new Migration(10, 11) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN feedback_actions_json TEXT DEFAULT NULL");
+        }
+    };
+
+    /**
+     * Migration from version 11 to 12: Add feedback_play_mode column.
+     * Allows users to choose between sequential or parallel execution of feedback actions.
+     */
+    private static final Migration MIGRATION_11_12 = new Migration(11, 12) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE watched_sites ADD COLUMN feedback_play_mode TEXT NOT NULL DEFAULT 'SEQUENTIAL'");
+        }
+    };
+
+    /**
      * Get the WatchedSite DAO.
      *
      * @return WatchedSiteDao instance
@@ -249,7 +271,7 @@ public abstract class SiteWatcherDatabase extends RoomDatabase {
                             SiteWatcherDatabase.class,
                             DATABASE_NAME
                     )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                     .fallbackToDestructiveMigration()
                     .build();
                 }

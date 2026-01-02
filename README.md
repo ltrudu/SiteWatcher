@@ -82,10 +82,26 @@ Create multiple schedules per site with flexible calendar-based rules:
 - **Seconds Precision** - Shows seconds when under 1 minute
 - **Dramatic Effect** - Shows tenths (X.X sec) when under 10 seconds with rapid updates
 
-### Notifications
-- **Instant Alerts** - Get notified immediately when changes are detected
-- **Configurable Actions** - Tap to open the app or go directly to the website
-- **Smart Thresholds** - Only alert when changes exceed your set percentage
+### Feedback Actions
+Customize how you're alerted when site changes are detected. Stack multiple actions that execute when changes exceed your threshold.
+
+#### Action Types
+- **Notification** - Standard Android notification (default)
+- **Send SMS** - Auto-send SMS to a configured phone number
+- **Trigger Alarm** - Play alarm sound until dismissed (configurable duration)
+- **Play Sound** - Play a notification/ringtone sound (configurable duration)
+- **Camera Flash** - Strobe the camera flash (configurable speed and duration)
+- **Vibrate** - Vibrate with customizable pattern and duration
+
+#### Play Modes
+- **Sequential** (default) - Execute actions one after another in order
+- **All At Once** - Execute all actions simultaneously using parallel threads
+
+#### Actions Management
+- **Drag-to-Reorder** - Arrange action execution order by dragging
+- **Enable/Disable** - Toggle individual actions without deleting
+- **Duplicate** - Clone actions for quick setup
+- **Duration Control** - Configure how long timed actions run (1-120 seconds)
 
 ### Built-in Browser
 - **Discover Sites** - Browse the web directly within the app
@@ -164,6 +180,9 @@ When first launching the app, you'll be asked for:
 - **Notifications** - Required to alert you of changes
 - **Exact Alarms** - Required for precise scheduling
 - **Accessibility Service** (optional) - Required only for "Tap at Coordinates" actions
+- **Send SMS** (optional) - Required only for "Send SMS" feedback actions
+- **Camera** (optional) - Required only for "Camera Flash" feedback actions
+- **Vibrate** - Automatically granted for vibration feedback
 
 ### Add Your First Site
 
@@ -206,6 +225,23 @@ For sites with cookie consent dialogs or dynamic content:
    - **Add Sleep** - Add delays between actions
 4. Drag actions to reorder, toggle to enable/disable
 5. Tap **Test Actions** to preview the sequence
+
+### Configure Feedback Actions (Optional)
+
+Customize how you're alerted when changes are detected:
+
+1. In the Add/Edit screen, scroll to **Feedback Actions** section
+2. Tap **Edit Feedback** to manage actions
+3. Tap the **+** FAB to add action types:
+   - **Notification** - Standard push notification
+   - **Send SMS** - Auto-send text message
+   - **Trigger Alarm** - Play alarm sound
+   - **Play Sound** - Play notification sound
+   - **Camera Flash** - Strobe flashlight
+   - **Vibrate** - Vibration pattern
+4. Configure each action's parameters (duration, phone number, etc.)
+5. Drag to reorder, toggle to enable/disable individual actions
+6. Choose **Play Mode**: Sequential or All At Once
 
 ### Monitor Changes
 
@@ -264,6 +300,24 @@ Each field has a visual picker button - tap to open the interactive element pick
 | **Wait** | Animations, loads | Pauses 1-60 seconds before next action |
 | **Tap at Coordinates** | iframes, shadow DOM | Taps at exact screen position via Accessibility Service |
 
+### Feedback Action Types
+
+| Type | Best For | Configuration |
+|------|----------|---------------|
+| **Notification** | Default alerts | Standard Android notification |
+| **Send SMS** | Remote alerts | Phone number, auto-sends when change detected |
+| **Trigger Alarm** | Urgent alerts | Sound selection, duration (0 = indefinite until dismissed) |
+| **Play Sound** | Audio alerts | Sound selection, duration (1-120 seconds) |
+| **Camera Flash** | Visual alerts | Flash speed (fast/medium/slow), duration |
+| **Vibrate** | Silent alerts | Vibration pattern, duration |
+
+### Feedback Play Modes
+
+| Mode | Behavior | Best For |
+|------|----------|----------|
+| **Sequential** | Actions run one after another | Ordered alerts (notify → then vibrate → then sound) |
+| **All At Once** | All actions start simultaneously | Maximum attention (sound + flash + vibrate together) |
+
 ### Calendar Schedule Types
 
 | Type | Use Case | Example |
@@ -311,8 +365,10 @@ Each field has a visual picker button - tap to open the interactive element pick
 
 ### Requirements
 - **Android 14** (API 34) or higher
-- **Permissions**: Notifications, Exact Alarms
+- **Permissions**: Notifications, Exact Alarms, Vibrate
 - **Optional**: Accessibility Service (for Tap at Coordinates actions)
+- **Optional**: Send SMS (for SMS feedback actions)
+- **Optional**: Camera (for Camera Flash feedback actions)
 
 ### Architecture
 - **Pattern**: Single Activity with Navigation Component, MVVM with Repository
@@ -328,11 +384,12 @@ com.ltrudu.sitewatcher/
 ├── data/
 │   ├── dao/           # Room DAOs
 │   ├── database/      # Room Database with migrations
-│   ├── model/         # Entity classes (WatchedSite, Schedule, AutoClickAction, etc.)
+│   ├── model/         # Entity classes (WatchedSite, Schedule, AutoClickAction,
+│   │                  #   FeedbackAction, FeedbackActionType, FeedbackPlayMode)
 │   └── repository/    # Data access layer
 ├── ui/
 │   ├── sitelist/      # Main site list
-│   ├── addedit/       # Add/Edit forms, schedule and action management
+│   ├── addedit/       # Add/Edit forms, schedule, action, and feedback management
 │   ├── selector/      # Interactive pickers (CSS, coordinates, tester)
 │   ├── browser/       # Built-in browser
 │   ├── diff/          # Diff viewer
@@ -342,7 +399,8 @@ com.ltrudu.sitewatcher/
 │   ├── view/          # Custom views (TapCrosshairView)
 │   └── about/         # About screen
 ├── background/        # Schedulers and receivers
-├── network/           # HTTP client, WebView fetcher, auto-click executor
+├── network/           # HTTP client, WebView fetcher, auto-click executor,
+│                      #   feedback action executor
 ├── notification/      # Notification handling
 └── util/              # Utilities, theme manager, logger
 ```
@@ -414,6 +472,14 @@ Contributions are welcome! Here's how you can help:
 - Use WiFi-only mode to avoid mobile data checks
 - Reduce the number of monitored sites
 - Use Static fetch mode when JavaScript isn't needed
+
+### Feedback actions not working?
+- **SMS not sending**: Grant SMS permission in Android settings
+- **Camera flash not working**: Grant Camera permission, ensure device has flash
+- **Alarm not playing**: Check device volume, ensure sound is selected
+- **Vibration not working**: Ensure device is not in silent mode (some devices)
+- **Actions not triggering**: Verify actions are enabled (toggle is on)
+- **Wrong execution order**: Check Play Mode setting (Sequential vs All At Once)
 
 ## License
 

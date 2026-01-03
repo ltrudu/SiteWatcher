@@ -161,7 +161,13 @@
         android:id="@+id/browserDiscoveryFragment"
         android:name="com.ltrudu.sitewatcher.ui.browser.BrowserDiscoveryFragment"
         android:label="@string/browse"
-        tools:layout="@layout/fragment_browser_discovery" />
+        tools:layout="@layout/fragment_browser_discovery">
+        <argument
+            android:name="initial_url"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
 
     <fragment
         android:id="@+id/diffViewerFragment"

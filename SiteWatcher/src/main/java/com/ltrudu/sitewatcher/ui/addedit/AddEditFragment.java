@@ -882,7 +882,20 @@ public class AddEditFragment extends Fragment {
 
     private void navigateToBrowserDiscovery() {
         NavController navController = Navigation.findNavController(requireView());
-        navController.navigate(R.id.action_addEdit_to_browserDiscovery);
+
+        // If URL is set, pass it to the browser to navigate directly
+        String url = viewModel.getUrl().getValue();
+        if (url != null && !url.isEmpty()) {
+            // Normalize URL
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://" + url;
+            }
+            Bundle args = new Bundle();
+            args.putString("initial_url", url);
+            navController.navigate(R.id.action_addEdit_to_browserDiscovery, args);
+        } else {
+            navController.navigate(R.id.action_addEdit_to_browserDiscovery);
+        }
     }
 
     private void navigateToIncludeSelectorBrowser() {

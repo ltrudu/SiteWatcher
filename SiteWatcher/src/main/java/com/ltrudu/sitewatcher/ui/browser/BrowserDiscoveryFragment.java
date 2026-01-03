@@ -36,14 +36,17 @@ public class BrowserDiscoveryFragment extends Fragment {
     private static final String TAG = "BrowserDiscovery";
     private static final String FRAGMENT_RESULT_KEY = "browserResult";
     private static final String URL_KEY = "url";
+    private static final String ARG_INITIAL_URL = "initial_url";
 
     private WebView webView;
     private TextInputEditText editUrl;
+    private com.google.android.material.textfield.TextInputLayout urlInputLayout;
     private ProgressBar progressBar;
     private Button btnCancel;
     private Button btnWatch;
 
     private String currentUrl = "";
+    private String searchEngineUrl = "";
 
     @Nullable
     @Override
@@ -66,6 +69,7 @@ public class BrowserDiscoveryFragment extends Fragment {
     private void initializeViews(@NonNull View view) {
         webView = view.findViewById(R.id.webView);
         editUrl = view.findViewById(R.id.editUrl);
+        urlInputLayout = view.findViewById(R.id.urlInputLayout);
         progressBar = view.findViewById(R.id.progressBar);
         btnCancel = view.findViewById(R.id.btnCancel);
         btnWatch = view.findViewById(R.id.btnWatch);
@@ -156,6 +160,23 @@ public class BrowserDiscoveryFragment extends Fragment {
             }
             return false;
         });
+
+        // Home button - navigate to search engine
+        if (urlInputLayout != null) {
+            urlInputLayout.setEndIconOnClickListener(v -> navigateToSearchEngine());
+        }
+    }
+
+    /**
+     * Navigate to the user's preferred search engine.
+     */
+    private void navigateToSearchEngine() {
+        if (searchEngineUrl != null && !searchEngineUrl.isEmpty()) {
+            Logger.d(TAG, "Navigating to search engine: " + searchEngineUrl);
+            currentUrl = searchEngineUrl;
+            updateUrlField(searchEngineUrl);
+            webView.loadUrl(searchEngineUrl);
+        }
     }
 
     private void setupBackPressHandler() {
@@ -178,12 +199,26 @@ public class BrowserDiscoveryFragment extends Fragment {
 
     private void loadInitialPage() {
         PreferencesManager preferencesManager = new PreferencesManager(requireContext());
-        String searchEngineUrl = preferencesManager.getSearchEngineUrl();
-        Logger.d(TAG, "Loading initial search engine: " + searchEngineUrl);
+        searchEngineUrl = preferencesManager.getSearchEngineUrl();
 
-        currentUrl = searchEngineUrl;
-        updateUrlField(searchEngineUrl);
-        webView.loadUrl(searchEngineUrl);
+        // Check if an initial URL was passed as argument
+        String initialUrl = null;
+        if (getArguments() != null) {
+            initialUrl = getArguments().getString(ARG_INITIAL_URL);
+        }
+
+        // If initial URL is set, navigate to it; otherwise use search engine
+        if (initialUrl != null && !initialUrl.isEmpty()) {
+            Logger.d(TAG, "Loading initial URL: " + initialUrl);
+            currentUrl = initialUrl;
+            updateUrlField(initialUrl);
+            webView.loadUrl(initialUrl);
+        } else {
+            Logger.d(TAG, "Loading search engine: " + searchEngineUrl);
+            currentUrl = searchEngineUrl;
+            updateUrlField(searchEngineUrl);
+            webView.loadUrl(searchEngineUrl);
+        }
     }
 
     private void updateUrlField(@NonNull String url) {

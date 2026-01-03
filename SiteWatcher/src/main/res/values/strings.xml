@@ -311,6 +311,7 @@
     <string name="search_google">Google</string>
     <string name="search_bing">Bing</string>
     <string name="search_qwant">Qwant</string>
+    <string name="go_to_search_engine">Go to search engine</string>
 
     <!-- Backups -->
     <string name="no_backups">No backups available</string>

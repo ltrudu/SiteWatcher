@@ -16,7 +16,7 @@
 
         <Button
             android:id="@+id/btnCancel"
-            style="@style/Widget.Material3.Button.TextButton"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cancel" />
@@ -40,10 +40,14 @@
 
     <!-- Current URL display -->
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/urlInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="8dp"
         android:hint="@string/current_url"
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_home"
+        app:endIconContentDescription="@string/go_to_search_engine"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
         <com.google.android.material.textfield.TextInputEditText

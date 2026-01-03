@@ -136,7 +136,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonCancel"
-            style="@style/Widget.Material3.Button.TonalButton"
+            style="@style/Widget.SiteWatcher.Button.Cancel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -145,6 +145,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonConfirm"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"

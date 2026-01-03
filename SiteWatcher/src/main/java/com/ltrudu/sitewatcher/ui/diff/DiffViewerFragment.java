@@ -219,8 +219,12 @@ public class DiffViewerFragment extends Fragment {
         textSiteUrl.setText(result.getSiteUrl());
 
         // Store HTML content for WebView mode
-        oldHtmlContent = result.getOldContent();
-        newHtmlContent = result.getNewContent();
+        // Use filtered content for CSS_SELECTOR mode (excludes unwanted elements)
+        // Fall back to raw content if filtered isn't available
+        String filteredOld = result.getOldContentFiltered();
+        String filteredNew = result.getNewContentFiltered();
+        oldHtmlContent = (filteredOld != null && !filteredOld.isEmpty()) ? filteredOld : result.getOldContent();
+        newHtmlContent = (filteredNew != null && !filteredNew.isEmpty()) ? filteredNew : result.getNewContent();
 
         // Store comparison mode and CSS include selector state
         siteComparisonMode = result.getComparisonMode();

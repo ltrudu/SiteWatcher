@@ -50,6 +50,7 @@
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>
     <string name="duplicate">Duplicate</string>
+    <string name="export_site">Export Site</string>
     <string name="check_now">Check Now</string>
     <string name="check_all">Check All Sites</string>
     <string name="view_data">View Data</string>
@@ -86,6 +87,8 @@
     <string name="css_exclude_selector">Exclude Elements</string>
     <string name="css_exclude_title">Select CSS to exclude</string>
     <string name="css_exclude_hint">No elements to exclude</string>
+    <string name="css_include_empty_hint">Full HTML will be used for comparison</string>
+    <string name="css_include_empty_with_exclude_hint">Full HTML will be fetched, then excluded elements will be filtered out</string>
     <string name="min_text_length">Minimum Text Length</string>
     <string name="min_text_length_value">%1$d chars</string>
     <string name="min_text_length_hint">Ignores text blocks shorter than this to reduce false positives from timestamps, counters, etc.</string>
@@ -256,6 +259,8 @@
     <string name="confirm">Confirm</string>
     <string name="loading_page">Loading page…</string>
     <string name="url_required_for_selector">Enter a URL first to pick elements</string>
+    <string name="pick_with_actions">Pick with Auto-Click Actions</string>
+    <string name="pick_without_actions">Pick without Actions</string>
 
     <!-- Settings -->
     <string name="request_permissions">Request Permissions</string>
@@ -376,6 +381,22 @@
         <item quantity="one">%d element selected</item>
         <item quantity="other">%d elements selected</item>
     </plurals>
+
+    <plurals name="elements_excluded_count">
+        <item quantity="one">%d element excluded</item>
+        <item quantity="other">%d elements excluded</item>
+    </plurals>
+
+    <!-- View Excluded Elements Dialog -->
+    <string name="view_excluded_elements">View Excluded</string>
+    <string name="excluded_elements_title">Excluded Elements</string>
+    <string name="no_excluded_elements">No excluded elements</string>
+
+    <!-- View Selected Elements Dialog -->
+    <string name="view_selected">View Elements</string>
+    <string name="selected_elements_title">Selected Elements</string>
+    <string name="remove_element">Remove element</string>
+    <string name="no_elements_to_show">No elements selected</string>
 
     <!-- Edit Actions -->
     <string name="edit_actions">Edit Actions</string>
@@ -498,4 +519,9 @@
     <string name="feedback_permission_sms">SMS: Required to automatically send text messages when site changes are detected.</string>
     <string name="feedback_permission_camera">Camera: Required to use the camera flash for visual alerts.</string>
     <string name="grant">Grant</string>
+
+    <!-- CSS Picker enhancements -->
+    <string name="mode_browse">Browse</string>
+    <string name="mode_pick">Pick</string>
+    <string name="browse_mode_instructions">Browse the page normally. Tap toggle to return to pick mode.</string>
 </resources>

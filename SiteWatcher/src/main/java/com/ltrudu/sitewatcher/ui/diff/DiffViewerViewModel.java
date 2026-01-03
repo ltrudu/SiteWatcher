@@ -16,6 +16,11 @@ import com.ltrudu.sitewatcher.data.model.SiteHistory;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.util.Logger;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -51,6 +56,8 @@ public class DiffViewerViewModel extends AndroidViewModel {
         private final String siteUrl;
         private final String oldContent;
         private final String newContent;
+        private final String oldContentFiltered;
+        private final String newContentFiltered;
         private final long oldTimestamp;
         private final long newTimestamp;
         private final int addedLines;
@@ -60,12 +67,15 @@ public class DiffViewerViewModel extends AndroidViewModel {
         private final boolean cssIncludeSelectorEmpty;
 
         public DiffResult(String siteUrl, String oldContent, String newContent,
+                          String oldContentFiltered, String newContentFiltered,
                           long oldTimestamp, long newTimestamp, int addedLines,
                           int removedLines, String diffText, ComparisonMode comparisonMode,
                           boolean cssIncludeSelectorEmpty) {
             this.siteUrl = siteUrl;
             this.oldContent = oldContent;
             this.newContent = newContent;
+            this.oldContentFiltered = oldContentFiltered;
+            this.newContentFiltered = newContentFiltered;
             this.oldTimestamp = oldTimestamp;
             this.newTimestamp = newTimestamp;
             this.addedLines = addedLines;
@@ -85,6 +95,22 @@ public class DiffViewerViewModel extends AndroidViewModel {
 
         public String getNewContent() {
             return newContent;
+        }
+
+        /**
+         * Get the filtered old content for WebView display.
+         * Returns content with excluded elements removed.
+         */
+        public String getOldContentFiltered() {
+            return oldContentFiltered;
+        }
+
+        /**
+         * Get the filtered new content for WebView display.
+         * Returns content with excluded elements removed.
+         */
+        public String getNewContentFiltered() {
+            return newContentFiltered;
         }
 
         public long getOldTimestamp() {
@@ -221,23 +247,46 @@ public class DiffViewerViewModel extends AndroidViewModel {
                 SiteHistory oldHistory = historyList.get(1);
 
                 // Load content from both versions
-                String newContent = loadContentFromHistory(newHistory);
-                String oldContent = loadContentFromHistory(oldHistory);
+                String newContentRaw = loadContentFromHistory(newHistory);
+                String oldContentRaw = loadContentFromHistory(oldHistory);
 
-                if (newContent == null || oldContent == null) {
+                if (newContentRaw == null || oldContentRaw == null) {
                     postError("Failed to load content");
                     return;
                 }
 
                 // Check if CSS include selector is empty
                 String cssInclude = site.getCssIncludeSelector();
-                boolean cssIncludeEmpty = (cssInclude == null || cssInclude.trim().isEmpty());
+                String cssExclude = site.getCssExcludeSelector();
+                String legacyCssSelector = site.getCssSelector();
+                boolean cssIncludeEmpty = (cssInclude == null || cssInclude.trim().isEmpty())
+                        && (legacyCssSelector == null || legacyCssSelector.trim().isEmpty());
+
+                // Apply CSS filtering for CSS_SELECTOR mode
+                String oldContent = oldContentRaw;
+                String newContent = newContentRaw;
+                String oldContentFiltered = oldContentRaw;
+                String newContentFiltered = newContentRaw;
+
+                if (site.getComparisonMode() == ComparisonMode.CSS_SELECTOR) {
+                    // Apply CSS filtering for the diff comparison
+                    oldContent = applyCssFilter(oldContentRaw, cssInclude, legacyCssSelector, cssExclude);
+                    newContent = applyCssFilter(newContentRaw, cssInclude, legacyCssSelector, cssExclude);
+
+                    // Generate filtered HTML for WebView display (exclude filter only)
+                    if (cssExclude != null && !cssExclude.trim().isEmpty()) {
+                        oldContentFiltered = generateFilteredHtml(oldContentRaw, cssExclude);
+                        newContentFiltered = generateFilteredHtml(newContentRaw, cssExclude);
+                    }
+                }
 
                 // Compute the diff
                 DiffResult result = computeDiff(
                         site.getUrl(),
                         oldContent,
                         newContent,
+                        oldContentFiltered,
+                        newContentFiltered,
                         oldHistory.getCheckTime(),
                         newHistory.getCheckTime(),
                         site.getComparisonMode(),
@@ -301,6 +350,7 @@ public class DiffViewerViewModel extends AndroidViewModel {
      */
     @NonNull
     private DiffResult computeDiff(String siteUrl, String oldContent, String newContent,
+                                    String oldContentFiltered, String newContentFiltered,
                                     long oldTimestamp, long newTimestamp, ComparisonMode comparisonMode,
                                     boolean cssIncludeSelectorEmpty) {
         String[] oldLines = oldContent.split("\n", -1);
@@ -333,6 +383,8 @@ public class DiffViewerViewModel extends AndroidViewModel {
                 siteUrl,
                 oldContent,
                 newContent,
+                oldContentFiltered,
+                newContentFiltered,
                 oldTimestamp,
                 newTimestamp,
                 addedCount,
@@ -420,6 +472,97 @@ public class DiffViewerViewModel extends AndroidViewModel {
         }
 
         return lcs;
+    }
+
+    /**
+     * Apply CSS filtering to content.
+     * Extracts text from elements matching include selectors and excludes elements matching exclude selectors.
+     *
+     * @param html The raw HTML content
+     * @param cssInclude CSS selector for elements to include (null or empty = include all)
+     * @param legacyCssSelector Legacy CSS selector (for backward compatibility)
+     * @param cssExclude CSS selector for elements to exclude
+     * @return Filtered text content
+     */
+    @NonNull
+    private String applyCssFilter(@NonNull String html, @Nullable String cssInclude,
+                                   @Nullable String legacyCssSelector, @Nullable String cssExclude) {
+        try {
+            Document doc = Jsoup.parse(html);
+
+            // Remove script, style, and noscript elements first
+            doc.select("script, style, noscript").remove();
+
+            // Determine which include selector to use
+            String includeSelector = null;
+            if (cssInclude != null && !cssInclude.trim().isEmpty()) {
+                includeSelector = cssInclude.trim();
+            } else if (legacyCssSelector != null && !legacyCssSelector.trim().isEmpty()) {
+                includeSelector = legacyCssSelector.trim();
+            }
+
+            // Apply include filter if specified
+            Element targetElement;
+            if (includeSelector != null) {
+                Elements selectedElements = doc.select(includeSelector);
+                if (selectedElements.isEmpty()) {
+                    return ""; // No matching elements
+                }
+                // Create a container for all matched elements
+                StringBuilder combinedText = new StringBuilder();
+                for (Element el : selectedElements) {
+                    // Apply exclude filter to each included element
+                    if (cssExclude != null && !cssExclude.trim().isEmpty()) {
+                        el.select(cssExclude.trim()).remove();
+                    }
+                    combinedText.append(el.text()).append("\n");
+                }
+                return combinedText.toString().trim();
+            } else {
+                // No include selector - use whole body
+                targetElement = doc.body();
+                if (targetElement == null) {
+                    return doc.text();
+                }
+
+                // Apply exclude filter if specified
+                if (cssExclude != null && !cssExclude.trim().isEmpty()) {
+                    targetElement.select(cssExclude.trim()).remove();
+                }
+
+                return targetElement.text();
+            }
+        } catch (Exception e) {
+            Logger.e(TAG, "Error applying CSS filter", e);
+            return html; // Return original on error
+        }
+    }
+
+    /**
+     * Generate filtered HTML for WebView display.
+     * Removes excluded elements from HTML while preserving structure for rendering.
+     *
+     * @param html The raw HTML content
+     * @param cssExclude CSS selector for elements to exclude
+     * @return HTML with excluded elements removed
+     */
+    @NonNull
+    private String generateFilteredHtml(@NonNull String html, @NonNull String cssExclude) {
+        try {
+            Document doc = Jsoup.parse(html);
+
+            // Remove script and style elements that might cause issues
+            doc.select("script, style, noscript").remove();
+
+            // Apply exclude filter
+            Elements excludedElements = doc.select(cssExclude.trim());
+            excludedElements.remove();
+
+            return doc.html();
+        } catch (Exception e) {
+            Logger.e(TAG, "Error generating filtered HTML", e);
+            return html; // Return original on error
+        }
     }
 
     /**

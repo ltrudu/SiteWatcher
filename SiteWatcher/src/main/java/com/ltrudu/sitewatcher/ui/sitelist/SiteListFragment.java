@@ -43,9 +43,18 @@ import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.data.preferences.PreferencesManager;
 import com.ltrudu.sitewatcher.util.Logger;
 import com.ltrudu.sitewatcher.util.SearchQueryParser;
+import com.ltrudu.sitewatcher.util.SiteExporter;
 
+import org.json.JSONException;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Fragment displaying the list of watched sites.
@@ -80,6 +89,11 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
 
     // Permission launcher for SMS
     private ActivityResultLauncher<String[]> feedbackPermissionsLauncher;
+
+    // SAF launcher for site export
+    private ActivityResultLauncher<Intent> siteExportLauncher;
+    private WatchedSite siteToExport;
+    private final ExecutorService exportExecutor = Executors.newSingleThreadExecutor();
 
     // Handler for periodic UI refresh
     private final Handler refreshHandler = new Handler(Looper.getMainLooper());
@@ -118,6 +132,17 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
                         Logger.d(TAG, "Feedback permissions granted");
                     } else {
                         Logger.d(TAG, "Some feedback permissions denied");
+                    }
+                }
+        );
+
+        // Register launcher for site export using SAF
+        siteExportLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == android.app.Activity.RESULT_OK
+                            && result.getData() != null) {
+                        onExportFileCreated(result.getData().getData());
                     }
                 }
         );
@@ -482,6 +507,9 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         } else if (itemId == R.id.action_duplicate) {
             viewModel.duplicateSite(site);
             return true;
+        } else if (itemId == R.id.action_export_site) {
+            exportSite(site);
+            return true;
         } else if (itemId == R.id.action_check_now) {
             viewModel.checkSiteNow(site);
             return true;
@@ -540,6 +568,61 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    /**
+     * Export a single site to a JSON file using SAF (Storage Access Framework).
+     * @param site The site to export
+     */
+    private void exportSite(@NonNull WatchedSite site) {
+        siteToExport = site;
+        String filename = SiteExporter.generateFilenameForSite(site.getUrl());
+
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, filename);
+        siteExportLauncher.launch(intent);
+    }
+
+    /**
+     * Called when the user selects a location for the export file.
+     */
+    private void onExportFileCreated(@Nullable Uri uri) {
+        if (uri == null || siteToExport == null) {
+            Logger.d(TAG, "Export cancelled by user or no site to export");
+            return;
+        }
+
+        final WatchedSite site = siteToExport;
+        siteToExport = null; // Clear the reference
+
+        exportExecutor.execute(() -> {
+            try {
+                // Export single site as a list (reusing existing export format)
+                String json = SiteExporter.exportToJson(Collections.singletonList(site));
+
+                try (OutputStream os = requireContext().getContentResolver().openOutputStream(uri)) {
+                    if (os != null) {
+                        os.write(json.getBytes(StandardCharsets.UTF_8));
+                        os.flush();
+                    }
+                }
+
+                requireActivity().runOnUiThread(() -> {
+                    String message = getString(R.string.export_success, 1);
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                    Logger.d(TAG, "Exported site to " + uri);
+                });
+
+            } catch (JSONException | IOException e) {
+                Logger.e(TAG, "Site export failed", e);
+                requireActivity().runOnUiThread(() -> {
+                    String message = getString(R.string.export_failed, e.getMessage());
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
     }
 
     /**
@@ -655,5 +738,12 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Shutdown the export executor
+        exportExecutor.shutdown();
     }
 }

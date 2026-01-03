@@ -65,7 +65,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/request_permissions"
-                    style="@style/Widget.Material3.Button" />
+                    style="@style/Widget.Material3.Button.TonalButton" />
 
                 <TextView
                     android:id="@+id/tvPermissionStatus"
@@ -113,7 +113,7 @@
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
                         android:text="@string/export_sites"
-                        style="@style/Widget.Material3.Button.OutlinedButton" />
+                        style="@style/Widget.Material3.Button.TonalButton" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnImportSites"
@@ -122,7 +122,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
                         android:text="@string/import_sites"
-                        style="@style/Widget.Material3.Button.OutlinedButton" />
+                        style="@style/Widget.Material3.Button.TonalButton" />
 
                 </LinearLayout>
 

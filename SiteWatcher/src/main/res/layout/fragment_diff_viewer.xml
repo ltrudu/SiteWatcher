@@ -92,7 +92,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="@string/retry"
-            style="@style/Widget.Material3.Button.TextButton" />
+            style="@style/Widget.Material3.Button.TonalButton" />
 
     </LinearLayout>
 
@@ -216,11 +216,14 @@
                 <!-- View Mode Toggle -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnToggleView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
                     android:layout_marginTop="8dp"
                     android:text="@string/show_text_diff"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    android:textSize="13sp"
+                    android:minWidth="0dp"
+                    android:paddingHorizontal="12dp" />
 
             </LinearLayout>
 

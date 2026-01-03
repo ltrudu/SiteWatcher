@@ -356,6 +356,26 @@
 
     <style name="Widget.SiteWatcher.Button.Text" parent="Widget.Material3.Button.TextButton" />
 
+    <!-- Cancel Button - subtle outline with theme-aware background -->
+    <style name="Widget.SiteWatcher.Button.Cancel" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="shapeAppearance">@style/ShapeAppearance.SiteWatcher.Button</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="backgroundTint">?attr/colorSurface</item>
+        <item name="strokeColor">?attr/colorSecondaryContainer</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="rippleColor">?attr/colorSecondaryContainer</item>
+    </style>
+
+    <!-- Destructive Button - red outline for destructive actions like Clear -->
+    <style name="Widget.SiteWatcher.Button.Destructive" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="shapeAppearance">@style/ShapeAppearance.SiteWatcher.Button</item>
+        <item name="android:textColor">?attr/colorError</item>
+        <item name="backgroundTint">?attr/colorSurface</item>
+        <item name="strokeColor">?attr/colorError</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="rippleColor">?attr/colorErrorContainer</item>
+    </style>
+
     <!-- Text Input -->
     <style name="Widget.SiteWatcher.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="android:textColorHint">@color/sw_on_surface_variant</item>

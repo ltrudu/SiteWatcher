@@ -33,8 +33,18 @@ import com.ltrudu.sitewatcher.data.preferences.PreferencesManager;
 import com.ltrudu.sitewatcher.network.AutoClickExecutor;
 import com.ltrudu.sitewatcher.util.Logger;
 
+import org.json.JSONObject;
+import com.google.android.material.button.MaterialButton;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import android.app.AlertDialog;
+import android.view.LayoutInflater;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * Fragment for visually selecting elements on a webpage to generate CSS selectors.
@@ -50,8 +60,12 @@ public class SelectorBrowserFragment extends Fragment {
     private static final String ARG_URL = "url";
     private static final String ARG_ACTIONS_JSON = "actions_json";
     private static final String ARG_RESULT_KEY = "result_key";
+    private static final String ARG_EXISTING_SELECTORS = "existing_selectors";
+    private static final String ARG_SKIP_DELAY = "skip_delay";
     private static final String FRAGMENT_RESULT_KEY = "selectorResult";
     private static final String SELECTOR_KEY = "selector";
+    private static final int PRE_SELECT_CHECK_INTERVAL_MS = 500;
+    private static final int PRE_SELECT_MAX_ATTEMPTS = 20;
 
     /**
      * Fragment states.
@@ -83,6 +97,13 @@ public class SelectorBrowserFragment extends Fragment {
     private List<AutoClickAction> actions;
     private final List<String> selectedSelectors = new ArrayList<>();
     private boolean pageLoaded = false;
+    private boolean isBrowseMode = false;
+    private MaterialButton btnToggleMode;
+    private MaterialButton btnViewSelected;
+    private String existingSelectors;
+    private boolean skipDelay = false;
+    private Handler preSelectHandler;
+    private int preSelectAttempts = 0;
 
     // Utilities
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -101,6 +122,8 @@ public class SelectorBrowserFragment extends Fragment {
             targetUrl = getArguments().getString(ARG_URL, "");
             actionsJson = getArguments().getString(ARG_ACTIONS_JSON, null);
             resultKey = getArguments().getString(ARG_RESULT_KEY, FRAGMENT_RESULT_KEY);
+            existingSelectors = getArguments().getString(ARG_EXISTING_SELECTORS, null);
+            skipDelay = getArguments().getBoolean(ARG_SKIP_DELAY, false);
         } else {
             resultKey = FRAGMENT_RESULT_KEY;
         }
@@ -154,6 +177,8 @@ public class SelectorBrowserFragment extends Fragment {
         btnClear = view.findViewById(R.id.btnClear);
         btnCancel = view.findViewById(R.id.btnCancel);
         btnConfirm = view.findViewById(R.id.btnConfirm);
+        btnToggleMode = view.findViewById(R.id.btnToggleMode);
+        btnViewSelected = view.findViewById(R.id.btnViewSelected);
 
         // Set instructions based on mode (include vs exclude)
         if (resultKey != null && resultKey.toLowerCase().contains("exclude")) {
@@ -204,6 +229,10 @@ public class SelectorBrowserFragment extends Fragment {
                 if (currentState == State.EXECUTING) {
                     return false;
                 }
+                // Allow navigation in browse mode
+                if (isBrowseMode) {
+                    return false;
+                }
                 // Prevent navigation in selection mode
                 return currentState == State.SELECTING;
             }
@@ -247,6 +276,14 @@ public class SelectorBrowserFragment extends Fragment {
         btnConfirm.setOnClickListener(v -> confirmSelection());
 
         btnClear.setOnClickListener(v -> clearSelection());
+
+        if (btnToggleMode != null) {
+            btnToggleMode.setOnClickListener(v -> toggleMode());
+        }
+
+        if (btnViewSelected != null) {
+            btnViewSelected.setOnClickListener(v -> showViewSelectedDialog());
+        }
     }
 
     private void loadTargetPage() {
@@ -276,6 +313,13 @@ public class SelectorBrowserFragment extends Fragment {
      * Called when the initial page load is complete.
      */
     private void onPageLoadComplete() {
+        // Skip delay if requested (picking without actions)
+        if (skipDelay && !hasActionsToExecute()) {
+            Logger.d(TAG, "Skipping delay - going directly to selection mode");
+            enableSelectionMode();
+            return;
+        }
+
         int pageLoadDelay = getPageLoadDelayMs();
         // Wait for JS-loaded content (cookie dialogs) to appear before proceeding
         Logger.d(TAG, "Waiting " + pageLoadDelay + "ms for JS content to load...");
@@ -435,6 +479,7 @@ public class SelectorBrowserFragment extends Fragment {
     private void enableSelectionMode() {
         updateStateUI(State.SELECTING);
         injectSelectorScript();
+        preSelectExistingElements();
         Logger.d(TAG, "Selection mode enabled");
     }
 
@@ -480,6 +525,8 @@ public class SelectorBrowserFragment extends Fragment {
      * Inject JavaScript to handle element selection.
      */
     private void injectSelectorScript() {
+        // Reset browse mode flag first
+        webView.evaluateJavascript("window.siteWatcherBrowseMode = false;", null);
         String script = getSelectionScript();
         webView.evaluateJavascript(script, null);
         Logger.d(TAG, "Selector script injected");
@@ -586,6 +633,8 @@ public class SelectorBrowserFragment extends Fragment {
 
                 // Handle click events
                 "function handleClick(e) {" +
+                // Check if in browse mode - allow normal behavior
+                "  if (window.siteWatcherBrowseMode) return;" +
                 "  e.preventDefault();" +
                 "  e.stopPropagation();" +
 
@@ -596,15 +645,29 @@ public class SelectorBrowserFragment extends Fragment {
                 // Skip if it's the body or html
                 "  if (el.tagName === 'BODY' || el.tagName === 'HTML') return;" +
 
-                "  var selector = getSelector(el);" +
-                "  var index = window.siteWatcherSelected.indexOf(selector);" +
-
-                "  if (index > -1) {" +
-                // Deselect
-                "    window.siteWatcherSelected.splice(index, 1);" +
+                // Check if element is already selected (by class, more reliable than selector matching)
+                "  if (el.classList.contains('sitewatcher-selected')) {" +
+                // Deselect - find and remove the selector for this element
                 "    el.classList.remove('sitewatcher-selected');" +
+                "    var selector = getSelector(el);" +
+                "    var index = window.siteWatcherSelected.indexOf(selector);" +
+                "    if (index > -1) {" +
+                "      window.siteWatcherSelected.splice(index, 1);" +
+                "    } else {" +
+                // Try to find by querying each selector
+                "      for (var i = window.siteWatcherSelected.length - 1; i >= 0; i--) {" +
+                "        try {" +
+                "          var found = document.querySelector(window.siteWatcherSelected[i]);" +
+                "          if (found === el) {" +
+                "            window.siteWatcherSelected.splice(i, 1);" +
+                "            break;" +
+                "          }" +
+                "        } catch(err) {}" +
+                "      }" +
+                "    }" +
                 "  } else {" +
                 // Select
+                "    var selector = getSelector(el);" +
                 "    window.siteWatcherSelected.push(selector);" +
                 "    el.classList.add('sitewatcher-selected');" +
                 "  }" +
@@ -753,14 +816,19 @@ public class SelectorBrowserFragment extends Fragment {
             textSelectedCount.setText(R.string.no_elements_selected);
             btnClear.setVisibility(View.GONE);
             btnConfirm.setEnabled(false);
+            if (btnViewSelected != null) {
+                btnViewSelected.setVisibility(View.GONE);
+            }
         } else {
-            // Build display text with count and selector names
+            // Show only the count, use View button for details
             String countText = getResources().getQuantityString(
                     R.plurals.elements_selected, count, count);
-            String selectorsText = String.join(", ", selectedSelectors);
-            textSelectedCount.setText(countText + ": " + selectorsText);
+            textSelectedCount.setText(countText);
             btnClear.setVisibility(View.VISIBLE);
             btnConfirm.setEnabled(true);
+            if (btnViewSelected != null) {
+                btnViewSelected.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -775,6 +843,154 @@ public class SelectorBrowserFragment extends Fragment {
                 "window.siteWatcherSelected = [];" +
                 "})();";
         webView.evaluateJavascript(script, null);
+    }
+
+    /**
+     * Toggle between Pick and Browse modes.
+     */
+    private void toggleMode() {
+        isBrowseMode = !isBrowseMode;
+        updateModeUI();
+        if (isBrowseMode) {
+            disableSelectionScript();
+        } else {
+            enableSelectionScript();
+        }
+    }
+
+    /**
+     * Update UI to reflect current mode.
+     */
+    private void updateModeUI() {
+        if (btnToggleMode == null) return;
+
+        if (isBrowseMode) {
+            btnToggleMode.setText(R.string.mode_pick);
+            textInstructions.setText(R.string.browse_mode_instructions);
+        } else {
+            btnToggleMode.setText(R.string.mode_browse);
+            // Restore original instructions based on mode
+            if (resultKey != null && resultKey.toLowerCase().contains("exclude")) {
+                textInstructions.setText(R.string.selector_instructions_exclude);
+            } else {
+                textInstructions.setText(R.string.selector_instructions);
+            }
+        }
+    }
+
+    /**
+     * Disable selection script to allow normal browsing.
+     * Keeps visual selections but allows normal click/navigation behavior.
+     */
+    private void disableSelectionScript() {
+        String script = "(function() {" +
+            // Just enable browse mode - keep visual selections intact
+            "window.siteWatcherBrowseMode = true;" +
+            // Remove hover styling only
+            "var hovered = document.querySelectorAll('.sitewatcher-hover');" +
+            "hovered.forEach(function(el) { el.classList.remove('sitewatcher-hover'); });" +
+            "})();";
+        webView.evaluateJavascript(script, null);
+        Logger.d(TAG, "Browse mode enabled - selections preserved");
+    }
+
+    /**
+     * Re-enable selection script after browsing.
+     * Just resets the browse mode flag - listeners are still in place.
+     */
+    private void enableSelectionScript() {
+        String script = "(function() {" +
+            "window.siteWatcherBrowseMode = false;" +
+            // Re-highlight previously selected elements
+            "if (window.siteWatcherSelected) {" +
+            "  window.siteWatcherSelected.forEach(function(sel) {" +
+            "    try {" +
+            "      var el = document.querySelector(sel);" +
+            "      if (el) el.classList.add('sitewatcher-selected');" +
+            "    } catch(e) {}" +
+            "  });" +
+            "}" +
+            "})();";
+        webView.evaluateJavascript(script, null);
+        Logger.d(TAG, "Pick mode re-enabled");
+    }
+
+    /**
+     * Pre-select existing elements with polling for dynamic content.
+     */
+    private void preSelectExistingElements() {
+        if (existingSelectors == null || existingSelectors.isEmpty()) return;
+
+        preSelectHandler = new Handler(Looper.getMainLooper());
+        preSelectAttempts = 0;
+        attemptPreSelect();
+    }
+
+    private void attemptPreSelect() {
+        if (!isAdded() || webView == null) return;
+        if (preSelectAttempts >= PRE_SELECT_MAX_ATTEMPTS) {
+            Logger.d(TAG, "Pre-select: max attempts reached");
+            return;
+        }
+        preSelectAttempts++;
+
+        String script = buildPreSelectScript();
+        webView.evaluateJavascript(script, result -> {
+            if (!isAdded()) return;
+            if (result != null && !result.equals("null")) {
+                try {
+                    String jsonStr = result.replace("\\\"", "\"");
+                    if (jsonStr.startsWith("\"") && jsonStr.endsWith("\"")) {
+                        jsonStr = jsonStr.substring(1, jsonStr.length() - 1);
+                    }
+                    JSONObject json = new JSONObject(jsonStr);
+                    int notFound = json.optInt("notFound", 0);
+                    int found = json.optInt("found", 0);
+                    Logger.d(TAG, "Pre-select attempt " + preSelectAttempts + ": found=" + found + ", notFound=" + notFound);
+                    if (notFound > 0 && preSelectAttempts < PRE_SELECT_MAX_ATTEMPTS) {
+                        preSelectHandler.postDelayed(this::attemptPreSelect, PRE_SELECT_CHECK_INTERVAL_MS);
+                    }
+                } catch (Exception e) {
+                    Logger.e(TAG, "Pre-select parse error", e);
+                }
+            }
+        });
+    }
+
+    private String buildPreSelectScript() {
+        // Split selectors by comma and build JSON array
+        String[] selectorArray = existingSelectors.split(",");
+        StringBuilder jsonArray = new StringBuilder("[");
+        for (int i = 0; i < selectorArray.length; i++) {
+            String sel = selectorArray[i].trim();
+            if (!sel.isEmpty()) {
+                if (jsonArray.length() > 1) jsonArray.append(",");
+                jsonArray.append("\"").append(sel.replace("\"", "\\\"")).append("\"");
+            }
+        }
+        jsonArray.append("]");
+
+        return "(function() {" +
+            "var selectors = " + jsonArray.toString() + ";" +
+            "var found = 0, notFound = 0;" +
+            "if (!window.siteWatcherSelected) window.siteWatcherSelected = [];" +
+            "selectors.forEach(function(sel) {" +
+            "  try {" +
+            "    var el = document.querySelector(sel);" +
+            "    if (el) {" +
+            "      el.classList.add('sitewatcher-selected');" +
+            "      if (window.siteWatcherSelected.indexOf(sel) === -1) {" +
+            "        window.siteWatcherSelected.push(sel);" +
+            "      }" +
+            "      found++;" +
+            "    } else { notFound++; }" +
+            "  } catch(e) { notFound++; }" +
+            "});" +
+            "if (typeof SelectorBridge !== 'undefined') {" +
+            "  SelectorBridge.onSelectionChanged(JSON.stringify(window.siteWatcherSelected));" +
+            "}" +
+            "return JSON.stringify({found: found, notFound: notFound});" +
+            "})();";
     }
 
     private void confirmSelection() {
@@ -823,6 +1039,12 @@ public class SelectorBrowserFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        // Cancel pre-select handler
+        if (preSelectHandler != null) {
+            preSelectHandler.removeCallbacksAndMessages(null);
+            preSelectHandler = null;
+        }
+
         // Cancel any running countdown timer
         cancelCountdownTimer();
 
@@ -837,5 +1059,155 @@ public class SelectorBrowserFragment extends Fragment {
             webView = null;
         }
         super.onDestroyView();
+    }
+
+    /**
+     * Show dialog with list of selected elements, allowing deletion.
+     */
+    private void showViewSelectedDialog() {
+        if (selectedSelectors.isEmpty()) {
+            return;
+        }
+
+        // Create a copy of selected selectors for the dialog
+        List<String> dialogSelectors = new ArrayList<>(selectedSelectors);
+        Set<String> selectorsToRemove = new HashSet<>();
+
+        // Inflate the dialog layout
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_view_selected_elements, null);
+
+        RecyclerView recyclerView = dialogView.findViewById(R.id.recyclerSelectedElements);
+        TextView emptyState = dialogView.findViewById(R.id.textEmptyState);
+        MaterialButton btnCancel = dialogView.findViewById(R.id.btnDialogCancel);
+        MaterialButton btnApply = dialogView.findViewById(R.id.btnDialogApply);
+
+        // Setup RecyclerView
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        SelectedElementsAdapter adapter = new SelectedElementsAdapter(dialogSelectors, selectorsToRemove,
+                () -> {
+                    // Update empty state visibility
+                    int remainingCount = dialogSelectors.size() - selectorsToRemove.size();
+                    if (remainingCount == 0) {
+                        emptyState.setVisibility(View.VISIBLE);
+                        recyclerView.setVisibility(View.GONE);
+                    }
+                });
+        recyclerView.setAdapter(adapter);
+
+        // Create dialog
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
+
+        // Cancel button - dismiss without applying changes
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        // Apply button - remove marked selectors
+        btnApply.setOnClickListener(v -> {
+            if (!selectorsToRemove.isEmpty()) {
+                // Remove selectors from the list
+                for (String selector : selectorsToRemove) {
+                    selectedSelectors.remove(selector);
+                    // Remove visual selection from WebView
+                    removeSelectionFromWebView(selector);
+                }
+                updateSelectedCount();
+            }
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * Remove visual selection for a specific selector from the WebView.
+     */
+    private void removeSelectionFromWebView(String selector) {
+        String escapedSelector = selector.replace("'", "\\'").replace("\"", "\\\"");
+        String script = "(function() {" +
+                "try {" +
+                "  var el = document.querySelector('" + escapedSelector + "');" +
+                "  if (el) el.classList.remove('sitewatcher-selected');" +
+                "  var idx = window.siteWatcherSelected.indexOf('" + escapedSelector + "');" +
+                "  if (idx > -1) window.siteWatcherSelected.splice(idx, 1);" +
+                "} catch(e) { console.error('Error removing selection:', e); }" +
+                "})();";
+        webView.evaluateJavascript(script, null);
+    }
+
+    /**
+     * Adapter for displaying selected elements in the dialog.
+     */
+    private static class SelectedElementsAdapter
+            extends RecyclerView.Adapter<SelectedElementsAdapter.ViewHolder> {
+
+        private final List<String> selectors;
+        private final Set<String> markedForRemoval;
+        private final Runnable onChangeCallback;
+
+        SelectedElementsAdapter(List<String> selectors, Set<String> markedForRemoval,
+                                Runnable onChangeCallback) {
+            this.selectors = selectors;
+            this.markedForRemoval = markedForRemoval;
+            this.onChangeCallback = onChangeCallback;
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_selected_element, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            String selector = selectors.get(position);
+            boolean isRemoved = markedForRemoval.contains(selector);
+
+            holder.textSelector.setText(selector);
+            holder.textSelector.setAlpha(isRemoved ? 0.4f : 1.0f);
+            holder.btnDelete.setAlpha(isRemoved ? 0.4f : 1.0f);
+
+            // Toggle strikethrough effect
+            if (isRemoved) {
+                holder.textSelector.setPaintFlags(
+                        holder.textSelector.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            } else {
+                holder.textSelector.setPaintFlags(
+                        holder.textSelector.getPaintFlags() & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            }
+
+            holder.btnDelete.setOnClickListener(v -> {
+                if (markedForRemoval.contains(selector)) {
+                    // Undo removal
+                    markedForRemoval.remove(selector);
+                } else {
+                    // Mark for removal
+                    markedForRemoval.add(selector);
+                }
+                notifyItemChanged(position);
+                if (onChangeCallback != null) {
+                    onChangeCallback.run();
+                }
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return selectors.size();
+        }
+
+        static class ViewHolder extends RecyclerView.ViewHolder {
+            TextView textSelector;
+            View btnDelete;
+
+            ViewHolder(@NonNull View itemView) {
+                super(itemView);
+                textSelector = itemView.findViewById(R.id.textSelector);
+                btnDelete = itemView.findViewById(R.id.btnDelete);
+            }
+        }
     }
 }

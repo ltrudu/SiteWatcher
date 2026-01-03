@@ -16,6 +16,9 @@
         android:id="@+id/action_duplicate"
         android:title="@string/duplicate" />
     <item
+        android:id="@+id/action_export_site"
+        android:title="@string/export_site" />
+    <item
         android:id="@+id/action_check_now"
         android:title="@string/check_now" />
     <item

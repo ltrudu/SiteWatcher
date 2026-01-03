@@ -26,6 +26,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -53,20 +55,28 @@ public class DataViewerViewModel extends AndroidViewModel {
     public static class DataContent {
         private final String content;
         private final String rawHtml;
+        private final String filteredHtml;
         private final String modeDescription;
         private final long capturedAt;
         private final ComparisonMode mode;
         private final boolean cssIncludeSelectorEmpty;
+        private final boolean hasExcludeFilter;
+        private final List<String> excludedSelectors;
 
         public DataContent(@NonNull String content, @NonNull String rawHtml,
+                           @Nullable String filteredHtml,
                            @NonNull String modeDescription, long capturedAt,
-                           @NonNull ComparisonMode mode, boolean cssIncludeSelectorEmpty) {
+                           @NonNull ComparisonMode mode, boolean cssIncludeSelectorEmpty,
+                           boolean hasExcludeFilter, @NonNull List<String> excludedSelectors) {
             this.content = content;
             this.rawHtml = rawHtml;
+            this.filteredHtml = filteredHtml;
             this.modeDescription = modeDescription;
             this.capturedAt = capturedAt;
             this.mode = mode;
             this.cssIncludeSelectorEmpty = cssIncludeSelectorEmpty;
+            this.hasExcludeFilter = hasExcludeFilter;
+            this.excludedSelectors = excludedSelectors;
         }
 
         @NonNull
@@ -80,6 +90,33 @@ public class DataViewerViewModel extends AndroidViewModel {
         @NonNull
         public String getRawHtml() {
             return rawHtml;
+        }
+
+        /**
+         * Get HTML content for rendering.
+         * Returns filtered HTML if exclude filter is applied, otherwise raw HTML.
+         */
+        @NonNull
+        public String getHtmlForRendering() {
+            if (filteredHtml != null && hasExcludeFilter) {
+                return filteredHtml;
+            }
+            return rawHtml;
+        }
+
+        /**
+         * Check if this content has an exclude filter applied.
+         */
+        public boolean hasExcludeFilter() {
+            return hasExcludeFilter;
+        }
+
+        /**
+         * Get the list of excluded CSS selectors.
+         */
+        @NonNull
+        public List<String> getExcludedSelectors() {
+            return excludedSelectors;
         }
 
         @NonNull
@@ -224,13 +261,27 @@ public class DataViewerViewModel extends AndroidViewModel {
                 }
                 boolean cssIncludeSelectorEmpty = (effectiveInclude == null || effectiveInclude.trim().isEmpty());
 
+                // Check if there's an exclude selector and generate filtered HTML
+                String cssExcludeSelector = site.getCssExcludeSelector();
+                boolean hasExcludeFilter = cssExcludeSelector != null && !cssExcludeSelector.trim().isEmpty();
+                String filteredHtml = null;
+                if (hasExcludeFilter && mode == ComparisonMode.CSS_SELECTOR) {
+                    filteredHtml = generateFilteredHtml(rawContent, cssExcludeSelector);
+                }
+
+                // Parse excluded selectors into a list
+                List<String> excludedSelectors = parseSelectors(cssExcludeSelector);
+
                 DataContent result = new DataContent(
                         processedContent,
                         rawContent,
+                        filteredHtml,
                         modeDescription,
                         latestHistory.getCheckTime(),
                         mode,
-                        cssIncludeSelectorEmpty
+                        cssIncludeSelectorEmpty,
+                        hasExcludeFilter,
+                        excludedSelectors
                 );
 
                 dataContent.postValue(result);
@@ -419,6 +470,34 @@ public class DataViewerViewModel extends AndroidViewModel {
     }
 
     /**
+     * Generate filtered HTML with excluded elements removed.
+     * This is used for rendering in WebView when exclude filter is applied.
+     *
+     * @param html The raw HTML content
+     * @param cssExcludeSelector CSS selectors for elements to exclude
+     * @return HTML with excluded elements removed
+     */
+    @NonNull
+    private String generateFilteredHtml(@NonNull String html, @NonNull String cssExcludeSelector) {
+        try {
+            Document doc = Jsoup.parse(html);
+
+            // Remove script, style elements
+            doc.select("script, style, noscript").remove();
+
+            // Remove elements matching exclude selector
+            Elements excludedElements = doc.select(cssExcludeSelector.trim());
+            excludedElements.remove();
+
+            Logger.d(TAG, "Filtered HTML: removed " + excludedElements.size() + " excluded elements");
+            return doc.html();
+        } catch (Exception e) {
+            Logger.e(TAG, "Error generating filtered HTML", e);
+            return html; // Fallback to raw content
+        }
+    }
+
+    /**
      * Get a human-readable description of the comparison mode.
      *
      * @param mode               The comparison mode
@@ -444,33 +523,39 @@ public class DataViewerViewModel extends AndroidViewModel {
     }
 
     /**
-     * Build a description for CSS Selector mode with include/exclude info.
+     * Build a description for CSS Selector mode.
+     * Simplified to just return "CSS Selector" - details are shown via View Excluded button.
      */
     @NonNull
     private String buildCssSelectorDescription(@Nullable String cssSelector,
                                                @Nullable String cssIncludeSelector,
                                                @Nullable String cssExcludeSelector) {
-        StringBuilder desc = new StringBuilder("CSS Selector");
+        return "CSS Selector";
+    }
 
-        // Determine effective include selector
-        String effectiveInclude = cssIncludeSelector;
-        if ((effectiveInclude == null || effectiveInclude.trim().isEmpty())
-                && cssSelector != null && !cssSelector.trim().isEmpty()) {
-            effectiveInclude = cssSelector;
+    /**
+     * Parse a CSS selector string into a list of individual selectors.
+     * Selectors can be separated by commas or newlines.
+     *
+     * @param selectorString The combined selector string
+     * @return List of individual selectors
+     */
+    @NonNull
+    private List<String> parseSelectors(@Nullable String selectorString) {
+        List<String> selectors = new ArrayList<>();
+        if (selectorString == null || selectorString.trim().isEmpty()) {
+            return selectors;
         }
 
-        if (effectiveInclude != null && !effectiveInclude.trim().isEmpty()) {
-            desc.append(" (include: ").append(effectiveInclude);
-        } else {
-            desc.append(" (all elements");
+        // Split by comma or newline
+        String[] parts = selectorString.split("[,\\n]");
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                selectors.add(trimmed);
+            }
         }
-
-        if (cssExcludeSelector != null && !cssExcludeSelector.trim().isEmpty()) {
-            desc.append(", exclude: ").append(cssExcludeSelector);
-        }
-
-        desc.append(")");
-        return desc.toString();
+        return selectors;
     }
 
     /**

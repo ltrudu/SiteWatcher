@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.Spinner;
 
 import androidx.annotation.NonNull;
@@ -66,6 +67,7 @@ public class AddEditFragment extends Fragment {
     private TextInputEditText cssIncludeEditText;
     private TextInputLayout cssExcludeInputLayout;
     private TextInputEditText cssExcludeEditText;
+    private android.widget.TextView cssIncludeHelperText;
     private Slider thresholdSlider;
     private MaterialButton cancelButton;
     private MaterialButton saveButton;
@@ -176,6 +178,7 @@ public class AddEditFragment extends Fragment {
         cssIncludeEditText = view.findViewById(R.id.cssIncludeEditText);
         cssExcludeInputLayout = view.findViewById(R.id.cssExcludeInputLayout);
         cssExcludeEditText = view.findViewById(R.id.cssExcludeEditText);
+        cssIncludeHelperText = view.findViewById(R.id.cssIncludeHelperText);
         thresholdSlider = view.findViewById(R.id.thresholdSlider);
         cancelButton = view.findViewById(R.id.cancelButton);
         saveButton = view.findViewById(R.id.saveButton);
@@ -483,11 +486,12 @@ public class AddEditFragment extends Fragment {
                 if (!isInitializing) {
                     viewModel.setCssIncludeSelector(s.toString());
                 }
+                updateCssIncludeHelperText();
             }
         });
 
         // CSS Include Selector picker button (touch icon)
-        cssIncludeInputLayout.setEndIconOnClickListener(v -> navigateToIncludeSelectorBrowser());
+        cssIncludeInputLayout.setEndIconOnClickListener(v -> showPickerOptionsMenu(v, true));
 
         // CSS Exclude Selector input
         cssExcludeEditText.addTextChangedListener(new TextWatcher() {
@@ -504,11 +508,12 @@ public class AddEditFragment extends Fragment {
                 if (!isInitializing) {
                     viewModel.setCssExcludeSelector(s.toString());
                 }
+                updateCssIncludeHelperText();
             }
         });
 
         // CSS Exclude Selector picker button (touch icon)
-        cssExcludeInputLayout.setEndIconOnClickListener(v -> navigateToExcludeSelectorBrowser());
+        cssExcludeInputLayout.setEndIconOnClickListener(v -> showPickerOptionsMenu(v, false));
 
         // Threshold slider
         thresholdSlider.addOnChangeListener((slider, value, fromUser) -> {
@@ -619,6 +624,7 @@ public class AddEditFragment extends Fragment {
             if (selector != null && !selector.equals(cssIncludeEditText.getText().toString())) {
                 cssIncludeEditText.setText(selector);
             }
+            updateCssIncludeHelperText();
         });
 
         // Observe CSS exclude selector
@@ -626,6 +632,7 @@ public class AddEditFragment extends Fragment {
             if (selector != null && !selector.equals(cssExcludeEditText.getText().toString())) {
                 cssExcludeEditText.setText(selector);
             }
+            updateCssIncludeHelperText();
         });
 
         // Observe threshold
@@ -811,6 +818,29 @@ public class AddEditFragment extends Fragment {
         minWordLengthValueLabel.setText(getString(R.string.min_word_length_value, length));
     }
 
+    /**
+     * Updates the helper text below the CSS Include field based on current include/exclude values.
+     */
+    private void updateCssIncludeHelperText() {
+        if (cssIncludeHelperText == null) return;
+
+        String includeText = cssIncludeEditText.getText() != null ?
+                cssIncludeEditText.getText().toString().trim() : "";
+        String excludeText = cssExcludeEditText.getText() != null ?
+                cssExcludeEditText.getText().toString().trim() : "";
+
+        if (includeText.isEmpty()) {
+            cssIncludeHelperText.setVisibility(View.VISIBLE);
+            if (excludeText.isEmpty()) {
+                cssIncludeHelperText.setText(R.string.css_include_empty_hint);
+            } else {
+                cssIncludeHelperText.setText(R.string.css_include_empty_with_exclude_hint);
+            }
+        } else {
+            cssIncludeHelperText.setVisibility(View.GONE);
+        }
+    }
+
     private ComparisonMode getComparisonModeFromPosition(int position) {
         switch (position) {
             case 0:
@@ -898,34 +928,42 @@ public class AddEditFragment extends Fragment {
         }
     }
 
-    private void navigateToIncludeSelectorBrowser() {
+    private void showPickerOptionsMenu(View anchor, boolean isInclude) {
+        // Check if URL is valid first
         String url = viewModel.getUrl().getValue();
         if (url == null || url.isEmpty()) {
             urlInputLayout.setError(getString(R.string.url_required_for_selector));
             return;
         }
 
-        // Normalize URL
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            url = "https://" + url;
-        }
-
-        Bundle args = new Bundle();
-        args.putString("url", url);
-        args.putString("result_key", INCLUDE_SELECTOR_RESULT_KEY);
-
-        // Pass auto-click actions so they execute before element selection
+        // Check if there are any actions configured
         List<AutoClickAction> actions = viewModel.getAutoClickActions().getValue();
-        if (actions != null && !actions.isEmpty()) {
-            String actionsJson = AutoClickAction.toJsonString(actions);
-            args.putString("actions_json", actionsJson);
+        boolean hasActions = actions != null && !actions.isEmpty();
+
+        if (!hasActions) {
+            // No actions, navigate directly without showing menu
+            navigateToSelectorBrowser(isInclude, false);
+            return;
         }
 
-        NavController navController = Navigation.findNavController(requireView());
-        navController.navigate(R.id.action_addEdit_to_selectorBrowser, args);
+        // Show popup menu with options
+        PopupMenu popup = new PopupMenu(requireContext(), anchor);
+        popup.getMenuInflater().inflate(R.menu.menu_picker_options, popup.getMenu());
+        popup.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.action_pick_with_actions) {
+                navigateToSelectorBrowser(isInclude, true);
+                return true;
+            } else if (itemId == R.id.action_pick_without_actions) {
+                navigateToSelectorBrowser(isInclude, false);
+                return true;
+            }
+            return false;
+        });
+        popup.show();
     }
 
-    private void navigateToExcludeSelectorBrowser() {
+    private void navigateToSelectorBrowser(boolean isInclude, boolean withActions) {
         String url = viewModel.getUrl().getValue();
         if (url == null || url.isEmpty()) {
             urlInputLayout.setError(getString(R.string.url_required_for_selector));
@@ -939,14 +977,27 @@ public class AddEditFragment extends Fragment {
 
         Bundle args = new Bundle();
         args.putString("url", url);
-        args.putString("result_key", EXCLUDE_SELECTOR_RESULT_KEY);
+        args.putString("result_key", isInclude ? INCLUDE_SELECTOR_RESULT_KEY : EXCLUDE_SELECTOR_RESULT_KEY);
 
-        // Pass auto-click actions so they execute before element selection
-        List<AutoClickAction> actions = viewModel.getAutoClickActions().getValue();
-        if (actions != null && !actions.isEmpty()) {
-            String actionsJson = AutoClickAction.toJsonString(actions);
-            args.putString("actions_json", actionsJson);
+        // Pass auto-click actions only if requested
+        if (withActions) {
+            List<AutoClickAction> actions = viewModel.getAutoClickActions().getValue();
+            if (actions != null && !actions.isEmpty()) {
+                String actionsJson = AutoClickAction.toJsonString(actions);
+                args.putString("actions_json", actionsJson);
+            }
         }
+
+        // Pass existing selectors for pre-selection
+        String existingSelectors = isInclude
+            ? viewModel.getCssIncludeSelector().getValue()
+            : viewModel.getCssExcludeSelector().getValue();
+        if (existingSelectors != null && !existingSelectors.isEmpty()) {
+            args.putString("existing_selectors", existingSelectors);
+        }
+
+        // Skip delay when picking without actions
+        args.putBoolean("skip_delay", !withActions);
 
         NavController navController = Navigation.findNavController(requireView());
         navController.navigate(R.id.action_addEdit_to_selectorBrowser, args);

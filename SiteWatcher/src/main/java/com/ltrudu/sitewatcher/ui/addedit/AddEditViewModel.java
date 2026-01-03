@@ -184,8 +184,29 @@ public class AddEditViewModel extends AndroidViewModel {
         // Load schedules JSON
         schedulesJson = site.getSchedulesJson();
 
-        // Load feedback actions JSON
+        // Load feedback actions JSON - add default if empty
         feedbackActionsJson = site.getFeedbackActionsJson();
+        if (feedbackActionsJson == null || feedbackActionsJson.isEmpty()) {
+            // Add default Notification feedback for sites with empty feedback list
+            List<FeedbackAction> defaultFeedbackActions = new ArrayList<>();
+            defaultFeedbackActions.add(FeedbackAction.createNotification("Notification"));
+            feedbackActionsJson = FeedbackAction.toJsonString(defaultFeedbackActions);
+            Logger.d(TAG, "Added default Notification feedback for site: " + siteId);
+
+            // Update the site in database immediately
+            site.setFeedbackActionsJson(feedbackActionsJson);
+            repository.updateSite(site, new SiteRepository.OnOperationCompleteListener() {
+                @Override
+                public void onSuccess() {
+                    Logger.d(TAG, "Site updated with default feedback action: " + site.getId());
+                }
+
+                @Override
+                public void onError(@NonNull Exception exception) {
+                    Logger.e(TAG, "Error updating site with default feedback", exception);
+                }
+            });
+        }
 
         // Load feedback play mode
         feedbackPlayMode = site.getFeedbackPlayMode();

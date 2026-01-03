@@ -6,6 +6,7 @@ import androidx.annotation.Nullable;
 import com.ltrudu.sitewatcher.data.model.ComparisonMode;
 import com.ltrudu.sitewatcher.data.model.DiffAlgorithmType;
 import com.ltrudu.sitewatcher.data.model.FeedbackPlayMode;
+import com.ltrudu.sitewatcher.data.model.FeedbackAction;
 import com.ltrudu.sitewatcher.data.model.FetchMode;
 import com.ltrudu.sitewatcher.data.model.Schedule;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
@@ -63,6 +64,113 @@ public class SiteExporter {
         SimpleDateFormat sdf = new SimpleDateFormat("yy-MM-dd_HH-mm-ss", Locale.US);
         String timestamp = sdf.format(new Date());
         return "SiteWatcher_" + timestamp + ".json";
+    }
+
+    /**
+     * Generates a filename for a single site export with the format:
+     * [DomainName]-YYYYMMDD-HH_MM_SS.json
+     * <p>
+     * Domain name is extracted from URL without www prefix and without TLD extension.
+     * For example:
+     * - https://www.example.com -> example-20261203-14_30_45.json
+     * - https://my-site.org/path -> my-site-20261203-14_30_45.json
+     *
+     * @param url The URL to extract domain name from
+     * @return The generated filename
+     */
+    @NonNull
+    public static String generateFilenameForSite(@NonNull String url) {
+        String domainName = extractDomainName(url);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd-HH_mm_ss", Locale.US);
+        String timestamp = sdf.format(new Date());
+        return domainName + "-" + timestamp + ".json";
+    }
+
+    /**
+     * Extracts the domain name from a URL without www prefix and without TLD extension.
+     * <p>
+     * Examples:
+     * - https://www.example.com -> example
+     * - https://my-site.org/path -> my-site
+     * - https://subdomain.example.co.uk -> subdomain.example
+     *
+     * @param url The URL to extract domain from
+     * @return The domain name without www and TLD
+     */
+    @NonNull
+    private static String extractDomainName(@NonNull String url) {
+        try {
+            // Remove protocol
+            String domain = url.replaceFirst("^https?://", "");
+
+            // Remove path and query string
+            int pathIndex = domain.indexOf('/');
+            if (pathIndex > 0) {
+                domain = domain.substring(0, pathIndex);
+            }
+            int queryIndex = domain.indexOf('?');
+            if (queryIndex > 0) {
+                domain = domain.substring(0, queryIndex);
+            }
+
+            // Remove port if present
+            int portIndex = domain.indexOf(':');
+            if (portIndex > 0) {
+                domain = domain.substring(0, portIndex);
+            }
+
+            // Remove www prefix
+            if (domain.startsWith("www.")) {
+                domain = domain.substring(4);
+            }
+
+            // Remove TLD extension (last part after the final dot)
+            // Handle multi-part TLDs like .co.uk, .com.br
+            String[] parts = domain.split("\\.");
+            if (parts.length >= 2) {
+                // Check for common two-part TLDs
+                String lastPart = parts[parts.length - 1].toLowerCase(Locale.US);
+                String secondLastPart = parts.length >= 2 ? parts[parts.length - 2].toLowerCase(Locale.US) : "";
+
+                // Common two-part TLDs
+                boolean isTwoPartTld = (secondLastPart.equals("co") || secondLastPart.equals("com") ||
+                        secondLastPart.equals("org") || secondLastPart.equals("net") ||
+                        secondLastPart.equals("gov") || secondLastPart.equals("edu") ||
+                        secondLastPart.equals("ac")) &&
+                        (lastPart.length() == 2 || lastPart.equals("uk")); // Country codes
+
+                if (isTwoPartTld && parts.length >= 3) {
+                    // Remove last two parts (e.g., .co.uk)
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < parts.length - 2; i++) {
+                        if (sb.length() > 0) sb.append(".");
+                        sb.append(parts[i]);
+                    }
+                    domain = sb.toString();
+                } else {
+                    // Remove only the last part (e.g., .com)
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < parts.length - 1; i++) {
+                        if (sb.length() > 0) sb.append(".");
+                        sb.append(parts[i]);
+                    }
+                    domain = sb.toString();
+                }
+            }
+
+            // Sanitize for filename: replace invalid characters
+            domain = domain.replaceAll("[^a-zA-Z0-9._-]", "_");
+
+            // Ensure we have something valid
+            if (domain.isEmpty()) {
+                domain = "site";
+            }
+
+            return domain;
+        } catch (Exception e) {
+            Logger.e(TAG, "Error extracting domain name from: " + url, e);
+            return "site";
+        }
     }
 
     /**
@@ -229,12 +337,18 @@ public class SiteExporter {
                 }
             }
 
-            // Parse feedback actions
+            // Parse feedback actions - add default if empty
             if (json.has(KEY_FEEDBACK_ACTIONS)) {
                 JSONArray feedbackActionsArray = json.optJSONArray(KEY_FEEDBACK_ACTIONS);
-                if (feedbackActionsArray != null) {
+                if (feedbackActionsArray != null && feedbackActionsArray.length() > 0) {
                     site.setFeedbackActionsJson(feedbackActionsArray.toString());
+                } else {
+                    // Add default Notification feedback for sites with empty feedback list
+                    addDefaultFeedbackAction(site);
                 }
+            } else {
+                // Add default Notification feedback for sites without feedback actions
+                addDefaultFeedbackAction(site);
             }
 
             // Parse feedback play mode
@@ -277,5 +391,18 @@ public class SiteExporter {
             Logger.e(TAG, "Error parsing site JSON", e);
             return null;
         }
+    }
+
+    /**
+     * Adds a default Notification feedback action to a site.
+     * Used when importing sites with empty feedback actions.
+     *
+     * @param site The site to add the default feedback action to
+     */
+    private static void addDefaultFeedbackAction(@NonNull WatchedSite site) {
+        List<FeedbackAction> defaultFeedbackActions = new ArrayList<>();
+        defaultFeedbackActions.add(FeedbackAction.createNotification("Notification"));
+        site.setFeedbackActionsJson(FeedbackAction.toJsonString(defaultFeedbackActions));
+        Logger.d(TAG, "Added default Notification feedback for imported site: " + site.getUrl());
     }
 }

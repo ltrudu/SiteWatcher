@@ -112,6 +112,15 @@
             app:argType="string"
             app:nullable="true"
             android:defaultValue="@null" />
+        <argument
+            android:name="existing_selectors"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+        <argument
+            android:name="skip_delay"
+            app:argType="boolean"
+            android:defaultValue="false" />
     </fragment>
 
     <fragment

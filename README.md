@@ -41,10 +41,17 @@ Pre-configured patterns for common cookie consent frameworks:
 #### Interactive Element Pickers
 - **CSS Selector Picker** - Tap elements visually to generate selectors
   - Context-aware instructions: shows "monitor" for include mode, "exclude" for exclude mode
+  - **Pick with/without Actions** - Choose whether to execute auto-click actions before picking elements
+  - **Browse/Pick Mode Toggle** - Switch between element selection and normal browsing
+  - **Pre-select Existing Elements** - Previously selected elements are automatically highlighted when reopening the picker (with smart polling for dynamic content)
+  - **View Selected Elements** - Review and remove individual CSS selectors from your selection
 - **Coordinate Picker** - Tap anywhere to set exact tap positions with crosshair preview
 - **Action Tester** - Test and preview complete action sequences before saving
 - **Action Execution in Pickers** - Auto-click actions are executed before element selection to ensure accurate page state
-- **Real-Time Countdown** - Visual countdown (X.X seconds) while waiting for page load or after actions
+- **Real-Time Countdown** - Visual countdown (X.X seconds) with decisecond precision for:
+  - Page load delays
+  - Wait/Sleep action execution
+  - Post-action delays after all actions complete
 
 #### Actions Management
 - **Drag-to-Reorder** - Arrange action execution order by dragging
@@ -106,6 +113,8 @@ Customize how you're alerted when site changes are detected. Stack multiple acti
 ### Built-in Browser
 - **Discover Sites** - Browse the web directly within the app
 - **Quick Add** - One tap to start monitoring any page you visit
+- **Smart Navigation** - When editing a site, the browse button opens directly to the site's URL
+- **Home Button** - Quickly return to your preferred search engine while browsing
 - **Search Integration** - Choose your preferred search engine (DuckDuckGo, Google, Bing, Qwant)
 - **Open in WebView** - Test sites with JavaScript fetch mode
 
@@ -119,6 +128,7 @@ Customize how you're alerted when site changes are detected. Stack multiple acti
 - **Changes Only (Default for Full HTML)** - Rendered page with changed elements highlighted in red
 - **Rendered View** - Side-by-side comparison of before/after pages
 - **Full Text Diff** - Complete line-by-line diff with context
+- **Smart Display Order** - Additions shown first, then removals for better readability
 - **Color Coding** - Green for additions, red for removals
 - **Statistics** - See exactly how many lines changed
 
@@ -126,9 +136,11 @@ Customize how you're alerted when site changes are detected. Stack multiple acti
 - **View Comparison Data** - See raw content used for comparison
 - **Word Wrap Toggle** - Better readability for long lines
 - **Mode Display** - Shows current comparison mode and capture timestamp
+- **View Excluded Elements** - When CSS exclude filters are applied, see which elements were filtered out
 
 ### Backup & Restore
-- **Export Sites** - Save your monitored sites to a JSON file
+- **Export All Sites** - Save all monitored sites to a JSON file
+- **Export Single Site** - Export individual sites from the context menu with domain-based filenames
 - **Import Sites** - Restore from backup or share configurations
 - **Content Backups** - View and manage stored page snapshots
 - **Backup Viewer** - View rendered page or source code for any backup
@@ -187,7 +199,9 @@ When first launching the app, you'll be asked for:
 ### Add Your First Site
 
 1. Tap the **+** floating button
-2. Enter the website URL or tap **Browse** to discover sites
+2. Enter the website URL or tap **Browse** (🌍) to discover sites
+   - If a URL is already entered, Browse opens directly to that site
+   - Use the Home icon to return to your search engine
 3. Configure monitoring options:
    - **Name** (optional) - Custom display name
    - **Comparison Mode** - How to detect changes
@@ -225,6 +239,8 @@ For sites with cookie consent dialogs or dynamic content:
    - **Add Sleep** - Add delays between actions
 4. Drag actions to reorder, toggle to enable/disable
 5. Tap **Test Actions** to preview the sequence
+   - Real-time countdown displays during Wait/Sleep actions
+   - Countdown also shows for post-action delay after completion
 
 ### Configure Feedback Actions (Optional)
 
@@ -254,6 +270,7 @@ Customize how you're alerted when changes are detected:
   - Test Actions
   - Edit
   - Duplicate
+  - Export Site
   - Check Now
   - View Changes
   - View Data

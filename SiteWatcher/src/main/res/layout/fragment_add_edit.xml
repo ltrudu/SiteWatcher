@@ -82,7 +82,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonEditSchedules"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
@@ -165,7 +165,7 @@
                     <!-- Edit Actions Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonEditActions"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
@@ -240,6 +240,18 @@
                         android:imeOptions="actionNext" />
 
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Dynamic hint for empty include field -->
+                <TextView
+                    android:id="@+id/cssIncludeHelperText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="4dp"
+                    android:text="@string/css_include_empty_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="visible" />
 
                 <!-- Exclude CSS Title -->
                 <TextView
@@ -491,7 +503,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonEditFeedback"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
@@ -544,14 +556,15 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/cancelButton"
+                    style="@style/Widget.SiteWatcher.Button.Cancel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
-                    android:text="@string/cancel"
-                    style="@style/Widget.MaterialComponents.Button.TextButton" />
+                    android:text="@string/cancel" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/saveButton"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/add"

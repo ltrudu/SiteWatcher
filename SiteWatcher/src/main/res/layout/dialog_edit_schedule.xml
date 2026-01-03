@@ -119,9 +119,9 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/timePickerButton"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     tools:text="09:00" />
 
             </LinearLayout>
@@ -235,9 +235,9 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/datePickerButton"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     tools:text="Jan 15, 2026" />
 
             </LinearLayout>
@@ -267,9 +267,9 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/fromDatePickerButton"
+                        style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         tools:text="Jan 1, 2026" />
 
                 </LinearLayout>
@@ -291,9 +291,9 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/toDatePickerButton"
+                        style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         tools:text="Mar 31, 2026" />
 
                 </LinearLayout>
@@ -466,14 +466,15 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonCancel"
+                    style="@style/Widget.SiteWatcher.Button.Cancel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
-                    android:text="@string/cancel"
-                    style="@style/Widget.MaterialComponents.Button.TextButton" />
+                    android:text="@string/cancel" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonSave"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/add" />

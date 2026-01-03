@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 
 import com.ltrudu.sitewatcher.data.model.NetworkMode;
 import com.ltrudu.sitewatcher.data.model.NotificationAction;
+import com.ltrudu.sitewatcher.ui.sitelist.SiteListAdapter;
 import com.ltrudu.sitewatcher.util.Constants;
 
 /**
@@ -25,6 +26,7 @@ public class PreferencesManager {
     private static final String KEY_DEBUG_MODE = "debug_mode";
     private static final String KEY_PAGE_LOAD_DELAY = "page_load_delay";
     private static final String KEY_POST_ACTION_DELAY = "post_action_delay";
+    private static final String KEY_SITE_LIST_SORT_ORDER = "site_list_sort_order";
 
     private final SharedPreferences preferences;
 
@@ -127,6 +129,20 @@ public class PreferencesManager {
         int validSeconds = Math.max(Constants.MIN_DELAY_SECONDS,
                 Math.min(Constants.MAX_DELAY_SECONDS, seconds));
         preferences.edit().putInt(KEY_POST_ACTION_DELAY, validSeconds).apply();
+    }
+
+    // Site List Sort Order
+    public SiteListAdapter.SortOrder getSiteListSortOrder() {
+        int ordinal = preferences.getInt(KEY_SITE_LIST_SORT_ORDER, SiteListAdapter.SortOrder.A_TO_Z.ordinal());
+        try {
+            return SiteListAdapter.SortOrder.values()[ordinal];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            return SiteListAdapter.SortOrder.A_TO_Z;
+        }
+    }
+
+    public void setSiteListSortOrder(SiteListAdapter.SortOrder sortOrder) {
+        preferences.edit().putInt(KEY_SITE_LIST_SORT_ORDER, sortOrder.ordinal()).apply();
     }
 
     /**

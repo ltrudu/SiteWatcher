@@ -67,6 +67,9 @@
     <string name="url_hint">https://example.com</string>
     <string name="invalid_url">Please enter a valid URL</string>
     <string name="comparison_mode">Comparison Mode</string>
+    <string name="comparison_mode_full_html_desc">Compares the entire HTML including tags, attributes, and structure. Detects any change to the page.</string>
+    <string name="comparison_mode_text_only_desc">Extracts and compares only visible text content. Ignores HTML structure, styles, and scripts.</string>
+    <string name="comparison_mode_css_selector_desc">Monitors specific page elements using CSS selectors. Use Include to focus on areas, Exclude to ignore dynamic content.</string>
     <string name="days_to_check">Days to Check</string>
     <string name="schedule_type">Schedule Type</string>
     <string name="check_interval">Check Interval</string>
@@ -74,6 +77,7 @@
     <string name="specific_time">Specific Time</string>
     <string name="threshold">Feedback Threshold</string>
     <string name="threshold_value">%1$d%%</string>
+    <string name="threshold_hint">Minimum change percentage required to trigger feedback actions. Lower values detect smaller changes.</string>
     <string name="css_selector">CSS Selector</string>
     <string name="css_selector_hint">e.g., #content, .main-text</string>
     <string name="css_include_selector">Include Elements</string>
@@ -148,6 +152,7 @@
 
     <!-- Add Sleep Dialog -->
     <string name="add_sleep_title">Add Sleep Action</string>
+    <string name="action_sleep">Sleep</string>
     <string name="sleep_label_hint">e.g., Wait for menu to open</string>
     <string name="sleep_duration_label">Duration (seconds)</string>
 
@@ -167,6 +172,8 @@
     <string name="page_loaded">Page loaded</string>
     <string name="waiting_for_content">Waiting for content…</string>
     <string name="waiting_countdown">Waiting: %1$d.%2$d s</string>
+    <string name="sleep_countdown">%1$d.%2$d s</string>
+    <string name="post_action_countdown">After actions: %1$d.%2$d s</string>
     <string name="waiting_after_actions">Waiting after actions…</string>
     <string name="waiting_for_page_settle">Waiting for page to settle…</string>
     <string name="open_in_webview">Open in WebView</string>
@@ -333,6 +340,8 @@
     <string name="diff_removed_lines">-%1$d lines</string>
     <string name="show_text_diff">Show Text Diff</string>
     <string name="show_changes_only">Show Changes Only</string>
+    <string name="show_source">Show Source</string>
+    <string name="show_rendered">Show Rendered</string>
     <string name="changes_highlighted">Rendered Page - Changed Elements Highlighted in Red</string>
     <string name="no_changes_detected">No changes detected</string>
 

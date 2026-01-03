@@ -82,6 +82,17 @@
                 android:textColor="@color/sw_on_surface_variant"
                 tools:text="Closing cookie banner..." />
 
+            <TextView
+                android:id="@+id/textCountdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="@color/sw_on_surface"
+                android:visibility="gone"
+                tools:text="5.0 s"
+                tools:visibility="visible" />
+
             <ProgressBar
                 android:id="@+id/progressBar"
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"

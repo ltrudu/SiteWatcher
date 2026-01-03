@@ -104,6 +104,9 @@ public class AddSleepDialogFragment extends DialogFragment {
         durationEditText = view.findViewById(R.id.editDuration);
         cancelButton = view.findViewById(R.id.buttonCancel);
         addButton = view.findViewById(R.id.buttonAdd);
+
+        // Pre-fill label with "Sleep"
+        labelEditText.setText(R.string.action_sleep);
     }
 
     private void setupListeners() {

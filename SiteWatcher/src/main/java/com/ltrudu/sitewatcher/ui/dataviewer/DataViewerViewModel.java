@@ -52,21 +52,34 @@ public class DataViewerViewModel extends AndroidViewModel {
      */
     public static class DataContent {
         private final String content;
+        private final String rawHtml;
         private final String modeDescription;
         private final long capturedAt;
         private final ComparisonMode mode;
+        private final boolean cssIncludeSelectorEmpty;
 
-        public DataContent(@NonNull String content, @NonNull String modeDescription,
-                           long capturedAt, @NonNull ComparisonMode mode) {
+        public DataContent(@NonNull String content, @NonNull String rawHtml,
+                           @NonNull String modeDescription, long capturedAt,
+                           @NonNull ComparisonMode mode, boolean cssIncludeSelectorEmpty) {
             this.content = content;
+            this.rawHtml = rawHtml;
             this.modeDescription = modeDescription;
             this.capturedAt = capturedAt;
             this.mode = mode;
+            this.cssIncludeSelectorEmpty = cssIncludeSelectorEmpty;
         }
 
         @NonNull
         public String getContent() {
             return content;
+        }
+
+        /**
+         * Get the raw HTML content for WebView rendering.
+         */
+        @NonNull
+        public String getRawHtml() {
+            return rawHtml;
         }
 
         @NonNull
@@ -81,6 +94,22 @@ public class DataViewerViewModel extends AndroidViewModel {
         @NonNull
         public ComparisonMode getMode() {
             return mode;
+        }
+
+        /**
+         * Check if CSS include selector is empty (for CSS_SELECTOR mode).
+         */
+        public boolean isCssIncludeSelectorEmpty() {
+            return cssIncludeSelectorEmpty;
+        }
+
+        /**
+         * Check if this content supports WebView rendering.
+         * Supported for FULL_HTML or CSS_SELECTOR with empty include selector.
+         */
+        public boolean supportsRendering() {
+            return mode == ComparisonMode.FULL_HTML ||
+                    (mode == ComparisonMode.CSS_SELECTOR && cssIncludeSelectorEmpty);
         }
     }
 
@@ -187,11 +216,21 @@ public class DataViewerViewModel extends AndroidViewModel {
                 String modeDescription = getModeDescription(mode, site.getCssSelector(),
                         site.getCssIncludeSelector(), site.getCssExcludeSelector());
 
+                // Check if CSS include selector is empty
+                String effectiveInclude = site.getCssIncludeSelector();
+                if ((effectiveInclude == null || effectiveInclude.trim().isEmpty())
+                        && site.getCssSelector() != null && !site.getCssSelector().trim().isEmpty()) {
+                    effectiveInclude = site.getCssSelector();
+                }
+                boolean cssIncludeSelectorEmpty = (effectiveInclude == null || effectiveInclude.trim().isEmpty());
+
                 DataContent result = new DataContent(
                         processedContent,
+                        rawContent,
                         modeDescription,
                         latestHistory.getCheckTime(),
-                        mode
+                        mode,
+                        cssIncludeSelectorEmpty
                 );
 
                 dataContent.postValue(result);

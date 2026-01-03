@@ -64,6 +64,7 @@ public class ActionTesterFragment extends Fragment {
     private ProgressBar progressBar;
     private TextView textStepProgress;
     private TextView textActionLabel;
+    private TextView textCountdown;
     private LinearLayout floatingButtonBar;
     private MaterialButton buttonClose;
     private MaterialButton buttonRestart;
@@ -80,6 +81,8 @@ public class ActionTesterFragment extends Fragment {
     private boolean pageLoaded = false;
     private boolean hasExecutedActions = false;
     private CountDownTimer waitCountdownTimer;
+    private CountDownTimer actionWaitCountdownTimer;
+    private CountDownTimer postActionCountdownTimer;
     private Runnable fadeOutRunnable;
     private ObjectAnimator fadeOutAnimator;
 
@@ -105,6 +108,13 @@ public class ActionTesterFragment extends Fragment {
      */
     private int getPageLoadDelayMs() {
         return preferencesManager.getPageLoadDelay() * 1000;
+    }
+
+    /**
+     * Get the post-action delay in milliseconds from settings.
+     */
+    private int getPostActionDelayMs() {
+        return preferencesManager.getPostActionDelay() * 1000;
     }
 
     /**
@@ -237,6 +247,7 @@ public class ActionTesterFragment extends Fragment {
         progressBar = view.findViewById(R.id.progressBar);
         textStepProgress = view.findViewById(R.id.textStepProgress);
         textActionLabel = view.findViewById(R.id.textActionLabel);
+        textCountdown = view.findViewById(R.id.textCountdown);
         floatingButtonBar = view.findViewById(R.id.floatingButtonBar);
         buttonClose = view.findViewById(R.id.buttonClose);
         buttonRestart = view.findViewById(R.id.buttonRestart);
@@ -387,13 +398,24 @@ public class ActionTesterFragment extends Fragment {
                 mainHandler.post(() -> {
                     // Exit fullscreen mode if executor entered it
                     executor.exitFullscreenMode();
-                    showCompletionState(successCount, failCount);
+
+                    // Check if post-action delay is configured
+                    int postActionDelayMs = getPostActionDelayMs();
+                    if (postActionDelayMs > 0) {
+                        // Start post-action countdown before showing completion
+                        startPostActionCountdown(postActionDelayMs, successCount, failCount);
+                    } else {
+                        showCompletionState(successCount, failCount);
+                    }
                 });
             }
 
             @Override
             public void onActionResult(String actionId, boolean success) {
                 mainHandler.post(() -> {
+                    // Hide countdown when action completes
+                    cancelActionWaitCountdown();
+
                     currentActionIndex++;
                     if (currentActionIndex < enabledActions.size()) {
                         updateProgressUI(currentActionIndex, enabledActions.size());
@@ -404,6 +426,11 @@ public class ActionTesterFragment extends Fragment {
             @Override
             public void onBeforeTap(float screenX, float screenY) {
                 mainHandler.post(() -> showTapCrosshair(screenX, screenY));
+            }
+
+            @Override
+            public void onWaitStart(String actionId, int durationSeconds) {
+                mainHandler.post(() -> startActionWaitCountdown(durationSeconds));
             }
         });
     }
@@ -456,6 +483,9 @@ public class ActionTesterFragment extends Fragment {
     private void showCompletionState(int successCount, int failCount) {
         if (!isAdded() || textStepProgress == null) return;
 
+        // Hide countdown if showing
+        cancelActionWaitCountdown();
+
         textStepProgress.setText(R.string.test_complete);
         textActionLabel.setVisibility(View.GONE);
         progressBar.setProgress(100);
@@ -468,6 +498,115 @@ public class ActionTesterFragment extends Fragment {
         scheduleStatusCardFadeOut();
 
         Logger.d(TAG, "Action execution complete: " + successCount + " success, " + failCount + " failed");
+    }
+
+    /**
+     * Start a countdown timer for a WAIT action.
+     * Shows the countdown in the UI updating every 100ms with deciseconds (matching page load format).
+     *
+     * @param durationSeconds Duration of the wait in seconds
+     */
+    private void startActionWaitCountdown(int durationSeconds) {
+        if (!isAdded() || textCountdown == null) return;
+
+        // Cancel any existing countdown
+        cancelActionWaitCountdown();
+
+        // Show countdown view with initial value
+        textCountdown.setVisibility(View.VISIBLE);
+        textCountdown.setText(getString(R.string.sleep_countdown, durationSeconds, 0));
+
+        Logger.d(TAG, "Starting action wait countdown: " + durationSeconds + " seconds");
+
+        // Create countdown timer that updates every 100ms for smooth decisecond display
+        actionWaitCountdownTimer = new CountDownTimer(durationSeconds * 1000L, 100) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                if (!isAdded() || textCountdown == null) return;
+
+                // Calculate seconds and deciseconds (tenths of seconds)
+                int seconds = (int) (millisUntilFinished / 1000);
+                int deciseconds = (int) ((millisUntilFinished % 1000) / 100);
+
+                textCountdown.setText(getString(R.string.sleep_countdown, seconds, deciseconds));
+            }
+
+            @Override
+            public void onFinish() {
+                // Countdown complete - hide the view
+                if (isAdded() && textCountdown != null) {
+                    textCountdown.setVisibility(View.GONE);
+                }
+            }
+        };
+
+        actionWaitCountdownTimer.start();
+    }
+
+    /**
+     * Cancel the action wait countdown timer if running.
+     */
+    private void cancelActionWaitCountdown() {
+        if (actionWaitCountdownTimer != null) {
+            actionWaitCountdownTimer.cancel();
+            actionWaitCountdownTimer = null;
+        }
+        if (textCountdown != null) {
+            textCountdown.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Start a countdown timer for the post-action delay (wait after last action).
+     * Updates the UI every 100ms with format similar to page load countdown.
+     *
+     * @param durationMs   The total duration in milliseconds
+     * @param successCount Number of successful actions (for completion state)
+     * @param failCount    Number of failed actions (for completion state)
+     */
+    private void startPostActionCountdown(int durationMs, int successCount, int failCount) {
+        if (!isAdded() || textStepProgress == null) return;
+
+        // Cancel any existing timer
+        cancelPostActionCountdown();
+
+        Logger.d(TAG, "Starting post-action countdown: " + (durationMs / 1000) + " seconds");
+
+        // Update UI every 100ms for smooth decisecond display
+        postActionCountdownTimer = new CountDownTimer(durationMs, 100) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                if (!isAdded() || textStepProgress == null) return;
+
+                // Calculate seconds and deciseconds (tenths of seconds)
+                int seconds = (int) (millisUntilFinished / 1000);
+                int deciseconds = (int) ((millisUntilFinished % 1000) / 100);
+
+                // Update UI with countdown format
+                String countdownText = getString(R.string.post_action_countdown, seconds, deciseconds);
+                textStepProgress.setText(countdownText);
+            }
+
+            @Override
+            public void onFinish() {
+                if (!isAdded()) return;
+
+                Logger.d(TAG, "Post-action countdown complete");
+                showCompletionState(successCount, failCount);
+            }
+        };
+
+        postActionCountdownTimer.start();
+    }
+
+    /**
+     * Cancel the post-action countdown timer if running.
+     */
+    private void cancelPostActionCountdown() {
+        if (postActionCountdownTimer != null) {
+            postActionCountdownTimer.cancel();
+            postActionCountdownTimer = null;
+        }
     }
 
     private void showNoActionsState() {
@@ -562,8 +701,10 @@ public class ActionTesterFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        // Cancel countdown timer and fade out if still running
+        // Cancel countdown timers and fade out if still running
         cancelWaitCountdown();
+        cancelActionWaitCountdown();
+        cancelPostActionCountdown();
         cancelStatusCardFadeOut();
 
         // Exit fullscreen mode if still active

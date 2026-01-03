@@ -71,7 +71,7 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
     private final OnSiteClickListener listener;
     private final Set<Long> checkingSites = new HashSet<>();
     private String currentFilter = "";
-    private SortOrder currentSortOrder = SortOrder.NONE;
+    private SortOrder currentSortOrder = SortOrder.A_TO_Z; // Default to alphabetical sorting
 
     /**
      * Constructor for SiteListAdapter.
@@ -154,18 +154,19 @@ public class SiteListAdapter extends RecyclerView.Adapter<SiteListAdapter.SiteVi
     }
 
     /**
-     * Toggle through sort orders: NONE -> A_TO_Z -> Z_TO_A -> A_TO_Z ...
+     * Toggle through sort orders: A_TO_Z -> Z_TO_A -> A_TO_Z ...
      * @return The new sort order after toggling
      */
     @NonNull
     public SortOrder toggleSortOrder() {
         switch (currentSortOrder) {
-            case NONE:
-            case Z_TO_A:
-                currentSortOrder = SortOrder.A_TO_Z;
-                break;
             case A_TO_Z:
                 currentSortOrder = SortOrder.Z_TO_A;
+                break;
+            case Z_TO_A:
+            case NONE:
+            default:
+                currentSortOrder = SortOrder.A_TO_Z;
                 break;
         }
         applyFilter();

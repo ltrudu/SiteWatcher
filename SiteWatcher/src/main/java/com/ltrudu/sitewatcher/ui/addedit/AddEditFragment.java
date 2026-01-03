@@ -60,6 +60,7 @@ public class AddEditFragment extends Fragment {
     private Spinner fetchModeSpinner;
     private android.widget.TextView fetchModeHint;
     private Spinner comparisonModeSpinner;
+    private android.widget.TextView comparisonModeHint;
     private LinearLayout cssSelectorSection;
     private TextInputLayout cssIncludeInputLayout;
     private TextInputEditText cssIncludeEditText;
@@ -93,6 +94,7 @@ public class AddEditFragment extends Fragment {
     private android.widget.TextView feedbackCountLabel;
     private MaterialButton buttonEditFeedback;
     private Spinner spinnerFeedbackPlayMode;
+    private android.widget.TextView feedbackPlayModeHint;
 
     // Adapters
     private ArrayAdapter<String> fetchModeAdapter;
@@ -168,6 +170,7 @@ public class AddEditFragment extends Fragment {
         fetchModeSpinner = view.findViewById(R.id.fetchModeSpinner);
         fetchModeHint = view.findViewById(R.id.fetchModeHint);
         comparisonModeSpinner = view.findViewById(R.id.comparisonModeSpinner);
+        comparisonModeHint = view.findViewById(R.id.comparisonModeHint);
         cssSelectorSection = view.findViewById(R.id.cssSelectorSection);
         cssIncludeInputLayout = view.findViewById(R.id.cssIncludeInputLayout);
         cssIncludeEditText = view.findViewById(R.id.cssIncludeEditText);
@@ -201,6 +204,7 @@ public class AddEditFragment extends Fragment {
         feedbackCountLabel = view.findViewById(R.id.feedbackCountLabel);
         buttonEditFeedback = view.findViewById(R.id.buttonEditFeedback);
         spinnerFeedbackPlayMode = view.findViewById(R.id.spinnerFeedbackPlayMode);
+        feedbackPlayModeHint = view.findViewById(R.id.feedbackPlayModeHint);
 
         // Set button text and title based on mode
         ActionBar actionBar = ((AppCompatActivity) requireActivity()).getSupportActionBar();
@@ -450,6 +454,8 @@ public class AddEditFragment extends Fragment {
         comparisonModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                // Always update hint text
+                updateComparisonModeHint(position);
                 if (!isInitializing) {
                     ComparisonMode mode = getComparisonModeFromPosition(position);
                     viewModel.setComparisonMode(mode);
@@ -548,6 +554,8 @@ public class AddEditFragment extends Fragment {
         spinnerFeedbackPlayMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                // Always update hint text
+                updateFeedbackPlayModeHint(position);
                 if (!isInitializing) {
                     viewModel.setFeedbackPlayMode(FeedbackPlayMode.values()[position]);
                 }
@@ -751,6 +759,31 @@ public class AddEditFragment extends Fragment {
             fetchModeHint.setText(R.string.fetch_mode_static_desc);
         } else {
             fetchModeHint.setText(R.string.fetch_mode_javascript_desc);
+        }
+    }
+
+    private void updateComparisonModeHint(int position) {
+        switch (position) {
+            case 0: // Full HTML
+                comparisonModeHint.setText(R.string.comparison_mode_full_html_desc);
+                break;
+            case 1: // Text Only
+                comparisonModeHint.setText(R.string.comparison_mode_text_only_desc);
+                break;
+            case 2: // CSS Selector
+                comparisonModeHint.setText(R.string.comparison_mode_css_selector_desc);
+                break;
+            default:
+                comparisonModeHint.setText(R.string.comparison_mode_full_html_desc);
+                break;
+        }
+    }
+
+    private void updateFeedbackPlayModeHint(int position) {
+        if (position == 0) { // Sequential
+            feedbackPlayModeHint.setText(R.string.feedback_play_mode_sequential_desc);
+        } else { // All At Once
+            feedbackPlayModeHint.setText(R.string.feedback_play_mode_parallel_desc);
         }
     }
 

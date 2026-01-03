@@ -40,6 +40,7 @@ import com.ltrudu.sitewatcher.R;
 import android.widget.ImageButton;
 import com.ltrudu.sitewatcher.accessibility.TapAccessibilityService;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
+import com.ltrudu.sitewatcher.data.preferences.PreferencesManager;
 import com.ltrudu.sitewatcher.util.Logger;
 import com.ltrudu.sitewatcher.util.SearchQueryParser;
 
@@ -65,6 +66,7 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     private FloatingActionButton fab;
     private TextInputEditText editSearch;
     private ImageButton btnSort;
+    private PreferencesManager preferencesManager;
 
     // Handler for search debounce
     private final Handler searchHandler = new Handler(Looper.getMainLooper());
@@ -99,6 +101,7 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
         super.onCreate(savedInstanceState);
         // Use Activity-scoped ViewModel so it's shared with MainActivity for check all
         viewModel = new ViewModelProvider(requireActivity()).get(SiteListViewModel.class);
+        preferencesManager = new PreferencesManager(requireContext());
 
         // Register permission launcher for feedback actions
         feedbackPermissionsLauncher = registerForActivityResult(
@@ -145,6 +148,15 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
     @Override
     public void onResume() {
         super.onResume();
+        // Reapply saved sort order from preferences (in case it was changed elsewhere)
+        if (adapter != null && preferencesManager != null) {
+            SiteListAdapter.SortOrder savedSortOrder = preferencesManager.getSiteListSortOrder();
+            if (adapter.getSortOrder() != savedSortOrder) {
+                adapter.setSortOrder(savedSortOrder);
+                updateSortIcon(savedSortOrder);
+                Logger.d(TAG, "Reapplied sort order from preferences: " + savedSortOrder);
+            }
+        }
         // Start periodic refresh timer
         refreshHandler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS);
         Logger.d(TAG, "Started refresh timer");
@@ -224,9 +236,17 @@ public class SiteListFragment extends Fragment implements SiteListAdapter.OnSite
      * Set up the sort button functionality.
      */
     private void setupSort() {
+        // Load saved sort order from preferences
+        SiteListAdapter.SortOrder savedSortOrder = preferencesManager.getSiteListSortOrder();
+        adapter.setSortOrder(savedSortOrder);
+        updateSortIcon(savedSortOrder);
+        Logger.d(TAG, "Loaded sort order from preferences: " + savedSortOrder);
+
         btnSort.setOnClickListener(v -> {
             SiteListAdapter.SortOrder newOrder = adapter.toggleSortOrder();
             updateSortIcon(newOrder);
+            // Save sort order to preferences
+            preferencesManager.setSiteListSortOrder(newOrder);
             Logger.d(TAG, "Sort order changed to: " + newOrder);
         });
     }

@@ -80,6 +80,17 @@ public class AutoClickExecutor {
         default void onBeforeTap(float screenX, float screenY) {
             // Optional callback for tap visual feedback
         }
+
+        /**
+         * Called when a WAIT action starts.
+         * Use this for showing a countdown timer.
+         *
+         * @param actionId Action identifier
+         * @param durationSeconds Duration of the wait in seconds
+         */
+        default void onWaitStart(String actionId, int durationSeconds) {
+            // Optional callback for wait countdown display
+        }
     }
 
     private final Handler mainHandler;
@@ -248,12 +259,16 @@ public class AutoClickExecutor {
 
         if (action.getType() == ActionType.WAIT) {
             // WAIT action: just delay
-            int delayMs = action.getWaitSeconds() * 1000;
-            Logger.d(TAG, "WAIT action: waiting " + action.getWaitSeconds() + " seconds");
+            int waitSeconds = action.getWaitSeconds();
+            int delayMs = waitSeconds * 1000;
+            Logger.d(TAG, "WAIT action: waiting " + waitSeconds + " seconds");
 
-            callback.onActionResult(action.getId(), true);
+            // Notify callback that wait is starting (for countdown display)
+            callback.onWaitStart(action.getId(), waitSeconds);
 
             mainHandler.postDelayed(() -> {
+                // Report action result after wait completes (consistent with other action types)
+                callback.onActionResult(action.getId(), true);
                 executeNextAction(webView, actions, index + 1, successCount, failCount, callback);
             }, delayMs);
 

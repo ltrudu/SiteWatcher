@@ -513,7 +513,21 @@ Dependencies are subject to their own licences. Check links for more information
 - [Material Design 3](https://m3.material.io/) - UI components
 
 ---
+## Support the Project
 
+If you find SiteWatcher useful, consider supporting its development:
+
+<p align="center">
+  <a href="https://www.paypal.com/ncp/payment/TU8EH7BZEPCPN">
+    <img src="https://img.shields.io/badge/Donate-PayPal-blue.svg?logo=paypal" alt="Donate with PayPal">
+  </a>
+</p>
+
+Your support helps keep this project alive and enables new features!
+
+---
+
+<p align="center">
 <p align="center">Made with care for people who need to stay informed.</p>
 
 <p align="center">❤️ Made with <a href="https://claude.ai">Claude.ai</a> ❤️</p>

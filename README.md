@@ -2,7 +2,7 @@
 
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![API](https://img.shields.io/badge/API-34%2B-brightgreen.svg)](https://android-arsenal.com/api?level=34)
-[![License](https://img.shields.io/badge/License-Unlicense-blue.svg)](https://unlicense.org)
+
 
 **SiteWatcher** is a powerful Android application that monitors websites for content changes and notifies you when changes exceed configurable thresholds. Perfect for tracking price changes, news updates, product availability, or any web content you care about.
 

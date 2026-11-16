@@ -3,6 +3,7 @@ package com.ltrudu.sitewatcher.util;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -33,6 +34,30 @@ public final class UrlValidator {
      * @param url The URL to validate
      * @return true if the URL is valid, false otherwise
      */
+    public static boolean hasDuplicatedFullAddress(@Nullable String url) {
+        if (url == null) {
+            return false;
+        }
+
+        String trimmedUrl = url.trim();
+        String lowerUrl = trimmedUrl.toLowerCase(Locale.ROOT);
+        int schemeLength;
+        if (lowerUrl.startsWith("https://")) {
+            schemeLength = "https://".length();
+        } else if (lowerUrl.startsWith("http://")) {
+            schemeLength = "http://".length();
+        } else {
+            return false;
+        }
+
+        int secondHttp = lowerUrl.indexOf("http://", schemeLength);
+        int secondHttps = lowerUrl.indexOf("https://", schemeLength);
+        int secondAddress = secondHttp < 0 ? secondHttps
+                : secondHttps < 0 ? secondHttp : Math.min(secondHttp, secondHttps);
+        return secondAddress >= 0
+                && trimmedUrl.substring(0, secondAddress)
+                .equalsIgnoreCase(trimmedUrl.substring(secondAddress));
+    }
     public static boolean isValidUrl(@Nullable String url) {
         if (url == null || url.trim().isEmpty()) {
             return false;

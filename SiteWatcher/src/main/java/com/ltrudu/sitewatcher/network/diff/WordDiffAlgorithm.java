@@ -46,6 +46,8 @@ import java.util.List;
 public class WordDiffAlgorithm implements DiffAlgorithm {
 
     private static final int MAX_WORDS = 10000;
+    private static final int MAX_SAMPLED_WORDS = MAX_WORDS / 3 * 3;
+    private static final long MAX_MATRIX_CELLS = 1_000_000L;
 
     @NonNull
     @Override
@@ -55,7 +57,8 @@ public class WordDiffAlgorithm implements DiffAlgorithm {
         String[] newWords = tokenize(newContent);
 
         // For very large content, sample
-        if (oldWords.length > MAX_WORDS || newWords.length > MAX_WORDS) {
+        if (oldWords.length > MAX_WORDS || newWords.length > MAX_WORDS ||
+                !isWithinMatrixBudget(oldWords.length, newWords.length)) {
             return computeSampledDiff(oldWords, newWords);
         }
 
@@ -105,10 +108,9 @@ public class WordDiffAlgorithm implements DiffAlgorithm {
     }
 
     private DiffResult computeSampledDiff(String[] oldWords, String[] newWords) {
-        int sampleSize = MAX_WORDS / 3;
-
-        String[] oldSample = sampleArray(oldWords, sampleSize);
-        String[] newSample = sampleArray(newWords, sampleSize);
+        int[] sampleCounts = getSampleCounts(oldWords.length, newWords.length);
+        String[] oldSample = sampleArray(oldWords, sampleCounts[0]);
+        String[] newSample = sampleArray(newWords, sampleCounts[1]);
 
         DiffResult sampleResult = computeFullDiff(oldSample, newSample);
 
@@ -127,6 +129,9 @@ public class WordDiffAlgorithm implements DiffAlgorithm {
     private int[][] computeLcsMatrix(String[] oldWords, String[] newWords) {
         int m = oldWords.length;
         int n = newWords.length;
+        if (!isWithinMatrixBudget(m, n)) {
+            throw new IllegalArgumentException("Word LCS matrix exceeds the cell budget");
+        }
         int[][] lcs = new int[m + 1][n + 1];
 
         for (int i = 1; i <= m; i++) {
@@ -142,11 +147,57 @@ public class WordDiffAlgorithm implements DiffAlgorithm {
         return lcs;
     }
 
-    private String[] sampleArray(String[] arr, int sampleSize) {
-        if (arr.length <= sampleSize * 3) {
+    private int[] getSampleCounts(int oldCount, int newCount) {
+        int oldSampleLimit = Math.min(oldCount, MAX_SAMPLED_WORDS);
+        int newSampleLimit = Math.min(newCount, MAX_SAMPLED_WORDS);
+        if (isWithinMatrixBudget(oldSampleLimit, newSampleLimit)) {
+            return new int[] { oldSampleLimit, newSampleLimit };
+        }
+
+        double scaleFactor = Math.sqrt(MAX_MATRIX_CELLS /
+                (oldSampleLimit + 1.0) / (newSampleLimit + 1.0));
+        int oldSampleCount = scaleSampleCount(oldSampleLimit, scaleFactor);
+        int newSampleCount = scaleSampleCount(newSampleLimit, scaleFactor);
+        while (!isWithinMatrixBudget(oldSampleCount, newSampleCount)) {
+            if (oldSampleCount >= newSampleCount && oldSampleCount > 0) {
+                oldSampleCount = Math.max(0, oldSampleCount - (oldSampleCount > 3 ? 3 : 1));
+            } else if (newSampleCount > 0) {
+                newSampleCount = Math.max(0, newSampleCount - (newSampleCount > 3 ? 3 : 1));
+            }
+        }
+        return new int[] { oldSampleCount, newSampleCount };
+    }
+
+    private int scaleSampleCount(int sampleLimit, double scaleFactor) {
+        if (sampleLimit <= 3) {
+            return sampleLimit;
+        }
+        return Math.max(3, (int) (Math.floor(sampleLimit * scaleFactor / 3.0) * 3));
+    }
+
+    private boolean isWithinMatrixBudget(int oldCount, int newCount) {
+        long rows = (long) oldCount + 1;
+        long columns = (long) newCount + 1;
+        return rows <= MAX_MATRIX_CELLS / columns;
+    }
+
+    private String[] sampleArray(String[] arr, int maxSampleCount) {
+        if (arr.length <= maxSampleCount) {
             return arr;
         }
 
+        if (maxSampleCount < 3) {
+            String[] sample = new String[maxSampleCount];
+            if (maxSampleCount == 1) {
+                sample[0] = arr[arr.length / 2];
+            } else if (maxSampleCount == 2) {
+                sample[0] = arr[0];
+                sample[1] = arr[arr.length - 1];
+            }
+            return sample;
+        }
+
+        int sampleSize = maxSampleCount / 3;
         String[] sample = new String[sampleSize * 3];
         int middle = arr.length / 2;
 

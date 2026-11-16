@@ -4,9 +4,12 @@ import androidx.annotation.NonNull;
 
 import com.ltrudu.sitewatcher.util.Logger;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLException;
@@ -30,6 +33,7 @@ public class SiteContentFetcher {
      * Default timeout in seconds for all network operations.
      */
     public static final int DEFAULT_TIMEOUT_SECONDS = 30;
+    private static final int MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 
     /**
      * Maximum redirects to follow.
@@ -141,8 +145,7 @@ public class SiteContentFetcher {
                 .get()
                 .build();
 
-        try {
-            Response response = client.newCall(request).execute();
+        try (Response response = client.newCall(request).execute()) {
             long responseTime = System.currentTimeMillis() - startTime;
 
             int httpCode = response.code();
@@ -171,10 +174,17 @@ public class SiteContentFetcher {
                 return FetchResult.failure("Empty response body", responseTime, httpCode);
             }
 
-            String content = body.string();
-            response.close();
+            if (body.contentLength() > MAX_RESPONSE_BYTES) {
+                return FetchResult.failure("Website response exceeds the 5 MiB limit", responseTime, httpCode);
+            }
 
-            Logger.d(TAG, "Fetched " + content.length() + " bytes in " + responseTime + "ms");
+            byte[] contentBytes = readLimitedResponseBody(body.byteStream());
+            String content = new String(contentBytes,
+                    body.contentType() != null
+                            ? body.contentType().charset(StandardCharsets.UTF_8)
+                            : StandardCharsets.UTF_8);
+
+            Logger.d(TAG, "Fetched " + content.length() + " characters in " + responseTime + "ms");
 
             return FetchResult.success(content, responseTime, httpCode);
 
@@ -210,6 +220,23 @@ public class SiteContentFetcher {
         }
     }
 
+    private byte[] readLimitedResponseBody(InputStream inputStream) throws IOException {
+        try (InputStream stream = inputStream;
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int totalBytes = 0;
+            int bytesRead;
+            while ((bytesRead = stream.read(buffer, 0,
+                    Math.min(buffer.length, MAX_RESPONSE_BYTES - totalBytes + 1))) != -1) {
+                totalBytes += bytesRead;
+                if (totalBytes > MAX_RESPONSE_BYTES) {
+                    throw new IOException("Website response exceeds the 5 MiB limit");
+                }
+                output.write(buffer, 0, bytesRead);
+            }
+            return output.toByteArray();
+        }
+    }
     /**
      * Normalize URL by adding scheme if missing.
      *

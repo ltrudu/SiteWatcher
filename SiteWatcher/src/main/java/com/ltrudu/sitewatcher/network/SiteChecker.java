@@ -14,6 +14,7 @@ import com.ltrudu.sitewatcher.data.repository.SiteRepository;
 import com.ltrudu.sitewatcher.network.FeedbackActionExecutor;
 import com.ltrudu.sitewatcher.notification.NotificationHelper;
 import com.ltrudu.sitewatcher.util.Logger;
+import com.ltrudu.sitewatcher.util.UrlValidator;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -123,10 +124,18 @@ public class SiteChecker {
     private void performCheck(@NonNull WatchedSite site, @NonNull CheckCallback callback) {
         long checkTime = System.currentTimeMillis();
         FetchMode fetchMode = site.getFetchMode();
-        Logger.d(TAG, "Starting check for site: " + site.getId() + " - " + site.getUrl() +
-                " (fetch mode: " + fetchMode + ")");
 
         try {
+            if (UrlValidator.hasDuplicatedFullAddress(site.getUrl())) {
+                String error = "URL contains the same full address twice";
+                Logger.w(TAG, "Skipping site check for site " + site.getId() + ": " + error);
+                repository.updateLastCheck(site.getId(), checkTime, 0, error);
+                callback.onCheckError(site.getId(), error);
+                return;
+            }
+
+            Logger.d(TAG, "Starting check for site: " + site.getId() + " - " + site.getUrl() +
+                    " (fetch mode: " + fetchMode + ")");
             // Fetch current content using appropriate fetcher
             FetchResult fetchResult;
             if (fetchMode == FetchMode.JAVASCRIPT) {

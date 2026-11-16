@@ -19,6 +19,7 @@ import com.ltrudu.sitewatcher.util.Logger;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -42,6 +43,8 @@ public class WebViewContentFetcher {
      * JavaScript interface name for extracting HTML content.
      */
     private static final String JS_INTERFACE_NAME = "HtmlExtractor";
+    private static final int MAX_EXTRACTED_HTML_CHARS = 5 * 1024 * 1024;
+    private static final String PAGE_TOO_LARGE_MARKER = "__SITEWATCHER_PAGE_TOO_LARGE__";
 
     private final Context context;
     private final int timeoutSeconds;
@@ -137,19 +140,22 @@ public class WebViewContentFetcher {
         // Use CountDownLatch to wait for WebView operation
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<FetchResult> resultRef = new AtomicReference<>();
+        FetchSession session = new FetchSession(startTime, result -> {
+            resultRef.set(result);
+            latch.countDown();
+        });
 
         // Run WebView operations on main thread
         mainHandler.post(() -> {
+            if (!session.isActive()) {
+                return;
+            }
             try {
-                fetchWithWebView(normalizedUrl, startTime, autoClickActions, result -> {
-                    resultRef.set(result);
-                    latch.countDown();
-                });
+                fetchWithWebView(normalizedUrl, autoClickActions, session);
             } catch (Exception e) {
                 Logger.e(TAG, "Error creating WebView", e);
-                resultRef.set(FetchResult.failure("WebView error: " + e.getMessage(),
+                session.complete(FetchResult.failure("WebView error: " + e.getMessage(),
                         System.currentTimeMillis() - startTime));
-                latch.countDown();
             }
         });
 
@@ -158,14 +164,20 @@ public class WebViewContentFetcher {
             boolean completed = latch.await(timeoutSeconds + 10, TimeUnit.SECONDS);
             if (!completed) {
                 Logger.e(TAG, "WebView fetch timed out for: " + normalizedUrl);
-                return FetchResult.failure("Page load timed out",
+                FetchResult timeoutResult = FetchResult.failure("Page load timed out",
                         System.currentTimeMillis() - startTime);
+                session.cancel();
+                mainHandler.post(() -> session.complete(timeoutResult));
+                return timeoutResult;
             }
         } catch (InterruptedException e) {
             Logger.e(TAG, "WebView fetch interrupted", e);
-            Thread.currentThread().interrupt();
-            return FetchResult.failure("Fetch interrupted",
+            FetchResult interruptedResult = FetchResult.failure("Fetch interrupted",
                     System.currentTimeMillis() - startTime);
+            session.cancel();
+            mainHandler.post(() -> session.complete(interruptedResult));
+            Thread.currentThread().interrupt();
+            return interruptedResult;
         }
 
         FetchResult result = resultRef.get();
@@ -180,15 +192,94 @@ public class WebViewContentFetcher {
         void onResult(@NonNull FetchResult result);
     }
 
+    private final class FetchSession {
+        private final long startTime;
+        private final FetchCallback callback;
+        private final AutoClickExecutor.CancellationToken cancellationToken =
+                new AutoClickExecutor.CancellationToken();
+        private final java.util.concurrent.atomic.AtomicBoolean completed =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        @Nullable
+        private WebView webView;
+        @Nullable
+        private Runnable timeoutRunnable;
+
+        FetchSession(long startTime, @NonNull FetchCallback callback) {
+            this.startTime = startTime;
+            this.callback = callback;
+        }
+
+        boolean isActive() {
+            return !completed.get() && !cancellationToken.isCancelled();
+        }
+
+        void setWebView(@NonNull WebView webView) {
+            this.webView = webView;
+        }
+
+        AutoClickExecutor.CancellationToken getCancellationToken() {
+            return cancellationToken;
+        }
+
+        void cancel() {
+            cancellationToken.cancel();
+        }
+
+        void startTimeout(@NonNull String url) {
+            timeoutRunnable = () -> {
+                if (!isActive()) {
+                    return;
+                }
+                Logger.e(TAG, "WebView timeout for: " + url);
+                complete(FetchResult.failure("Page load timed out",
+                        System.currentTimeMillis() - startTime));
+            };
+            mainHandler.postDelayed(timeoutRunnable, timeoutSeconds * 1000L);
+        }
+
+        void postDelayed(@NonNull Runnable runnable, long delayMs) {
+            if (!isActive()) {
+                return;
+            }
+            mainHandler.postDelayed(() -> {
+                if (isActive()) {
+                    runnable.run();
+                }
+            }, delayMs);
+        }
+
+        void complete(@NonNull FetchResult result) {
+            if (!completed.compareAndSet(false, true)) {
+                return;
+            }
+            cancellationToken.cancel();
+            if (timeoutRunnable != null) {
+                mainHandler.removeCallbacks(timeoutRunnable);
+                timeoutRunnable = null;
+            }
+            cleanupWebView(webView);
+            webView = null;
+            callback.onResult(result);
+        }
+    }
+
     /**
      * Perform the actual WebView fetch on the main thread.
      */
-    private void fetchWithWebView(@NonNull String url, long startTime,
+    private void fetchWithWebView(@NonNull String url,
                                    @Nullable List<AutoClickAction> autoClickActions,
-                                   @NonNull FetchCallback callback) {
+                                   @NonNull FetchSession session) {
+        if (!session.isActive()) {
+            return;
+        }
+
         WebView webView = new WebView(context);
+        session.setWebView(webView);
 
         try {
+            if (!session.isActive()) {
+                return;
+            }
             configureWebView(webView);
 
             // Add JavaScript interface for extracting HTML
@@ -202,11 +293,10 @@ public class WebViewContentFetcher {
 
                 @Override
                 public void onPageFinished(WebView view, String url) {
-                    super.onPageFinished(view, url);
-
-                    if (isFinished || hasError) {
+                    if (!session.isActive() || isFinished || hasError) {
                         return;
                     }
+                    super.onPageFinished(view, url);
                     isFinished = true;
 
                     Logger.d(TAG, "Page finished loading: " + url);
@@ -216,27 +306,34 @@ public class WebViewContentFetcher {
                     Logger.d(TAG, "Using delays - pageLoad: " + pageLoadDelay + "ms, postAction: " + postActionDelay + "ms");
 
                     // Wait for page load delay (allows JS content to load, e.g., cookie dialogs)
-                    mainHandler.postDelayed(() -> {
+                    session.postDelayed(() -> {
+                        if (!session.isActive()) {
+                            return;
+                        }
                         // Execute auto-click actions if any, then extract content
                         if (autoClickActions != null && !autoClickActions.isEmpty()) {
                             Logger.d(TAG, "Executing auto-click actions...");
                             autoClickExecutor.executeActions(view, autoClickActions,
+                                    session.getCancellationToken(),
                                     new AutoClickExecutor.ExecutionCallback() {
                                         @Override
                                         public void onComplete(int successCount, int failCount) {
+                                            if (!session.isActive()) {
+                                                return;
+                                            }
                                             Logger.d(TAG, "Auto-click complete: " + successCount +
                                                     " success, " + failCount + " failed");
                                             // Wait for post-action delay, then extract content
-                                            mainHandler.postDelayed(() -> {
-                                                extractHtmlContent(view, startTime, callback, extractorInterface);
-                                            }, postActionDelay);
+                                            session.postDelayed(() -> extractHtmlContent(
+                                                    view, session.startTime, session, extractorInterface),
+                                                    postActionDelay);
                                         }
                                     });
                         } else {
                             // No auto-click actions, wait for post-action delay then extract
-                            mainHandler.postDelayed(() -> {
-                                extractHtmlContent(view, startTime, callback, extractorInterface);
-                            }, postActionDelay);
+                            session.postDelayed(() -> extractHtmlContent(
+                                    view, session.startTime, session, extractorInterface),
+                                    postActionDelay);
                         }
                     }, pageLoadDelay);
                 }
@@ -244,6 +341,9 @@ public class WebViewContentFetcher {
                 @Override
                 public void onReceivedError(WebView view, WebResourceRequest request,
                                             WebResourceError error) {
+                    if (!session.isActive()) {
+                        return;
+                    }
                     super.onReceivedError(view, request, error);
 
                     // Only handle main frame errors
@@ -251,31 +351,24 @@ public class WebViewContentFetcher {
                         hasError = true;
                         String errorMsg = "Page load error: " + error.getDescription();
                         Logger.e(TAG, errorMsg);
-                        cleanupWebView(view);
-                        callback.onResult(FetchResult.failure(errorMsg,
-                                System.currentTimeMillis() - startTime));
+                        session.complete(FetchResult.failure(errorMsg,
+                                System.currentTimeMillis() - session.startTime));
                     }
                 }
             });
 
-            // Set timeout handler
-            mainHandler.postDelayed(() -> {
-                if (!extractorInterface.isExtracted()) {
-                    Logger.e(TAG, "WebView timeout for: " + url);
-                    cleanupWebView(webView);
-                    callback.onResult(FetchResult.failure("Page load timed out",
-                            System.currentTimeMillis() - startTime));
-                }
-            }, timeoutSeconds * 1000L);
+            session.startTimeout(url);
 
             // Load the URL
+            if (!session.isActive()) {
+                return;
+            }
             webView.loadUrl(url);
 
         } catch (Exception e) {
             Logger.e(TAG, "Error in fetchWithWebView", e);
-            cleanupWebView(webView);
-            callback.onResult(FetchResult.failure("WebView error: " + e.getMessage(),
-                    System.currentTimeMillis() - startTime));
+            session.complete(FetchResult.failure("WebView error: " + e.getMessage(),
+                    System.currentTimeMillis() - session.startTime));
         }
     }
 
@@ -318,8 +411,12 @@ public class WebViewContentFetcher {
      * Extract HTML content from the WebView after JavaScript execution.
      */
     private void extractHtmlContent(@NonNull WebView webView, long startTime,
-                                     @NonNull FetchCallback callback,
+                                     @NonNull FetchSession session,
                                      @NonNull HtmlExtractorInterface extractorInterface) {
+        if (!session.isActive()) {
+            return;
+        }
+
         try {
             // JavaScript to extract the full HTML including changes made by JS
             String extractScript =
@@ -327,10 +424,20 @@ public class WebViewContentFetcher {
                             "document.documentElement.outerHTML" +
                             ");";
 
+            String extractionScript = "(function() { var html = document.documentElement.outerHTML; return html.length > " + MAX_EXTRACTED_HTML_CHARS + " ? \"" + PAGE_TOO_LARGE_MARKER + "\" : html; })()";
+            if (!session.isActive()) {
+                return;
+            }
             webView.evaluateJavascript(
-                    "document.documentElement.outerHTML",
+                    extractionScript,
                     value -> {
+                        if (!session.isActive()) {
+                            return;
+                        }
                         mainHandler.post(() -> {
+                            if (!session.isActive()) {
+                                return;
+                            }
                             try {
                                 String html = value;
 
@@ -341,22 +448,35 @@ public class WebViewContentFetcher {
                                     html = unescapeJson(html);
                                 }
 
+                                if (PAGE_TOO_LARGE_MARKER.equals(html)) {
+                                    extractorInterface.setExtracted(true);
+                                    session.complete(FetchResult.failure(
+                                            "Page content exceeds the 5 MiB extraction limit",
+                                            System.currentTimeMillis() - startTime));
+                                    return;
+                                }
+                                if (html != null && html.length() > MAX_EXTRACTED_HTML_CHARS) {
+                                    extractorInterface.setExtracted(true);
+                                    session.complete(FetchResult.failure(
+                                            "Page content exceeds the 5 MiB extraction limit",
+                                            System.currentTimeMillis() - startTime));
+                                    return;
+                                }
+
                                 if (html != null && !html.isEmpty() && !html.equals("null")) {
                                     extractorInterface.setExtracted(true);
                                     long responseTime = System.currentTimeMillis() - startTime;
                                     Logger.d(TAG, "Extracted " + html.length() +
                                             " bytes in " + responseTime + "ms");
-                                    cleanupWebView(webView);
-                                    callback.onResult(FetchResult.success(html, responseTime, 200));
+                                    extractorInterface.setExtracted(true);
+                                    session.complete(FetchResult.success(html, responseTime, 200));
                                 } else {
-                                    cleanupWebView(webView);
-                                    callback.onResult(FetchResult.failure("Failed to extract HTML content",
+                                    session.complete(FetchResult.failure("Failed to extract HTML content",
                                             System.currentTimeMillis() - startTime));
                                 }
                             } catch (Exception e) {
                                 Logger.e(TAG, "Error processing extracted HTML", e);
-                                cleanupWebView(webView);
-                                callback.onResult(FetchResult.failure("Error processing HTML: " + e.getMessage(),
+                                session.complete(FetchResult.failure("Error processing HTML: " + e.getMessage(),
                                         System.currentTimeMillis() - startTime));
                             }
                         });
@@ -364,8 +484,7 @@ public class WebViewContentFetcher {
             );
         } catch (Exception e) {
             Logger.e(TAG, "Error extracting HTML", e);
-            cleanupWebView(webView);
-            callback.onResult(FetchResult.failure("Error extracting HTML: " + e.getMessage(),
+            session.complete(FetchResult.failure("Error extracting HTML: " + e.getMessage(),
                     System.currentTimeMillis() - startTime));
         }
     }

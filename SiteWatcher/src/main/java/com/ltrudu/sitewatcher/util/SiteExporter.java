@@ -27,6 +27,11 @@ import java.util.Locale;
 public class SiteExporter {
 
     private static final String TAG = "SiteExporter";
+    public static final int MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
+    public static final int MAX_IMPORT_SITES = 500;
+    public static final int MAX_IMPORT_AUTO_CLICK_ACTIONS_PER_SITE = 100;
+    public static final int MAX_IMPORT_FEEDBACK_ACTIONS_PER_SITE = 100;
+    public static final int MAX_IMPORT_SCHEDULES_PER_SITE = 100;
 
     // JSON keys
     private static final String KEY_VERSION = "version";
@@ -212,8 +217,30 @@ public class SiteExporter {
         Logger.d(TAG, "Importing sites from version " + version + " format");
 
         JSONArray sitesArray = root.getJSONArray(KEY_SITES);
+        if (sitesArray.length() > MAX_IMPORT_SITES) {
+            throw new JSONException("Backup contains " + sitesArray.length()
+                    + " sites; the maximum is " + MAX_IMPORT_SITES);
+        }
+
         for (int i = 0; i < sitesArray.length(); i++) {
-            JSONObject siteJson = sitesArray.getJSONObject(i);
+            JSONObject siteJson = sitesArray.optJSONObject(i);
+            if (siteJson == null) {
+                continue;
+            }
+            validateNestedArrayLimit(siteJson, i + 1, KEY_AUTO_CLICK_ACTIONS,
+                    "auto-click actions", MAX_IMPORT_AUTO_CLICK_ACTIONS_PER_SITE);
+            validateNestedArrayLimit(siteJson, i + 1, KEY_FEEDBACK_ACTIONS,
+                    "feedback actions", MAX_IMPORT_FEEDBACK_ACTIONS_PER_SITE);
+            validateNestedArrayLimit(siteJson, i + 1, KEY_SCHEDULES,
+                    "schedules", MAX_IMPORT_SCHEDULES_PER_SITE);
+        }
+
+        for (int i = 0; i < sitesArray.length(); i++) {
+            JSONObject siteJson = sitesArray.optJSONObject(i);
+            if (siteJson == null) {
+                Logger.w(TAG, "Skipping malformed site entry at index " + i);
+                continue;
+            }
             WatchedSite site = jsonToSite(siteJson, version);
             if (site != null) {
                 sites.add(site);
@@ -222,6 +249,16 @@ public class SiteExporter {
 
         Logger.d(TAG, "Imported " + sites.size() + " sites");
         return sites;
+    }
+
+    private static void validateNestedArrayLimit(@NonNull JSONObject siteJson, int siteNumber,
+                                                 @NonNull String key, @NonNull String label,
+                                                 int maximum) throws JSONException {
+        JSONArray entries = siteJson.optJSONArray(key);
+        if (entries != null && entries.length() > maximum) {
+            throw new JSONException("Site " + siteNumber + " has " + entries.length() + " " + label
+                    + "; the maximum is " + maximum);
+        }
     }
 
     /**
@@ -290,6 +327,10 @@ public class SiteExporter {
             String url = json.optString(KEY_URL, null);
             if (url == null || url.isEmpty()) {
                 Logger.w(TAG, "Skipping site with missing URL");
+                return null;
+            }
+            if (UrlValidator.hasDuplicatedFullAddress(url)) {
+                Logger.w(TAG, "Skipping site with a duplicated full URL");
                 return null;
             }
 

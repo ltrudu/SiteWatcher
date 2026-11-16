@@ -33,6 +33,7 @@ import com.ltrudu.sitewatcher.data.preferences.PreferencesManager;
 import com.ltrudu.sitewatcher.network.AutoClickExecutor;
 import com.ltrudu.sitewatcher.util.Logger;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import com.google.android.material.button.MaterialButton;
 
@@ -960,18 +961,16 @@ public class SelectorBrowserFragment extends Fragment {
     private String buildPreSelectScript() {
         // Split selectors by comma and build JSON array
         String[] selectorArray = existingSelectors.split(",");
-        StringBuilder jsonArray = new StringBuilder("[");
-        for (int i = 0; i < selectorArray.length; i++) {
-            String sel = selectorArray[i].trim();
-            if (!sel.isEmpty()) {
-                if (jsonArray.length() > 1) jsonArray.append(",");
-                jsonArray.append("\"").append(sel.replace("\"", "\\\"")).append("\"");
+        JSONArray jsonArray = new JSONArray();
+        for (String selector : selectorArray) {
+            String trimmedSelector = selector.trim();
+            if (!trimmedSelector.isEmpty()) {
+                jsonArray.put(trimmedSelector);
             }
         }
-        jsonArray.append("]");
 
         return "(function() {" +
-            "var selectors = " + jsonArray.toString() + ";" +
+            "var selectors = " + jsonArray + ";" +
             "var found = 0, notFound = 0;" +
             "if (!window.siteWatcherSelected) window.siteWatcherSelected = [];" +
             "selectors.forEach(function(sel) {" +
@@ -1124,12 +1123,13 @@ public class SelectorBrowserFragment extends Fragment {
      * Remove visual selection for a specific selector from the WebView.
      */
     private void removeSelectionFromWebView(String selector) {
-        String escapedSelector = selector.replace("'", "\\'").replace("\"", "\\\"");
+        String selectorLiteral = JSONObject.quote(selector);
         String script = "(function() {" +
+                "var selector = " + selectorLiteral + ";" +
                 "try {" +
-                "  var el = document.querySelector('" + escapedSelector + "');" +
+                "  var el = document.querySelector(selector);" +
                 "  if (el) el.classList.remove('sitewatcher-selected');" +
-                "  var idx = window.siteWatcherSelected.indexOf('" + escapedSelector + "');" +
+                "  var idx = window.siteWatcherSelected.indexOf(selector);" +
                 "  if (idx > -1) window.siteWatcherSelected.splice(idx, 1);" +
                 "} catch(e) { console.error('Error removing selection:', e); }" +
                 "})();";

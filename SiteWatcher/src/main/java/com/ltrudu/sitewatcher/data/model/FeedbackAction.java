@@ -370,7 +370,11 @@ public class FeedbackAction {
     public static FeedbackAction fromJson(@NonNull JSONObject json) throws JSONException {
         FeedbackAction action = new FeedbackAction();
         action.id = json.optString("id", UUID.randomUUID().toString());
-        action.type = FeedbackActionType.valueOf(json.optString("type", "NOTIFICATION"));
+        try {
+            action.type = FeedbackActionType.valueOf(json.optString("type", "NOTIFICATION"));
+        } catch (IllegalArgumentException e) {
+            action.type = FeedbackActionType.NOTIFICATION;
+        }
         action.label = json.optString("label", "");
         action.phoneNumber = json.optString("phoneNumber", null);
         action.soundUri = json.optString("soundUri", null);
@@ -432,11 +436,15 @@ public class FeedbackAction {
         try {
             JSONArray array = new JSONArray(jsonString);
             for (int i = 0; i < array.length(); i++) {
-                JSONObject json = array.getJSONObject(i);
-                actions.add(fromJson(json));
+                try {
+                    JSONObject json = array.getJSONObject(i);
+                    actions.add(fromJson(json));
+                } catch (JSONException | IllegalArgumentException ignored) {
+                    continue;
+                }
             }
-        } catch (JSONException e) {
-            // Return empty list on error
+        } catch (JSONException ignored) {
+            return actions;
         }
         return actions;
     }

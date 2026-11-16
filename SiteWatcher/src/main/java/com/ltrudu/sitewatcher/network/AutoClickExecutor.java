@@ -21,9 +21,12 @@ import com.ltrudu.sitewatcher.data.model.ActionType;
 import com.ltrudu.sitewatcher.data.model.AutoClickAction;
 import com.ltrudu.sitewatcher.util.Logger;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Executes auto-click actions on a WebView.
@@ -93,6 +96,18 @@ public class AutoClickExecutor {
         }
     }
 
+    public static final class CancellationToken {
+        private final AtomicBoolean cancelled = new AtomicBoolean(false);
+
+        public void cancel() {
+            cancelled.set(true);
+        }
+
+        public boolean isCancelled() {
+            return cancelled.get();
+        }
+    }
+
     private final Handler mainHandler;
     private boolean isInFullscreen = false;
     private Activity currentActivity = null;
@@ -113,6 +128,18 @@ public class AutoClickExecutor {
             @NonNull WebView webView,
             @NonNull List<AutoClickAction> actions,
             @NonNull ExecutionCallback callback) {
+        executeActions(webView, actions, new CancellationToken(), callback);
+    }
+
+    public void executeActions(
+            @NonNull WebView webView,
+            @NonNull List<AutoClickAction> actions,
+            @NonNull CancellationToken cancellationToken,
+            @NonNull ExecutionCallback callback) {
+
+        if (cancellationToken.isCancelled()) {
+            return;
+        }
 
         // Filter enabled actions and sort by order
         List<AutoClickAction> enabledActions = new ArrayList<>();
@@ -149,7 +176,9 @@ public class AutoClickExecutor {
 
                 // Wait for layout to settle before executing actions
                 mainHandler.postDelayed(() -> {
-                    executeNextAction(webView, enabledActions, 0, 0, 0, callback);
+                    if (!cancellationToken.isCancelled()) {
+                        executeNextAction(webView, enabledActions, 0, 0, 0, cancellationToken, callback);
+                    }
                 }, FULLSCREEN_SETTLE_DELAY_MS);
                 return;
             } else {
@@ -158,7 +187,7 @@ public class AutoClickExecutor {
         }
 
         // Execute actions immediately if no tap actions or no activity
-        executeNextAction(webView, enabledActions, 0, 0, 0, callback);
+        executeNextAction(webView, enabledActions, 0, 0, 0, cancellationToken, callback);
     }
 
     /**
@@ -245,7 +274,12 @@ public class AutoClickExecutor {
             int index,
             int successCount,
             int failCount,
+            @NonNull CancellationToken cancellationToken,
             @NonNull ExecutionCallback callback) {
+
+        if (cancellationToken.isCancelled()) {
+            return;
+        }
 
         if (index >= actions.size()) {
             // All actions complete
@@ -267,23 +301,34 @@ public class AutoClickExecutor {
             callback.onWaitStart(action.getId(), waitSeconds);
 
             mainHandler.postDelayed(() -> {
+                if (cancellationToken.isCancelled()) {
+                    return;
+                }
                 // Report action result after wait completes (consistent with other action types)
                 callback.onActionResult(action.getId(), true);
-                executeNextAction(webView, actions, index + 1, successCount, failCount, callback);
+                executeNextAction(webView, actions, index + 1, successCount, failCount,
+                        cancellationToken, callback);
             }, delayMs);
 
         } else if (action.getType() == ActionType.TAP_COORDINATES) {
             // TAP_COORDINATES action: use accessibility service
-            executeTapCoordinatesAction(webView, action, callback, result -> {
+            executeTapCoordinatesAction(webView, action, cancellationToken, callback, result -> {
+                if (cancellationToken.isCancelled()) {
+                    return;
+                }
                 callback.onActionResult(action.getId(), result);
 
                 mainHandler.postDelayed(() -> {
+                    if (cancellationToken.isCancelled()) {
+                        return;
+                    }
                     executeNextAction(
                             webView,
                             actions,
                             index + 1,
                             result ? successCount + 1 : successCount,
                             result ? failCount : failCount + 1,
+                            cancellationToken,
                             callback
                     );
                 }, DEFAULT_CLICK_DELAY_MS);
@@ -296,14 +341,23 @@ public class AutoClickExecutor {
                 Logger.w(TAG, "CLICK action has no selector: " + action.getLabel());
                 callback.onActionResult(action.getId(), false);
                 mainHandler.postDelayed(() -> {
-                    executeNextAction(webView, actions, index + 1, successCount, failCount + 1, callback);
+                    if (!cancellationToken.isCancelled()) {
+                        executeNextAction(webView, actions, index + 1, successCount, failCount + 1,
+                                cancellationToken, callback);
+                    }
                 }, DEFAULT_CLICK_DELAY_MS);
                 return;
             }
 
             String clickScript = generateClickScript(selector);
+            if (cancellationToken.isCancelled()) {
+                return;
+            }
 
             webView.evaluateJavascript(clickScript, result -> {
+                if (cancellationToken.isCancelled()) {
+                    return;
+                }
                 boolean success = "\"success\"".equals(result);
                 if (success) {
                     Logger.d(TAG, "CLICK action succeeded: " + action.getLabel());
@@ -315,12 +369,16 @@ public class AutoClickExecutor {
 
                 // Wait after click for DOM to update
                 mainHandler.postDelayed(() -> {
+                    if (cancellationToken.isCancelled()) {
+                        return;
+                    }
                     executeNextAction(
                             webView,
                             actions,
                             index + 1,
                             success ? successCount + 1 : successCount,
                             success ? failCount : failCount + 1,
+                            cancellationToken,
                             callback
                     );
                 }, DEFAULT_CLICK_DELAY_MS);
@@ -348,8 +406,20 @@ public class AutoClickExecutor {
     private void executeTapCoordinatesAction(
             @NonNull WebView webView,
             @NonNull AutoClickAction action,
+            @NonNull CancellationToken cancellationToken,
             @NonNull ExecutionCallback executionCallback,
             @NonNull TapResultCallback callback) {
+
+        if (cancellationToken.isCancelled()) {
+            return;
+        }
+
+        Activity activity = getActivityFromView(webView);
+        if (!isWebViewReadyForCoordinateTap(webView, activity)) {
+            Logger.e(TAG, "TAP_COORDINATES requires a visible, focused WebView in a current Activity");
+            callback.onResult(false);
+            return;
+        }
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             Logger.e(TAG, "TAP_COORDINATES requires API 24+");
@@ -384,17 +454,50 @@ public class AutoClickExecutor {
 
         // Delay the tap slightly so the user can see the crosshair
         mainHandler.postDelayed(() -> {
+            if (cancellationToken.isCancelled()) {
+                return;
+            }
+            if (!isWebViewReadyForCoordinateTap(webView, activity)) {
+                Logger.e(TAG, "TAP_COORDINATES cancelled because the WebView is no longer visible and focused");
+                callback.onResult(false);
+                return;
+            }
+
             boolean dispatched = service.performTap(screenX, screenY);
 
             if (dispatched) {
                 Logger.d(TAG, "Tap gesture dispatched successfully");
                 // Give time for the tap to be processed
-                mainHandler.postDelayed(() -> callback.onResult(true), 200);
+                mainHandler.postDelayed(() -> {
+                    if (!cancellationToken.isCancelled()) {
+                        callback.onResult(true);
+                    }
+                }, 200);
             } else {
                 Logger.e(TAG, "Failed to dispatch tap gesture");
                 callback.onResult(false);
             }
         }, TAP_VISUAL_DELAY_MS);
+    }
+
+    private boolean isWebViewReadyForCoordinateTap(@NonNull WebView webView, @Nullable Activity activity) {
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
+            return false;
+        }
+
+        Window window = activity.getWindow();
+        if (window == null) {
+            return false;
+        }
+
+        View decorView = window.getDecorView();
+        return webView.isAttachedToWindow()
+                && webView.isShown()
+                && webView.getVisibility() == View.VISIBLE
+                && webView.getWidth() > 0
+                && webView.getHeight() > 0
+                && decorView.hasWindowFocus()
+                && webView.hasWindowFocus();
     }
 
     /**
@@ -406,12 +509,11 @@ public class AutoClickExecutor {
      */
     @NonNull
     public static String generateClickScript(@NonNull String selector) {
-        // Escape single quotes in selector
-        String escapedSelector = selector.replace("'", "\\'");
+        String selectorLiteral = JSONObject.quote(selector);
 
         return "(function() {\n" +
                 "    try {\n" +
-                "        var el = document.querySelector('" + escapedSelector + "');\n" +
+                "        var el = document.querySelector(" + selectorLiteral + ");\n" +
                 "        if (el) {\n" +
                 "            el.click();\n" +
                 "            return 'success';\n" +
@@ -432,11 +534,11 @@ public class AutoClickExecutor {
      */
     @NonNull
     public static String generateClickAllScript(@NonNull String selector) {
-        String escapedSelector = selector.replace("'", "\\'");
+        String selectorLiteral = JSONObject.quote(selector);
 
         return "(function() {\n" +
                 "    try {\n" +
-                "        var elements = document.querySelectorAll('" + escapedSelector + "');\n" +
+                "        var elements = document.querySelectorAll(" + selectorLiteral + ");\n" +
                 "        if (elements.length > 0) {\n" +
                 "            for (var i = 0; i < elements.length; i++) {\n" +
                 "                elements[i].click();\n" +

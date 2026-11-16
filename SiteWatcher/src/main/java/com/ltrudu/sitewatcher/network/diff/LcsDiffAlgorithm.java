@@ -65,6 +65,8 @@ import androidx.annotation.NonNull;
 public class LcsDiffAlgorithm implements DiffAlgorithm {
 
     private static final int MAX_LINES = 5000;
+    private static final int MAX_SAMPLED_LINES = MAX_LINES / 3 * 3;
+    private static final long MAX_MATRIX_CELLS = 1_000_000L;
 
     @NonNull
     @Override
@@ -73,7 +75,8 @@ public class LcsDiffAlgorithm implements DiffAlgorithm {
         String[] newLines = newContent.split("\n", -1);
 
         // For very large files, use sampling to avoid memory issues
-        if (oldLines.length > MAX_LINES || newLines.length > MAX_LINES) {
+        if (oldLines.length > MAX_LINES || newLines.length > MAX_LINES ||
+                !isWithinMatrixBudget(oldLines.length, newLines.length)) {
             return computeSampledDiff(oldLines, newLines);
         }
 
@@ -116,10 +119,9 @@ public class LcsDiffAlgorithm implements DiffAlgorithm {
      * Compute sampled diff for very large files.
      */
     private DiffResult computeSampledDiff(String[] oldLines, String[] newLines) {
-        int sampleSize = MAX_LINES / 3;
-
-        String[] oldSample = sampleLines(oldLines, sampleSize);
-        String[] newSample = sampleLines(newLines, sampleSize);
+        int[] sampleCounts = getSampleCounts(oldLines.length, newLines.length);
+        String[] oldSample = sampleLines(oldLines, sampleCounts[0]);
+        String[] newSample = sampleLines(newLines, sampleCounts[1]);
 
         DiffResult sampleResult = computeFullDiff(oldSample, newSample);
 
@@ -145,6 +147,9 @@ public class LcsDiffAlgorithm implements DiffAlgorithm {
     private int[][] computeLcsMatrix(String[] oldLines, String[] newLines) {
         int m = oldLines.length;
         int n = newLines.length;
+        if (!isWithinMatrixBudget(m, n)) {
+            throw new IllegalArgumentException("LCS matrix exceeds the cell budget");
+        }
         int[][] lcs = new int[m + 1][n + 1];
 
         for (int i = 1; i <= m; i++) {
@@ -163,11 +168,57 @@ public class LcsDiffAlgorithm implements DiffAlgorithm {
     /**
      * Sample lines from beginning, middle, and end.
      */
-    private String[] sampleLines(String[] lines, int sampleSize) {
-        if (lines.length <= sampleSize * 3) {
+    private int[] getSampleCounts(int oldCount, int newCount) {
+        int oldSampleLimit = Math.min(oldCount, MAX_SAMPLED_LINES);
+        int newSampleLimit = Math.min(newCount, MAX_SAMPLED_LINES);
+        if (isWithinMatrixBudget(oldSampleLimit, newSampleLimit)) {
+            return new int[] { oldSampleLimit, newSampleLimit };
+        }
+
+        double scaleFactor = Math.sqrt(MAX_MATRIX_CELLS /
+                (oldSampleLimit + 1.0) / (newSampleLimit + 1.0));
+        int oldSampleCount = scaleSampleCount(oldSampleLimit, scaleFactor);
+        int newSampleCount = scaleSampleCount(newSampleLimit, scaleFactor);
+        while (!isWithinMatrixBudget(oldSampleCount, newSampleCount)) {
+            if (oldSampleCount >= newSampleCount && oldSampleCount > 0) {
+                oldSampleCount = Math.max(0, oldSampleCount - (oldSampleCount > 3 ? 3 : 1));
+            } else if (newSampleCount > 0) {
+                newSampleCount = Math.max(0, newSampleCount - (newSampleCount > 3 ? 3 : 1));
+            }
+        }
+        return new int[] { oldSampleCount, newSampleCount };
+    }
+
+    private int scaleSampleCount(int sampleLimit, double scaleFactor) {
+        if (sampleLimit <= 3) {
+            return sampleLimit;
+        }
+        return Math.max(3, (int) (Math.floor(sampleLimit * scaleFactor / 3.0) * 3));
+    }
+
+    private boolean isWithinMatrixBudget(int oldCount, int newCount) {
+        long rows = (long) oldCount + 1;
+        long columns = (long) newCount + 1;
+        return rows <= MAX_MATRIX_CELLS / columns;
+    }
+
+    private String[] sampleLines(String[] lines, int maxSampleCount) {
+        if (lines.length <= maxSampleCount) {
             return lines;
         }
 
+        if (maxSampleCount < 3) {
+            String[] sample = new String[maxSampleCount];
+            if (maxSampleCount == 1) {
+                sample[0] = lines[lines.length / 2];
+            } else if (maxSampleCount == 2) {
+                sample[0] = lines[0];
+                sample[1] = lines[lines.length - 1];
+            }
+            return sample;
+        }
+
+        int sampleSize = maxSampleCount / 3;
         String[] sample = new String[sampleSize * 3];
         int middle = lines.length / 2;
 

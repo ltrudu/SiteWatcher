@@ -15,7 +15,11 @@ import com.ltrudu.sitewatcher.data.model.SiteHistory;
 import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.util.Logger;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -27,12 +31,15 @@ import java.util.concurrent.Executors;
 public class SiteRepository {
 
     private static final String TAG = "SiteRepository";
+    private static final String HISTORY_DIR = "site_history";
+    private static final long ORPHAN_FILE_GRACE_PERIOD_MS = 24L * 60L * 60L * 1000L;
     private static volatile SiteRepository instance;
 
     private final WatchedSiteDao watchedSiteDao;
     private final SiteHistoryDao siteHistoryDao;
     private final CheckResultDao checkResultDao;
     private final ExecutorService executorService;
+    private final File historyDirectory;
 
     /**
      * Callback interface for async database operations.
@@ -95,6 +102,8 @@ public class SiteRepository {
         this.siteHistoryDao = database.siteHistoryDao();
         this.checkResultDao = database.checkResultDao();
         this.executorService = Executors.newSingleThreadExecutor();
+        this.historyDirectory = new File(application.getFilesDir(), HISTORY_DIR);
+        this.executorService.execute(this::cleanupOrphanedHistoryFiles);
         Logger.d(TAG, "SiteRepository initialized");
     }
 
@@ -208,7 +217,9 @@ public class SiteRepository {
     public void deleteSite(@NonNull WatchedSite site, @Nullable OnOperationCompleteListener listener) {
         executorService.execute(() -> {
             try {
+                deleteSiteHistoryFiles(site.getId());
                 watchedSiteDao.delete(site);
+                cleanupOrphanedHistoryFiles();
                 Logger.d(TAG, "Site deleted: " + site.getId());
                 if (listener != null) {
                     listener.onSuccess();
@@ -442,7 +453,7 @@ public class SiteRepository {
     public void pruneOldHistory(long siteId, int keepCount) {
         executorService.execute(() -> {
             try {
-                siteHistoryDao.deleteOlderThan(siteId, keepCount);
+                pruneHistoryFiles(siteId, keepCount);
                 Logger.d(TAG, "Pruned old history for site: " + siteId + ", keeping: " + keepCount);
             } catch (Exception e) {
                 Logger.e(TAG, "Error pruning history for site: " + siteId, e);
@@ -459,7 +470,7 @@ public class SiteRepository {
     public void pruneOldHistory(long siteId, int keepCount, @Nullable OnOperationCompleteListener listener) {
         executorService.execute(() -> {
             try {
-                siteHistoryDao.deleteOlderThan(siteId, keepCount);
+                pruneHistoryFiles(siteId, keepCount);
                 Logger.d(TAG, "Pruned old history for site: " + siteId);
                 if (listener != null) {
                     listener.onSuccess();
@@ -471,6 +482,90 @@ public class SiteRepository {
                 }
             }
         });
+    }
+
+    private void deleteSiteHistoryFiles(long siteId) throws IOException {
+        for (SiteHistory history : siteHistoryDao.getBySiteId(siteId)) {
+            deleteHistoryFile(history.getStoragePath());
+        }
+    }
+
+    private void pruneHistoryFiles(long siteId, int keepCount) throws IOException {
+        List<SiteHistory> histories = siteHistoryDao.getBySiteId(siteId);
+        int firstOldEntry = Math.max(0, Math.min(keepCount, histories.size()));
+        for (int i = firstOldEntry; i < histories.size(); i++) {
+            SiteHistory history = histories.get(i);
+            deleteHistoryFile(history.getStoragePath());
+            siteHistoryDao.delete(history);
+        }
+    }
+
+    private void deleteHistoryFile(@Nullable String storagePath) throws IOException {
+        if (storagePath == null || storagePath.isEmpty()) {
+            return;
+        }
+
+        File historyRoot = historyDirectory.getCanonicalFile();
+        File snapshotFile = new File(storagePath).getCanonicalFile();
+        String historyRootPrefix = historyRoot.getPath() + File.separator;
+        if (!snapshotFile.getPath().startsWith(historyRootPrefix)) {
+            throw new IOException("History snapshot is outside the app history directory");
+        }
+
+        if (snapshotFile.exists() && !snapshotFile.delete()) {
+            throw new IOException("Could not delete history snapshot");
+        }
+    }
+
+    private void cleanupOrphanedHistoryFiles() {
+        if (!historyDirectory.isDirectory()) {
+            return;
+        }
+
+        try {
+            File historyRoot = historyDirectory.getCanonicalFile();
+            String historyRootPrefix = historyRoot.getPath() + File.separator;
+            Set<String> retainedPaths = new HashSet<>();
+            for (SiteHistory history : siteHistoryDao.getAll()) {
+                String storagePath = history.getStoragePath();
+                if (storagePath == null || storagePath.isEmpty()) {
+                    continue;
+                }
+                try {
+                    File snapshotFile = new File(storagePath).getCanonicalFile();
+                    if (snapshotFile.getPath().startsWith(historyRootPrefix)) {
+                        retainedPaths.add(snapshotFile.getPath());
+                    }
+                } catch (IOException e) {
+                    Logger.w(TAG, "Could not resolve a history snapshot path");
+                }
+            }
+
+            long staleBefore = System.currentTimeMillis() - ORPHAN_FILE_GRACE_PERIOD_MS;
+            File[] snapshotFiles = historyRoot.listFiles();
+            if (snapshotFiles == null) {
+                return;
+            }
+
+            for (File snapshotFile : snapshotFiles) {
+                if (!snapshotFile.isFile()
+                        || !snapshotFile.getName().matches("[0-9]+_[0-9]+\\.html")
+                        || snapshotFile.lastModified() >= staleBefore) {
+                    continue;
+                }
+
+                try {
+                    String canonicalPath = snapshotFile.getCanonicalPath();
+                    if (!retainedPaths.contains(canonicalPath)) {
+                        deleteHistoryFile(canonicalPath);
+                    }
+                } catch (IOException e) {
+                    Logger.w(TAG, "Could not clean an orphaned history snapshot");
+                }
+            }
+        } catch (Exception e) {
+            Logger.e(TAG, "Error cleaning orphaned history snapshots", e);
+        }
     }
 
     // ========================================

@@ -41,10 +41,9 @@ import com.ltrudu.sitewatcher.util.ThemeManager;
 
 import org.json.JSONException;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import android.widget.ArrayAdapter;
@@ -795,17 +794,27 @@ public class SettingsFragment extends Fragment {
      * Reads text content from a URI.
      */
     private String readTextFromUri(Uri uri) throws IOException {
-        StringBuilder stringBuilder = new StringBuilder();
-        try (InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
-             BufferedReader reader = new BufferedReader(
-                     new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                stringBuilder.append(line).append("\n");
-            }
+        InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+        if (inputStream == null) {
+            throw new IOException("Could not read the selected backup file");
         }
-        return stringBuilder.toString();
+
+        try (InputStream stream = inputStream;
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int totalBytes = 0;
+            int bytesRead;
+            int maximumBytes = SiteExporter.MAX_IMPORT_FILE_BYTES;
+            while ((bytesRead = stream.read(buffer, 0,
+                    Math.min(buffer.length, maximumBytes - totalBytes + 1))) != -1) {
+                totalBytes += bytesRead;
+                if (totalBytes > maximumBytes) {
+                    throw new IOException("Backup file exceeds the 10 MiB import limit");
+                }
+                output.write(buffer, 0, bytesRead);
+            }
+            return new String(output.toByteArray(), StandardCharsets.UTF_8);
+        }
     }
 
     /**

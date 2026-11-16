@@ -124,8 +124,8 @@ public class AutoClickAction {
         action.label = label;
         action.selector = null;
         action.waitSeconds = 0;
-        action.tapX = Math.max(0f, Math.min(1f, tapX));
-        action.tapY = Math.max(0f, Math.min(1f, tapY));
+        action.tapX = clampCoordinate(tapX);
+        action.tapY = clampCoordinate(tapY);
         action.enabled = enabled;
         action.builtIn = false;
         action.order = order;
@@ -271,16 +271,29 @@ public class AutoClickAction {
     public static AutoClickAction fromJson(@NonNull JSONObject json) throws JSONException {
         AutoClickAction action = new AutoClickAction();
         action.id = json.optString("id", UUID.randomUUID().toString());
-        action.type = ActionType.valueOf(json.optString("type", "CLICK"));
+        boolean validType = true;
+        try {
+            action.type = ActionType.valueOf(json.optString("type", "CLICK"));
+        } catch (IllegalArgumentException e) {
+            action.type = ActionType.WAIT;
+            validType = false;
+        }
         action.label = json.optString("label", "");
         action.selector = json.optString("selector", null);
         action.waitSeconds = json.optInt("waitSeconds", 1);
-        action.tapX = (float) json.optDouble("tapX", 0.0);
-        action.tapY = (float) json.optDouble("tapY", 0.0);
-        action.enabled = json.optBoolean("enabled", true);
+        action.tapX = clampCoordinate((float) json.optDouble("tapX", 0.0));
+        action.tapY = clampCoordinate((float) json.optDouble("tapY", 0.0));
+        action.enabled = validType && json.optBoolean("enabled", true);
         action.builtIn = json.optBoolean("builtIn", false);
         action.order = json.optInt("order", 0);
         return action;
+    }
+
+    private static float clampCoordinate(float coordinate) {
+        if (Float.isNaN(coordinate) || Float.isInfinite(coordinate)) {
+            return 0f;
+        }
+        return Math.max(0f, Math.min(1f, coordinate));
     }
 
     /**
@@ -320,11 +333,15 @@ public class AutoClickAction {
         try {
             JSONArray array = new JSONArray(jsonString);
             for (int i = 0; i < array.length(); i++) {
-                JSONObject json = array.getJSONObject(i);
-                actions.add(fromJson(json));
+                try {
+                    JSONObject json = array.getJSONObject(i);
+                    actions.add(fromJson(json));
+                } catch (JSONException | IllegalArgumentException ignored) {
+                    continue;
+                }
             }
-        } catch (JSONException e) {
-            // Return empty list on error
+        } catch (JSONException ignored) {
+            return actions;
         }
         return actions;
     }

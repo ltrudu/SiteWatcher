@@ -425,10 +425,18 @@ public class Schedule {
     public static Schedule fromJson(@NonNull JSONObject json) throws JSONException {
         Schedule schedule = new Schedule();
         schedule.id = json.optString("id", UUID.randomUUID().toString());
-        schedule.calendarType = CalendarScheduleType.valueOf(
-                json.optString("calendarType", "ALL_THE_TIME"));
-        schedule.intervalType = ScheduleType.valueOf(
-                json.optString("intervalType", "PERIODIC"));
+        try {
+            schedule.calendarType = CalendarScheduleType.valueOf(
+                    json.optString("calendarType", "ALL_THE_TIME"));
+        } catch (IllegalArgumentException e) {
+            schedule.calendarType = CalendarScheduleType.ALL_THE_TIME;
+        }
+        try {
+            schedule.intervalType = ScheduleType.valueOf(
+                    json.optString("intervalType", "PERIODIC"));
+        } catch (IllegalArgumentException e) {
+            schedule.intervalType = ScheduleType.PERIODIC;
+        }
         schedule.enabled = json.optBoolean("enabled", true);
         schedule.order = json.optInt("order", 0);
         schedule.intervalMinutes = json.optInt("intervalMinutes", 60);
@@ -440,8 +448,12 @@ public class Schedule {
         schedule.fromDate = json.optLong("fromDate", System.currentTimeMillis());
         schedule.toDate = json.optLong("toDate", System.currentTimeMillis());
         schedule.enabledDays = json.optInt("enabledDays", ALL_DAYS);
-        schedule.weekParity = WeekParity.valueOf(
-                json.optString("weekParity", "BOTH"));
+        try {
+            schedule.weekParity = WeekParity.valueOf(
+                    json.optString("weekParity", "BOTH"));
+        } catch (IllegalArgumentException e) {
+            schedule.weekParity = WeekParity.BOTH;
+        }
         return schedule;
     }
 
@@ -482,11 +494,15 @@ public class Schedule {
         try {
             JSONArray array = new JSONArray(jsonString);
             for (int i = 0; i < array.length(); i++) {
-                JSONObject json = array.getJSONObject(i);
-                schedules.add(fromJson(json));
+                try {
+                    JSONObject json = array.getJSONObject(i);
+                    schedules.add(fromJson(json));
+                } catch (JSONException | IllegalArgumentException ignored) {
+                    continue;
+                }
             }
-        } catch (JSONException e) {
-            // Return empty list on error
+        } catch (JSONException ignored) {
+            return schedules;
         }
         return schedules;
     }

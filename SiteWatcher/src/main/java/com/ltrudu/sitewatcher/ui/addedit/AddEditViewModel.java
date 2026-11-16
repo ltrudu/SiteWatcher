@@ -20,6 +20,7 @@ import com.ltrudu.sitewatcher.data.model.WatchedSite;
 import com.ltrudu.sitewatcher.data.repository.SiteRepository;
 import com.ltrudu.sitewatcher.network.SiteChecker;
 import com.ltrudu.sitewatcher.util.Logger;
+import com.ltrudu.sitewatcher.util.UrlValidator;
 
 import androidx.annotation.Nullable;
 
@@ -236,9 +237,12 @@ public class AddEditViewModel extends AndroidViewModel {
             trimmedUrl = "https://" + trimmedUrl;
         }
 
-        boolean valid = Patterns.WEB_URL.matcher(trimmedUrl).matches();
+        boolean repeatedAddress = UrlValidator.hasDuplicatedFullAddress(trimmedUrl);
+        boolean valid = !repeatedAddress && Patterns.WEB_URL.matcher(trimmedUrl).matches();
         isUrlValid.setValue(valid);
-        urlError.setValue(valid ? null : "Invalid URL format");
+        urlError.setValue(valid ? null : repeatedAddress
+                ? "URL contains the same full address twice"
+                : "Invalid URL format");
 
         return valid;
     }
